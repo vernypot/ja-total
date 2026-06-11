@@ -9,21 +9,35 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleLogin() {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (!error) {
+    setError("");
+    setIsLoading(true);
+    
+    try {
+      const { data, error: authError } = await sb.auth.signInWithPassword({ email, password });
+      if (authError) {
+        setError(authError.message || "Login failed. Please check your credentials.");
+        setIsLoading(false);
+        return;
+      }
       setUser(data.user);
       navigate("/dashboard");
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
     }
   }
 
   return (
     <div>
       <h2>Login</h2>
-      <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-      <input type="password" onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Ingresar</button>
+      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
+      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
+      <button onClick={handleLogin} disabled={isLoading}>{isLoading ? 'Ingresando...' : 'Ingresar'}</button>
     </div>
   );
 }

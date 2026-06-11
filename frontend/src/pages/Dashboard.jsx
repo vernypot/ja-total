@@ -1,14 +1,19 @@
+import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import Miembros from "./Miembros";
+import Breadcrumb from "../components/Breadcrumb";
+
 
 export default function Dashboard() {
   return (
-    <div style={{ display: "flex" }}>
+    <div className="layout">
       <Sidebar />
-      <div style={{ flex: 1 }}>
+      <div className="main">
         <Topbar />
-        <Miembros />
+        <div className="content">
+          <Breadcrumb />   {/* ✅ AQUÍ */}
+          <Outlet />
+        </div>
       </div>
     </div>
   );

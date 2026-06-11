@@ -1,0 +1,51 @@
+.miembro-perfil {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.miembro-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.miembro-foto {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.miembro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.miembro-grid div {
+  background: #f9fafb;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.miembro-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.miembro-tabs a {
+  padding: 8px 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #111;
+}
+
+.miembro-tabs a:hover {
+  background: #3b82f6;
+  color: white;
+}
