@@ -1,0 +1,174 @@
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.sidebar {
+  background: linear-gradient(180deg, var(--gray-900) 0%, var(--gray-800) 100%);
+  color: var(--white);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--info) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.role-user {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--info);
+}
+
+.role-admin {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning);
+}
+
+.role-superadmin {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
+  color: var(--danger);
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  color: rgba(255, 255, 255, 0.8);
+  transition: all var(--transition-fast);
+  font-weight: 500;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  margin-left: calc(-1 * var(--spacing-lg));
+  padding-left: calc(var(--spacing-lg) - 3px);
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  border-left-color: var(--info);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-link.active::before {
+  content: '●';
+  margin-right: var(--spacing-sm);
+}
+
+.admin-section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-section h4 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+}
+
+.admin-link {
+  background: rgba(220, 38, 38, 0.1);
+  border-left: 3px solid transparent;
+}
+
+.admin-link:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+.admin-link.active {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
+  border-left-color: var(--danger);
+}
+
+.sidebar hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: var(--spacing-md) 0;
+}
+
+/* ============================================
+   RESPONSIVE SIDEBAR
+   ============================================ */
+
+@media (max-width: 768px) {
+  .sidebar {
+    padding: var(--spacing-lg);
+  }
+
+  .sidebar-header {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .sidebar-header h3 {
+    font-size: var(--text-lg);
+  }
+
+  .nav-link {
+    padding: var(--spacing-md);
+    font-size: var(--text-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    padding: var(--spacing-md);
+  }
+
+  .sidebar-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .nav-link {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--text-xs);
+  }
+}

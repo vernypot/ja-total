@@ -7,8 +7,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    sb.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
+    sb.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('Failed to get session:', error);
+        setUser(null);
+      } else {
+        setUser(data.session?.user || null);
+      }
     });
   }, []);
 
