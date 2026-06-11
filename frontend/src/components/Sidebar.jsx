@@ -18,16 +18,16 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <Link 
+          to="/dashboard/iglesias" 
+          className={`nav-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
+        >
+          ⛪ Iglesias
+        </Link>
+        <Link 
           to="/dashboard/miembros" 
           className={`nav-link ${isActive('/dashboard/miembros') ? 'active' : ''}`}
         >
           👥 Members
-        </Link>
-        <Link 
-          to="/dashboard/iglesias" 
-          className={`nav-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
-        >
-          ⛪ Churches
         </Link>
         <Link 
           to="/dashboard/clubes" 
@@ -58,6 +58,12 @@ export default function Sidebar() {
                 className={`nav-link admin-link ${isActive('/dashboard/usuarios') ? 'active' : ''}`}
               >
                 🔑 User Management
+              </Link>
+              <Link 
+                to="/dashboard/advanced-settings" 
+                className={`nav-link admin-link ${isActive('/dashboard/advanced-settings') ? 'active' : ''}`}
+              >
+                ⚙️ Advanced Settings
               </Link>
             </div>
           </>

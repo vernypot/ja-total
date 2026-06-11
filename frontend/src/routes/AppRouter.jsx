@@ -9,6 +9,8 @@ import Contactos from "../pages/Contactos";
 import Especialidades from "../pages/Especialidades";
 import ClasesProgresivas from "../pages/ClasesProgresivas";
 import Usuarios from "../pages/Usuarios";
+import LabelSettings from "../pages/LabelSettings";
+import AdvancedSettings from "../pages/AdvancedSettings";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -32,6 +34,8 @@ export default function AppRouter() {
           <Route path="especialidades" element={<Especialidades />} />
           <Route path="clases-progresivas" element={<ClasesProgresivas />} />
           <Route path="usuarios" element={<Usuarios />} />
+          <Route path="label-settings" element={<LabelSettings />} />
+          <Route path="advanced-settings" element={<AdvancedSettings />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />
 
         </Route>

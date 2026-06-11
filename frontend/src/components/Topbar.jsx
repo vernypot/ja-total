@@ -1,10 +1,13 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { LanguageContext } from "../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { sb } from "../services/supabase";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Topbar() {
   const { user, setUser } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -24,6 +27,7 @@ export default function Topbar() {
       </div>
 
       <div className="topbar-right">
+        <LanguageSwitcher />
         <div className="user-menu">
           <button 
             className="user-button"
