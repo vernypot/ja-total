@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { sb } from '../services/supabase';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import PasswordReset from '../components/PasswordReset';
 import '../styles/form.css';
 
 export default function Usuarios() {
@@ -16,6 +17,8 @@ export default function Usuarios() {
   const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [selectedUserEmail, setSelectedUserEmail] = useState(null);
 
   const [form, setForm] = useState({
     nombre: '',
@@ -455,7 +458,7 @@ export default function Usuarios() {
                     <td style={{ padding: '12px' }}>{usuario.telefono || '—'}</td>
                     <td style={{ padding: '12px' }}>{new Date(usuario.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => handleEdit(usuario)}
                           title="Edit"
@@ -470,6 +473,24 @@ export default function Usuarios() {
                           }}
                         >
                           ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedUserEmail(usuario.email);
+                            setShowPasswordReset(true);
+                          }}
+                          title="Reset Password"
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          🔑
                         </button>
                         <button
                           onClick={() => handleDelete(usuario.id)}
@@ -495,6 +516,17 @@ export default function Usuarios() {
           </div>
         )}
       </div>
+
+      {showPasswordReset && (
+        <PasswordReset
+          onClose={() => {
+            setShowPasswordReset(false);
+            setSelectedUserEmail(null);
+          }}
+          userEmail={selectedUserEmail}
+          isOwnPassword={false}
+        />
+      )}
     </div>
   );
 }

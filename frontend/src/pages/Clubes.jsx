@@ -1,305 +1,357 @@
-import { useEffect, useState, useContext } from 'react';
-import { sb } from '../services/supabase';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { IglesiaContext } from '../context/IglesiaContext';
-import '../styles/form.css';
+import { useEffect, useState, useContext } from "react";
+import { sb } from "../services/supabase";
+import { AuthContext } from "../context/AuthContext";
+import { IglesiaContext } from "../context/IglesiaContext";
+import "../styles/form.css";
 
-export default function Clubes(){
- const { activeIglesia } = useContext(IglesiaContext);
- const [data,setData]=useState([]);
- const [iglesiasData, setIglesiasData]=useState([]);
- const [activeIglesiaData, setActiveIglesiaData] = useState(null);
- const [showInactive,setShowInactive]=useState(false);
- const [error,setError]=useState('');
- const [loading,setLoading]=useState(true);
- const [params]=useSearchParams();
- const iglesiaId=params.get('iglesia') || activeIglesia;
- const navigate=useNavigate();
- const [showForm, setShowForm] = useState(false);
- const [clubForm, setClubForm] = useState({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
- const [tipos, setTipos] = useState([]);
+export default function Clubes() {
+  const { user } = useContext(AuthContext);
+  const { activeIglesia } = useContext(IglesiaContext);
+  const userRole = user?.user_metadata?.role || 'user';
+  const [data, setData] = useState([]);
+  const [showInactive, setShowInactive] = useState(false);
+  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ nombre: "", iglesia_id: "" });
+  const [activeIglesiaData, setActiveIglesiaData] = useState(null);
 
- async function loadTipos() {
-   const { data: tiposData, error: tiposError } = await sb.from('tipos_club').select('id, nombre');
-   if(tiposError) {
-     console.error('Error loading club types:', tiposError);
-     return;
-   }
-   setTipos(tiposData || []);
- }
+  const canAddClub = userRole === 'superadmin';
 
- async function load(){
-  setError('');
-  setLoading(true);
-  
-  try {
-    let query = sb.from('clubes').select('id,nombre,iglesia_id,estado,created_at,iglesias(id,nombre),tipos_club(nombre)').order('nombre', { ascending: true });
+  async function load() {
+    setError("");
     
-    if(iglesiaId) {
-      query = query.eq('iglesia_id',iglesiaId);
-      // Get the iglesia data
-      const { data: igData } = await sb.from('iglesias').select('id,nombre').eq('id', iglesiaId).single();
-      if(igData) setActiveIglesiaData(igData);
-    }
-    
-    if(!showInactive) query = query.eq('estado','activo');
-    
-    const {data, error: queryError} = await query;
-    
-    if(queryError) {
-      setError('Error cargando clubes: ' + queryError.message);
-      console.error(queryError);
+    if (!activeIglesia) {
       setData([]);
-      setLoading(false);
       return;
     }
-    
-    setData(data || []);
-  } catch (err) {
-    setError('Error inesperado: ' + err.message);
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
- }
 
- async function loadIglesias() {
-   const { data: igData, error } = await sb.from('iglesias').select('id, nombre').eq('estado', 'activo');
-   if(!error) {
-     setIglesiasData(igData || []);
-   }
- }
+    let query = sb
+      .from("clubes")
+      .select("id, nombre, iglesia_id, estado, created_at")
+      .eq("iglesia_id", activeIglesia);
 
- async function addClub() {
-  setError('');
-  
-  if(!clubForm.nombre.trim() || !clubForm.iglesia_id) {
-    setError('Nombre e iglesia son requeridos');
-    return;
-  }
+    if (!showInactive) {
+      query = query.eq("estado", "activo");
+    }
 
-  const {error: saveError} = await sb.from('clubes').insert([{
-    nombre: clubForm.nombre.trim(),
-    iglesia_id: clubForm.iglesia_id,
-    tipo_id: clubForm.tipo_id || null,
-    estado: 'activo'
-  }]);
+    const { data: clubsData, error: clubsError } = await query;
 
-  if(saveError) {
-    setError('Error guardando club: ' + saveError.message);
-    console.error(saveError);
-    return;
-  }
-
-  setClubForm({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
-  setShowForm(false);
-  load();
- }
-
- async function toggleEstado(c){
-  setError('');
-  const nuevo = c.estado === 'activo' ? 'inactivo' : 'activo';
-  
-  if(nuevo === 'inactivo'){
-    const {data:dep, error: depError} = await sb.from('miembro_club').select('id').eq('club_id',c.id).limit(1);
-    
-    if(depError) {
-      setError('Error verificando dependencias');
-      console.error(depError);
+    if (clubsError) {
+      setError("Error loading clubs");
+      console.error(clubsError);
+      setData([]);
       return;
     }
-    
-    if(dep && dep.length > 0) {
-      alert('No se puede desactivar. Tiene miembros asignados.');
-      return;
+
+    setData(clubsData || []);
+  }
+
+  async function loadActiveIglesia() {
+    if (activeIglesia) {
+      const { data: igData } = await sb
+        .from("iglesias")
+        .select("id, nombre")
+        .eq("id", activeIglesia)
+        .single();
+      
+      if (igData) {
+        setActiveIglesiaData(igData);
+      }
     }
   }
-  
-  const {error: updateError} = await sb.from('clubes').update({estado:nuevo}).eq('id',c.id);
-  
-  if(updateError) {
-    setError('Error actualizando club: ' + updateError.message);
-    console.error(updateError);
-    return;
+
+  async function save() {
+    if (!canAddClub) {
+      alert("Solo superadmin puede agregar clubes");
+      return;
+    }
+
+    setError("");
+
+    if (!form.nombre || !activeIglesia) {
+      setError("Complete all required fields");
+      return;
+    }
+
+    if (editingId) {
+      const { error: updateError } = await sb
+        .from("clubes")
+        .update({
+          nombre: form.nombre
+        })
+        .eq("id", editingId);
+
+      if (updateError) {
+        setError("Error updating club: " + updateError.message);
+        console.error(updateError);
+        return;
+      }
+    } else {
+      const { error: saveError } = await sb.from("clubes").insert([
+        {
+          nombre: form.nombre,
+          iglesia_id: activeIglesia,
+          estado: "activo"
+        }
+      ]);
+
+      if (saveError) {
+        setError("Error saving club: " + saveError.message);
+        console.error(saveError);
+        return;
+      }
+    }
+
+    setForm({ nombre: "", iglesia_id: "" });
+    setEditingId(null);
+    setShowForm(false);
+    load();
   }
-  
-  load();
- }
 
- useEffect(()=>{
-  load();
-  loadTipos();
-  loadIglesias();
- },[iglesiaId,showInactive]);
+  async function startEdit(club) {
+    if (!canAddClub) {
+      alert("Solo superadmin puede editar clubes");
+      return;
+    }
 
- return (
-  <div className="container">
-    <div className="page-header">
-      <div>
-        <h1>🎯 Clubes</h1>
-        {activeIglesiaData && (
-          <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-            Church: <strong>{activeIglesiaData.nombre}</strong>
-          </p>
+    setEditingId(club.id);
+    setForm({
+      nombre: club.nombre,
+      iglesia_id: club.iglesia_id
+    });
+    setShowForm(true);
+  }
+
+  async function toggleEstado(club) {
+    if (!canAddClub) {
+      alert("Solo superadmin puede cambiar estado");
+      return;
+    }
+
+    setError("");
+    const nuevo = club.estado === "activo" ? "inactivo" : "activo";
+
+    const { error: updateError } = await sb
+      .from("clubes")
+      .update({ estado: nuevo })
+      .eq("id", club.id);
+
+    if (updateError) {
+      setError("Error updating club status");
+      console.error(updateError);
+      return;
+    }
+
+    load();
+  }
+
+  useEffect(() => {
+    load();
+  }, [activeIglesia, showInactive]);
+
+  useEffect(() => {
+    loadActiveIglesia();
+  }, [activeIglesia]);
+
+  return (
+    <div className="container">
+      <div className="page-header">
+        <div>
+          <h1>🎪 Clubes</h1>
+          {activeIglesiaData && (
+            <p style={{ margin: "8px 0 0 0", color: "#666", fontSize: "14px" }}>
+              Church: <strong>{activeIglesiaData.nombre}</strong>
+            </p>
+          )}
+        </div>
+        {canAddClub && (
+          <button
+            onClick={() => {
+              setShowForm(!showForm);
+              if (editingId) {
+                setEditingId(null);
+                setForm({ nombre: "", iglesia_id: "" });
+              }
+            }}
+            style={{
+              padding: "10px 15px",
+              backgroundColor: "#2563eb",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "bold"
+            }}
+          >
+            {showForm ? "✕ Cancelar" : "➕ Nuevo Club"}
+          </button>
         )}
       </div>
-      <button
-        onClick={() => setShowForm(!showForm)}
-        style={{
-          padding: '10px 15px',
-          backgroundColor: '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        }}
-      >
-        {showForm ? '✕ Cancelar' : '➕ Nuevo Club'}
-      </button>
-    </div>
 
-    {error && <div className="alert alert-error">{error}</div>}
-    
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input type='checkbox' onChange={e => setShowInactive(e.target.checked)} />
-          Mostrar inactivos
-        </label>
-      </div>
+      {error && <div className="alert alert-error">{error}</div>}
 
-      {showForm && (
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#f0f9ff',
-          border: '2px solid #0891b2',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
-          <h4 style={{ marginTop: 0 }}>Agregar Nuevo Club</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Nombre</label>
+      <div className="card">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+            flexWrap: "wrap",
+            gap: "10px"
+          }}
+        >
+          <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="checkbox"
+              onChange={e => setShowInactive(e.target.checked)}
+            />
+            Ver inactivos
+          </label>
+        </div>
+
+        {showForm && canAddClub && (
+          <div
+            style={{
+              padding: "15px",
+              backgroundColor: "#f0f9ff",
+              border: "2px solid #0891b2",
+              borderRadius: "8px",
+              marginBottom: "20px"
+            }}
+          >
+            <h4 style={{ marginTop: 0 }}>
+              {editingId ? "Editar Club" : "Nuevo Club"}
+            </h4>
+
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold"
+                }}
+              >
+                Nombre *
+              </label>
               <input
-                type="text"
-                value={clubForm.nombre}
-                onChange={e => setClubForm({ ...clubForm, nombre: e.target.value })}
                 placeholder="Nombre del club"
+                value={form.nombre}
+                onChange={e => setForm({ ...form, nombre: e.target.value })}
                 className="form-input"
                 style={{ margin: 0 }}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Iglesia</label>
-              <select
-                value={clubForm.iglesia_id}
-                onChange={e => setClubForm({ ...clubForm, iglesia_id: e.target.value })}
-                className="form-input"
-                style={{ margin: 0 }}
-              >
-                <option value="">Seleccione iglesia</option>
-                {iglesiasData.map(iglesia => (
-                  <option key={iglesia.id} value={iglesia.id}>{iglesia.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Tipo de Club</label>
-              <select
-                value={clubForm.tipo_id}
-                onChange={e => setClubForm({ ...clubForm, tipo_id: e.target.value })}
-                className="form-input"
-                style={{ margin: 0 }}
-              >
-                <option value="">Seleccione tipo</option>
-                {tipos.map(t => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={addClub}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#16a34a',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ✓ Guardar
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#6b7280',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ✕ Cancelar
-            </button>
-          </div>
-        </div>
-      )}
 
-      {loading ? (
-        <div className="loading">Cargando clubes...</div>
-      ) : data.length === 0 ? (
-        <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
-          No hay clubes registrados
-        </p>
-      ) : (
-        <div style={{ display: 'grid', gap: '15px' }}>
-          {data.map(c => (
-            <div key={c.id} style={{
-              padding: '15px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              transition: 'all 0.2s'
-            }} className="hover-shadow">
-              <div>
-                <strong>{c.nombre}</strong>
-                <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
-                  {c.tipos_club?.nombre && `Tipo: ${c.tipos_club.nombre}`}
-                </div>
-                <span className={`badge badge-${c.estado}`} style={{ marginTop: '8px', display: 'inline-block' }}>
-                  {c.estado}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={() => navigate(`/dashboard/miembros?club=${c.id}`)}
-                  className="btn btn-sm btn-edit"
-                >
-                  👥 Miembros
-                </button>
-                <button 
-                  onClick={() => toggleEstado(c)}
-                  className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
-                >
-                  {c.estado === 'activo' ? '❌ Desactivar' : '✓ Activar'}
-                </button>
-              </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                onClick={save}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#16a34a",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                ✓ Guardar
+              </button>
+              <button
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                  setForm({ nombre: "", iglesia_id: "" });
+                }}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#6b7280",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                ✕ Cancelar
+              </button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+
+        <h4>Listado de Clubes</h4>
+        {data.length === 0 ? (
+          <p className="text-muted" style={{ textAlign: "center", padding: "20px" }}>
+            No hay clubes registrados
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {data.map(c => (
+              <div
+                key={c.id}
+                style={{
+                  padding: "15px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  backgroundColor: "#fff"
+                }}
+              >
+                <div>
+                  <strong>{c.nombre}</strong>
+                  <span
+                    className={`badge badge-${c.estado}`}
+                    style={{ marginLeft: "10px" }}
+                  >
+                    {c.estado}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {canAddClub && (
+                    <>
+                      <button
+                        onClick={() => startEdit(c)}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#2563eb",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "12px"
+                        }}
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => toggleEstado(c)}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor:
+                            c.estado === "activo" ? "#dc2626" : "#16a34a",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "12px"
+                        }}
+                      >
+                        {c.estado === "activo" ? "❌ Desactivar" : "✓ Activar"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
- );
+  );
 }

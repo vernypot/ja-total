@@ -11,6 +11,7 @@ import ClasesProgresivas from "../pages/ClasesProgresivas";
 import Usuarios from "../pages/Usuarios";
 import LabelSettings from "../pages/LabelSettings";
 import AdvancedSettings from "../pages/AdvancedSettings";
+import UserProfile from "../pages/UserProfile";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -36,6 +37,7 @@ export default function AppRouter() {
           <Route path="usuarios" element={<Usuarios />} />
           <Route path="label-settings" element={<LabelSettings />} />
           <Route path="advanced-settings" element={<AdvancedSettings />} />
+          <Route path="profile" element={<UserProfile />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />
 
         </Route>

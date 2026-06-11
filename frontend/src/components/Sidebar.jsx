@@ -3,8 +3,8 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Sidebar() {
-  const { user } = useContext(AuthContext);
-  const userRole = user?.user_metadata?.role || 'user';
+  const { userData } = useContext(AuthContext);
+  const userRole = userData?.rol || 'user';
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;

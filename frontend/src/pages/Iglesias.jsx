@@ -19,6 +19,8 @@ export default function Iglesias(){
  const [editingNombre, setEditingNombre] = useState('');
  const navigate=useNavigate();
 
+ const canAddIglesia = userRole === 'superadmin';
+
  async function load(){
   setError('');
   setLoading(true);
@@ -38,8 +40,6 @@ export default function Iglesias(){
     }
     
     setData(data || []);
-    
-    // Load active iglesia data if selected
     if(activeIglesia) {
       const active = data.find(i => i.id === activeIglesia);
       setIglesiaData(active || null);
@@ -56,8 +56,8 @@ export default function Iglesias(){
  }
 
  async function save(){
-  if(userRole !== 'admin' && userRole !== 'superadmin') {
-    alert('Solo admin puede crear iglesias');
+  if(!canAddIglesia) {
+    alert('Solo superadmin puede crear iglesias');
     return;
   }
   
@@ -86,6 +86,11 @@ export default function Iglesias(){
  }
 
  async function saveEdit() {
+  if(!canAddIglesia) {
+    alert('Solo superadmin puede editar iglesias');
+    return;
+  }
+
   if(!editingNombre.trim()) {
     setError('Nombre de iglesia es requerido');
     return;
@@ -105,6 +110,11 @@ export default function Iglesias(){
  }
 
  async function toggleEstado(i){
+  if(!canAddIglesia) {
+    alert('Solo superadmin puede cambiar estado');
+    return;
+  }
+
   setError('');
   const nuevo = i.estado === 'activo' ? 'inactivo' : 'activo';
   
@@ -149,7 +159,7 @@ export default function Iglesias(){
           </p>
         )}
       </div>
-      {(userRole === 'admin' || userRole === 'superadmin') && (
+      {canAddIglesia && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <input 
             value={nombre} 
@@ -242,23 +252,27 @@ export default function Iglesias(){
                     >
                       ★ Select
                     </button>
-                    <button 
-                      onClick={() => startEdit(i)}
-                      className="btn btn-sm btn-edit"
-                    >
-                      ✏️ Editar
-                    </button>
+                    {canAddIglesia && (
+                      <>
+                        <button 
+                          onClick={() => startEdit(i)}
+                          className="btn btn-sm btn-edit"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button 
+                          onClick={() => toggleEstado(i)}
+                          className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
+                        >
+                          {i.estado === 'activo' ? '❌ Desactivar' : '✓ Activar'}
+                        </button>
+                      </>
+                    )}
                     <button 
                       onClick={() => navigate(`/dashboard/clubes?iglesia=${i.id}`)}
                       className="btn btn-sm btn-edit"
                     >
                       🎯 Clubes
-                    </button>
-                    <button 
-                      onClick={() => toggleEstado(i)}
-                      className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
-                    >
-                      {i.estado === 'activo' ? '❌ Desactivar' : '✓ Activar'}
                     </button>
                   </>
                 )}

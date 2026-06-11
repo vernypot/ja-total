@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { sb } from "../services/supabase";
+import { AuthContext } from "../context/AuthContext";
 import '../styles/form.css';
 
 export default function ClasesProgresivas() {
+  const { user } = useContext(AuthContext);
+  const userRole = user?.user_metadata?.role || 'user';
   const [data, setData] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [form, setForm] = useState({ nombre: "", tipo_id: "", club_tipo: "" });
@@ -10,6 +13,8 @@ export default function ClasesProgresivas() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const canAddClass = userRole === 'superadmin';
 
   async function load() {
     setError("");
@@ -47,6 +52,11 @@ export default function ClasesProgresivas() {
   }
 
   async function save() {
+    if (!canAddClass) {
+      alert('Solo superadmin puede agregar clases');
+      return;
+    }
+
     setError("");
     
     if (!form.nombre || !form.tipo_id) {
@@ -97,6 +107,11 @@ export default function ClasesProgresivas() {
   }
 
   async function startEdit(clase) {
+    if (!canAddClass) {
+      alert('Solo superadmin puede editar clases');
+      return;
+    }
+
     setEditingId(clase.id);
     setForm({
       nombre: clase.nombre,
@@ -107,6 +122,11 @@ export default function ClasesProgresivas() {
   }
 
   async function toggleEstado(clase) {
+    if (!canAddClass) {
+      alert('Solo superadmin puede cambiar estado');
+      return;
+    }
+
     setError("");
     const nuevo =
       clase.estado === "activo" ? "inactivo" : "activo";
@@ -133,19 +153,7 @@ export default function ClasesProgresivas() {
     <div className="container">
       <div className="page-header">
         <h1>📚 Clases Progresivas</h1>
-      </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              onChange={e => setShowInactive(e.target.checked)}
-            />
-            Ver inactivas
-          </label>
+        {canAddClass && (
           <button
             onClick={() => {
               setShowForm(!showForm);
@@ -167,9 +175,23 @@ export default function ClasesProgresivas() {
           >
             {showForm ? '✕ Cancelar' : '➕ Nueva Clase'}
           </button>
+        )}
+      </div>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              onChange={e => setShowInactive(e.target.checked)}
+            />
+            Ver inactivas
+          </label>
         </div>
 
-        {showForm && (
+        {showForm && canAddClass && (
           <div style={{
             padding: '15px',
             backgroundColor: '#f0f9ff',
@@ -287,36 +309,40 @@ export default function ClasesProgresivas() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => startEdit(c)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#2563eb',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    onClick={() => toggleEstado(c)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: c.estado === 'activo' ? '#dc2626' : '#16a34a',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    {c.estado === "activo"
-                      ? "❌ Desactivar"
-                      : "✓ Activar"}
-                  </button>
+                  {canAddClass && (
+                    <>
+                      <button
+                        onClick={() => startEdit(c)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#2563eb',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => toggleEstado(c)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: c.estado === 'activo' ? '#dc2626' : '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {c.estado === "activo"
+                          ? "❌ Desactivar"
+                          : "✓ Activar"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

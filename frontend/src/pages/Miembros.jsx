@@ -2,11 +2,14 @@ import { useEffect, useState, useContext } from 'react';
 import { sb } from '../services/supabase';
 import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from '../context/AuthContext';
 import { IglesiaContext } from '../context/IglesiaContext';
 import '../styles/form.css';
 
 export default function Miembros(){
+ const { user } = useContext(AuthContext);
  const { activeIglesia } = useContext(IglesiaContext);
+ const userRole = user?.user_metadata?.role || 'user';
  const [data,setData]=useState([]);
  const [iglesiasData, setIglesiasData]=useState([]);
  const [clubsData, setClubsData]=useState([]);
@@ -15,6 +18,8 @@ export default function Miembros(){
  const clubId=params.get('club');
  const navigate = useNavigate();
  const [activeIglesiaData, setActiveIglesiaData] = useState(null);
+
+ const canAddMember = userRole === 'superadmin';
 
  async function load(){
   let query=sb.from('miembro_club').select('miembros(id,nombre,apellido1,apellido2,estado)');
@@ -49,6 +54,11 @@ export default function Miembros(){
  }
 
  async function toggleEstado(m){
+  if(!canAddMember) {
+    alert('Solo superadmin puede cambiar estado');
+    return;
+  }
+
   const nuevo=m.estado==='activo'?'inactivo':'activo';
   const {error}=await sb.from('miembros').update({estado:nuevo}).eq('id',m.id);
   if(error) {
@@ -72,21 +82,23 @@ export default function Miembros(){
           </p>
         )}
       </div>
-      <button 
-        onClick={() => navigate('/dashboard/miembro/new')}
-        style={{
-          padding: '10px 15px',
-          backgroundColor: '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        }}
-      >
-        ➕ Nuevo Miembro
-      </button>
+      {canAddMember && (
+        <button 
+          onClick={() => navigate('/dashboard/miembro/new')}
+          style={{
+            padding: '10px 15px',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          ➕ Nuevo Miembro
+        </button>
+      )}
     </div>
 
     <div className="card">
@@ -156,12 +168,14 @@ export default function Miembros(){
                   >
                     ✏️ Editar
                   </button>
-                  <button 
-                    onClick={()=>toggleEstado(m)}
-                    className={`btn btn-sm ${m.estado==='activo' ? 'btn-danger' : 'btn-success'}`}
-                  >
-                    {m.estado==='activo'?'❌ Desactivar':'✓ Activar'}
-                  </button>
+                  {canAddMember && (
+                    <button 
+                      onClick={()=>toggleEstado(m)}
+                      className={`btn btn-sm ${m.estado==='activo' ? 'btn-danger' : 'btn-success'}`}
+                    >
+                      {m.estado==='activo'?'❌ Desactivar':'✓ Activar'}
+                    </button>
+                  )}
                 </div>
               </div>
             );

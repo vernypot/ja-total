@@ -6,12 +6,12 @@ import { sb } from "../services/supabase";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Topbar() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, userData, setUser } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
 
-  const userRole = user?.user_metadata?.role || 'user';
+  const userRole = userData?.rol || 'user';
   const userInitials = (user?.email || 'U').substring(0, 2).toUpperCase();
 
   async function handleLogout() {
@@ -51,8 +51,19 @@ export default function Topbar() {
                 </div>
               </div>
               <hr />
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  navigate('/dashboard/profile');
+                  setShowMenu(false);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                👤 {t('profile') || 'Mi Perfil'}
+              </button>
+              <hr />
               <button className="dropdown-item logout-btn" onClick={handleLogout}>
-                🚪 Logout
+                🚪 {t('logout') || 'Logout'}
               </button>
             </div>
           )}
