@@ -1,10 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions";
 
 export default function Sidebar() {
-  const { userData } = useContext(AuthContext);
-  const userRole = userData?.rol || 'user';
+  const { user, userData } = useContext(AuthContext);
+  const { t } = useLanguage();
+  const userRole = getUserRole(user, userData);
+  const superadmin = isSuperAdmin(userRole);
+  const adminOrAbove = isAdminOrAbove(userRole);
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
@@ -12,58 +17,64 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h3>JA Total</h3>
+        <h3>{t('appName')}</h3>
         <span className={`role-badge role-${userRole}`}>{userRole}</span>
       </div>
 
       <nav className="sidebar-nav">
-        <Link 
-          to="/dashboard/iglesias" 
-          className={`nav-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
-        >
-          ⛪ Iglesias
-        </Link>
-        <Link 
-          to="/dashboard/miembros" 
-          className={`nav-link ${isActive('/dashboard/miembros') ? 'active' : ''}`}
-        >
-          👥 Members
-        </Link>
-        <Link 
-          to="/dashboard/clubes" 
+        {adminOrAbove && (
+          <Link
+            to="/dashboard/iglesias"
+            className={`nav-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
+          >
+            ⛪ {superadmin ? t('churches') : t('myChurch')}
+          </Link>
+        )}
+        <Link
+          to="/dashboard/clubes"
           className={`nav-link ${isActive('/dashboard/clubes') ? 'active' : ''}`}
         >
-          🎯 Clubs
+          🎯 {t('clubs')}
         </Link>
-        <Link 
-          to="/dashboard/clases-progresivas" 
-          className={`nav-link ${isActive('/dashboard/clases-progresivas') ? 'active' : ''}`}
+        <Link
+          to="/dashboard/miembros"
+          className={`nav-link ${isActive('/dashboard/miembros') ? 'active' : ''}`}
         >
-          📚 Progressive Classes
+          👥 {t('members')}
         </Link>
-        <Link 
-          to="/dashboard/especialidades" 
-          className={`nav-link ${isActive('/dashboard/especialidades') ? 'active' : ''}`}
-        >
-          ⭐ Specialties
-        </Link>
+        {superadmin && (
+          <>
+            <Link
+              to="/dashboard/clases-progresivas"
+              className={`nav-link ${isActive('/dashboard/clases-progresivas') ? 'active' : ''}`}
+            >
+              📚 {t('progressiveClasses')}
+            </Link>
+            <Link
+              to="/dashboard/especialidades"
+              className={`nav-link ${isActive('/dashboard/especialidades') ? 'active' : ''}`}
+            >
+              ⭐ {t('specialties')}
+            </Link>
+          </>
+        )}
 
-        {userRole === 'superadmin' && (
+        {superadmin && (
           <>
             <hr />
             <div className="admin-section">
-              <h4>Administration</h4>
-              <Link 
-                to="/dashboard/usuarios" 
+              <h4>{t('administration')}</h4>
+              <Link
+                to="/dashboard/usuarios"
                 className={`nav-link admin-link ${isActive('/dashboard/usuarios') ? 'active' : ''}`}
               >
-                🔑 User Management
+                🔑 {t('userManagement')}
               </Link>
-              <Link 
-                to="/dashboard/advanced-settings" 
+              <Link
+                to="/dashboard/advanced-settings"
                 className={`nav-link admin-link ${isActive('/dashboard/advanced-settings') ? 'active' : ''}`}
               >
-                ⚙️ Advanced Settings
+                ⚙️ {t('advancedSettings')}
               </Link>
             </div>
           </>

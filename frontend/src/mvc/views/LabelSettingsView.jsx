@@ -24,9 +24,9 @@ export default function LabelSettingsView({
 
       <div className="card" style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <input type="text" placeholder={`${t('loading')}... / Search...`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input" style={{ flex: 1, minWidth: '200px' }} />
+          <input type="text" placeholder={t('search')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input" style={{ flex: 1, minWidth: '200px' }} />
           <button onClick={handleResetAll} style={{ padding: '10px 15px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
-            🔄 {t('cancel')} All
+            🔄 {t('resetAll')}
           </button>
         </div>
 
@@ -45,7 +45,7 @@ export default function LabelSettingsView({
                 ) : (
                   <div>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{customValue || defaultValue}</div>
-                    {customValue && <div style={{ fontSize: '12px', color: '#666' }}>Default: {defaultValue}</div>}
+                    {customValue && <div style={{ fontSize: '12px', color: '#666' }}>{t('defaultLabel')}: {defaultValue}</div>}
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

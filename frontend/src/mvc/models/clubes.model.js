@@ -3,7 +3,7 @@ import { sb } from '../../services/supabase';
 export async function fetchClubes({ iglesiaId, showInactive = false } = {}) {
   let query = sb
     .from('clubes')
-    .select('id,nombre,iglesia_id,estado,created_at,iglesias(id,nombre),tipos_club(nombre)')
+    .select('id,nombre,iglesia_id,tipo_id,estado,created_at,iglesias(id,nombre),tipos_club(id,nombre)')
     .order('nombre', { ascending: true });
 
   if (iglesiaId) query = query.eq('iglesia_id', iglesiaId);
@@ -12,7 +12,20 @@ export async function fetchClubes({ iglesiaId, showInactive = false } = {}) {
 }
 
 export async function fetchClubesByIglesia(iglesiaId) {
-  return sb.from('clubes').select('id, nombre').eq('iglesia_id', iglesiaId).eq('estado', 'activo');
+  return sb
+    .from('clubes')
+    .select('id, nombre, iglesia_id, tipo_id, tipos_club(id, nombre)')
+    .eq('iglesia_id', iglesiaId)
+    .eq('estado', 'activo')
+    .order('nombre', { ascending: true });
+}
+
+export async function fetchClubById(clubId) {
+  return sb
+    .from('clubes')
+    .select('id, nombre, iglesia_id, tipo_id, tipos_club(id, nombre)')
+    .eq('id', clubId)
+    .single();
 }
 
 export async function fetchTiposClub() {

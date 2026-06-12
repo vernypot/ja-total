@@ -1,6 +1,11 @@
-import { useEspecialidadesController } from '../mvc/controllers/useEspecialidadesController';
-import EspecialidadesView from '../mvc/views/EspecialidadesView';
+import { useEspecialidadesCatalogController } from '../mvc/controllers/useEspecialidadesCatalogController';
+import { useMiembroEspecialidadesController } from '../mvc/controllers/useMiembroEspecialidadesController';
+import EspecialidadesCatalogView from '../mvc/views/EspecialidadesCatalogView';
+import MiembroEspecialidadesView from '../mvc/views/MiembroEspecialidadesView';
 
 export default function Especialidades({ miembroId }) {
-  return <EspecialidadesView {...useEspecialidadesController(miembroId)} />;
+  if (miembroId) {
+    return <MiembroEspecialidadesView {...useMiembroEspecialidadesController(miembroId)} />;
+  }
+  return <EspecialidadesCatalogView {...useEspecialidadesCatalogController()} />;
 }

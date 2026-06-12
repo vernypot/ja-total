@@ -1,14 +1,27 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 import { IglesiaContext } from '../../context/IglesiaContext';
+import { ClubContext } from '../../context/ClubContext';
+import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { getUserRole, canManageClubs } from '../../utils/permissions';
+import { filterBySearch } from '../../utils/listSearch';
 import * as ClubesModel from '../models/clubes.model';
 import * as IglesiasModel from '../models/iglesias.model';
 
 export function useClubesController() {
+  const { user, userData } = useContext(AuthContext);
   const { activeIglesia } = useContext(IglesiaContext);
+  const { activeClub, updateActiveClub } = useContext(ClubContext);
+  const { effectiveIglesiaId, canSwitchIglesia, assignedIglesiaActive, hasIglesiaAssignment } = useScopedIglesia();
+  const userRole = getUserRole(user, userData);
+  const canManage = canManageClubs(userRole);
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const iglesiaId = params.get('iglesia') || activeIglesia;
+  const requestedIglesia = params.get('iglesia');
+  const iglesiaId = canSwitchIglesia
+    ? (requestedIglesia || activeIglesia)
+    : effectiveIglesiaId;
 
   const [data, setData] = useState([]);
   const [iglesiasData, setIglesiasData] = useState([]);
@@ -19,6 +32,12 @@ export function useClubesController() {
   const [showForm, setShowForm] = useState(false);
   const [clubForm, setClubForm] = useState({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
   const [tipos, setTipos] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredData = useMemo(
+    () => filterBySearch(data, searchQuery, c => [c.nombre, c.tipos_club?.nombre, c.estado]),
+    [data, searchQuery]
+  );
 
   async function loadTipos() {
     const { data: tiposData, error: tiposError } = await ClubesModel.fetchTiposClub();
@@ -64,6 +83,7 @@ export function useClubesController() {
   }
 
   async function addClub() {
+    if (!canManage) return;
     setError('');
 
     if (!clubForm.nombre.trim() || !clubForm.iglesia_id) {
@@ -73,7 +93,7 @@ export function useClubesController() {
 
     const { error: saveError } = await ClubesModel.createClub({
       nombre: clubForm.nombre.trim(),
-      iglesia_id: clubForm.iglesia_id,
+      iglesia_id: iglesiaId,
       tipo_id: clubForm.tipo_id,
     });
 
@@ -88,6 +108,7 @@ export function useClubesController() {
   }
 
   async function toggleEstado(club) {
+    if (!canManage) return;
     setError('');
     const nuevo = club.estado === 'activo' ? 'inactivo' : 'activo';
 
@@ -113,7 +134,14 @@ export function useClubesController() {
   }
 
   function navigateToMiembros(clubId) {
+    const club = data.find(c => c.id === clubId);
+    if (club) updateActiveClub(club);
     navigate(`/dashboard/miembros?club=${clubId}`);
+  }
+
+  function selectClub(club) {
+    if (!canSwitchIglesia && club.iglesia_id && club.iglesia_id !== effectiveIglesiaId) return;
+    updateActiveClub(club);
   }
 
   useEffect(() => {
@@ -127,9 +155,14 @@ export function useClubesController() {
   }, [iglesiaId, showInactive]);
 
   return {
-    data,
+    data: filteredData,
+    searchQuery,
+    setSearchQuery,
     iglesiasData,
     activeIglesiaData,
+    canSelectIglesia: canSwitchIglesia,
+    canManage,
+    iglesiaScopeReady: canSwitchIglesia || (hasIglesiaAssignment && assignedIglesiaActive),
     showInactive,
     setShowInactive,
     error,
@@ -142,5 +175,7 @@ export function useClubesController() {
     addClub,
     toggleEstado,
     navigateToMiembros,
+    selectClub,
+    activeClub,
   };
 }

@@ -1,16 +1,16 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { LanguageContext } from "../context/LanguageContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { getUserRole } from "../utils/permissions";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Topbar() {
   const { user, userData, logout } = useContext(AuthContext);
-  const { t } = useContext(LanguageContext);
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-
-  const userRole = userData?.rol || 'user';
+  const userRole = getUserRole(user, userData);
   const userInitials = (user?.email || 'U').substring(0, 2).toUpperCase();
 
   async function handleLogout() {
@@ -20,13 +20,13 @@ export default function Topbar() {
   return (
     <div className="topbar">
       <div className="topbar-left">
-        <h2 className="topbar-title">Dashboard</h2>
+        <h2 className="topbar-title">{t('dashboard')}</h2>
       </div>
 
       <div className="topbar-right">
         <LanguageSwitcher />
         <div className="user-menu">
-          <button 
+          <button
             className="user-button"
             onClick={() => setShowMenu(!showMenu)}
             title={user?.email}
@@ -48,7 +48,7 @@ export default function Topbar() {
                 </div>
               </div>
               <hr />
-              <button 
+              <button
                 className="dropdown-item"
                 onClick={() => {
                   navigate('/dashboard/profile');
@@ -56,11 +56,11 @@ export default function Topbar() {
                 }}
                 style={{ cursor: 'pointer' }}
               >
-                👤 {t('profile') || 'Mi Perfil'}
+                👤 {t('profile')}
               </button>
               <hr />
               <button className="dropdown-item logout-btn" onClick={handleLogout}>
-                🚪 {t('logout') || 'Logout'}
+                🚪 {t('logout')}
               </button>
             </div>
           )}

@@ -1,28 +1,33 @@
 import { useParams, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { useLanguage } from '../hooks/useLanguage';
 
 import DatosPersonales from './miembro/tabs/DatosPersonales';
+import DatosMedicos from './miembro/tabs/DatosMedicos';
 import Contactos from './Contactos';
 import Especialidades from './Especialidades';
-import Clases from './ClasesProgresivas';
+import Clases from './Clases';
 
 export default function MiembroDetalle() {
   const { id } = useParams();
+  const { t } = useLanguage();
 
   return (
     <div>
-      <h2>Detalle del Miembro</h2>
+      <h2>{t('memberDetail')}</h2>
 
       <div className="tabs">
-        <Link to="datos">Datos</Link>
-        <Link to="contactos">Contactos</Link>
-        <Link to="especialidades">Especialidades</Link>
-        <Link to="clases">Clases</Link>
+        <Link to="datos">{t('tabData')}</Link>
+        <Link to="datos-medicos">{t('tabMedicalData')}</Link>
+        <Link to="contactos">{t('tabContacts')}</Link>
+        <Link to="especialidades">{t('tabSpecialties')}</Link>
+        <Link to="clases">{t('tabClasses')}</Link>
       </div>
 
       <div className="card">
         <Routes>
           <Route index element={<Navigate to="datos" />} />
           <Route path="datos" element={<DatosPersonales miembroId={id} />} />
+          <Route path="datos-medicos" element={<DatosMedicos miembroId={id} />} />
           <Route path="contactos" element={<Contactos miembroId={id} />} />
           <Route path="especialidades" element={<Especialidades miembroId={id} />} />
           <Route path="clases" element={<Clases miembroId={id} />} />

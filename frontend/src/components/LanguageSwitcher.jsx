@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { LanguageContext } from '../context/LanguageContext';
 
 export default function LanguageSwitcher() {
-  const { language, setLanguage } = useContext(LanguageContext);
+  const { language, setLanguage, t } = useContext(LanguageContext);
 
   return (
     <div style={{
@@ -22,7 +22,7 @@ export default function LanguageSwitcher() {
           fontWeight: language === 'es' ? 'bold' : 'normal',
           transition: 'all 0.2s'
         }}
-        title="Español"
+        title={t('spanish')}
       >
         🇪🇸 ES
       </button>
@@ -38,7 +38,7 @@ export default function LanguageSwitcher() {
           fontWeight: language === 'en' ? 'bold' : 'normal',
           transition: 'all 0.2s'
         }}
-        title="English"
+        title={t('english')}
       >
         🇬🇧 EN
       </button>

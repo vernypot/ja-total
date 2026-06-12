@@ -1,11 +1,18 @@
+import { useLanguage } from '../../hooks/useLanguage';
+import { estadoLabel } from '../../i18n/helpers';
+import ListSearchInput from '../../components/ListSearchInput';
 import '../../styles/form.css';
 
 export default function IglesiasView({
   data,
+  searchQuery,
+  setSearchQuery,
   iglesiaData,
   activeIglesia,
   nombre,
   setNombre,
+  showForm,
+  setShowForm,
   showInactive,
   setShowInactive,
   error,
@@ -15,6 +22,9 @@ export default function IglesiasView({
   editingNombre,
   setEditingNombre,
   canCreate,
+  canManage,
+  canToggleEstado,
+  canSelectChurch,
   save,
   startEdit,
   saveEdit,
@@ -22,29 +32,36 @@ export default function IglesiasView({
   selectIglesia,
   navigateToClubes,
 }) {
+  const { t } = useLanguage();
+  const isSearching = searchQuery.trim().length > 0;
+
   return (
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>⛪ Iglesias</h1>
+          <h1>⛪ {canSelectChurch ? t('churches') : t('myChurch')}</h1>
           {iglesiaData && (
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-              Active: <strong>{iglesiaData.nombre}</strong>
+              {t('activeChurch')}: <strong>{iglesiaData.nombre}</strong>
             </p>
           )}
         </div>
         {canCreate && (
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              placeholder="Nombre de iglesia"
-              className="form-input"
-              onKeyPress={e => e.key === 'Enter' && save()}
-              style={{ minWidth: '200px' }}
-            />
-            <button onClick={save} className="btn btn-primary btn-sm">➕ Agregar</button>
-          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{
+              padding: '10px 15px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold',
+            }}
+          >
+            {showForm ? `✕ ${t('cancel')}` : `➕ ${t('newChurch')}`}
+          </button>
         )}
       </div>
 
@@ -52,16 +69,57 @@ export default function IglesiasView({
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        {canSelectChurch && (
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" onChange={e => setShowInactive(e.target.checked)} />
-            Mostrar inactivas
+            {t('showInactive')}
           </label>
+        )}
+        {canSelectChurch && (
+          <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
+        )}
         </div>
 
+        {showForm && canCreate && (
+          <div style={{
+            padding: '15px',
+            backgroundColor: '#f0f9ff',
+            border: '2px solid #0891b2',
+            borderRadius: '8px',
+            marginBottom: '20px',
+          }}>
+            <h4 style={{ marginTop: 0 }}>{t('addNewChurch')}</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '15px', marginBottom: '15px', alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('name')}</label>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={e => setNombre(e.target.value)}
+                  placeholder={t('churchName')}
+                  className="form-input"
+                  onKeyPress={e => e.key === 'Enter' && save()}
+                  style={{ margin: 0 }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+                ✓ {t('save')}
+              </button>
+              <button onClick={() => { setShowForm(false); setNombre(''); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+                ✕ {t('cancel')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
-          <div className="loading">Cargando iglesias...</div>
+          <div className="loading">{t('loadingChurches')}</div>
         ) : data.length === 0 ? (
-          <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>No hay iglesias registradas</p>
+          <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
+            {isSearching ? t('noSearchResults') : t('noChurches')}
+          </p>
         ) : (
           <div style={{ display: 'grid', gap: '15px' }}>
             {data.map(i => (
@@ -88,39 +146,31 @@ export default function IglesiasView({
                     <strong>{i.nombre}</strong>
                   )}
                   <span className={`badge badge-${i.estado}`} style={{ marginLeft: '10px' }}>
-                    {i.estado}
+                    {estadoLabel(i.estado, t)}
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {editingId === i.id ? (
                     <>
-                      <button onClick={saveEdit} className="btn btn-sm btn-success">✓ Guardar</button>
-                      <button onClick={() => setEditingId(null)} className="btn btn-sm btn-secondary">✕ Cancelar</button>
+                      <button onClick={saveEdit} className="btn btn-sm btn-success">✓ {t('save')}</button>
+                      <button onClick={() => setEditingId(null)} className="btn btn-sm btn-secondary">✕ {t('cancel')}</button>
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => selectIglesia(i)}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: activeIglesia === i.id ? '#1e40af' : '#0891b2',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                        }}
-                      >
-                        ★ Select
-                      </button>
-                      <button onClick={() => startEdit(i)} className="btn btn-sm btn-edit">✏️ Editar</button>
-                      <button onClick={() => navigateToClubes(i.id)} className="btn btn-sm btn-edit">🎯 Clubes</button>
-                      <button
-                        onClick={() => toggleEstado(i)}
-                        className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
-                      >
-                        {i.estado === 'activo' ? '❌ Desactivar' : '✓ Activar'}
-                      </button>
+                      {canSelectChurch && (
+                        <button onClick={() => selectIglesia(i)} style={{ padding: '6px 12px', backgroundColor: activeIglesia === i.id ? '#1e40af' : '#0891b2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                          ★ {t('select')}
+                        </button>
+                      )}
+                      {canManage && (
+                        <button onClick={() => startEdit(i)} className="btn btn-sm btn-edit">✏️ {t('edit')}</button>
+                      )}
+                      <button onClick={() => navigateToClubes(i.id)} className="btn btn-sm btn-edit">🎯 {t('clubs')}</button>
+                      {canToggleEstado && (
+                        <button onClick={() => toggleEstado(i)} className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
+                          {i.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

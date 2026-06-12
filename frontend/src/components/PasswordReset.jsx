@@ -1,27 +1,23 @@
 import { useState, useContext } from 'react';
-import { sb } from '../services/supabase';
 import { AuthContext } from '../context/AuthContext';
+import { getUserRole, isSuperAdmin } from '../utils/permissions';
+import { useLanguage } from '../hooks/useLanguage';
+import { validatePassword } from '../utils/passwordValidation';
+import * as AuthModel from '../mvc/models/auth.model';
+import '../styles/form.css';
 
 export default function PasswordReset({ onClose, userEmail, isOwnPassword = true }) {
   const { user, userData } = useContext(AuthContext);
-  const userRole = userData?.rol || 'user';
-  const canResetOthers = userRole === 'superadmin';
+  const { t } = useLanguage();
+  const userRole = getUserRole(user, userData);
+  const canResetOthers = isSuperAdmin(userRole);
 
-  const [step, setStep] = useState(isOwnPassword ? 'current-password' : 'new-password');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const validatePassword = (pwd) => {
-    if (pwd.length < 8) return 'Password must be at least 8 characters';
-    if (!/[A-Z]/.test(pwd)) return 'Password must contain an uppercase letter';
-    if (!/[0-9]/.test(pwd)) return 'Password must contain a number';
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) return 'Password must contain a special character';
-    return null;
-  };
 
   const handleChangeOwnPassword = async (e) => {
     e.preventDefault();
@@ -30,20 +26,15 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
     setLoading(true);
 
     try {
-      // Verify current password by attempting sign in
-      const { error: signInError } = await sb.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword
-      });
+      const { error: signInError } = await AuthModel.verifyPassword(user.email, currentPassword);
 
       if (signInError) {
-        setError('Current password is incorrect');
+        setError(t('currentPassword') + ': ' + signInError.message);
         setLoading(false);
         return;
       }
 
-      // Validate new password
-      const pwdError = validatePassword(newPassword);
+      const pwdError = validatePassword(newPassword, t);
       if (pwdError) {
         setError(pwdError);
         setLoading(false);
@@ -51,28 +42,25 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
       }
 
       if (newPassword !== confirmPassword) {
-        setError('Passwords do not match');
+        setError(t('passwordsDoNotMatch'));
         setLoading(false);
         return;
       }
 
-      // Update password
-      const { error: updateError } = await sb.auth.updateUser({
-        password: newPassword
-      });
+      const { error: updateError } = await AuthModel.updateOwnPassword(newPassword);
 
       if (updateError) {
-        setError('Error updating password: ' + updateError.message);
+        setError(updateError.message);
         setLoading(false);
         return;
       }
 
-      setSuccess('✓ Password updated successfully! Please log in again.');
+      setSuccess(`✓ ${t('changePasswordTitle')}`);
       setTimeout(() => {
         window.location.href = '/';
       }, 2000);
     } catch (err) {
-      setError('Error: ' + err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -85,14 +73,13 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
     setLoading(true);
 
     if (!canResetOthers) {
-      setError('Only superadmin can reset other user passwords');
+      setError(t('error'));
       setLoading(false);
       return;
     }
 
     try {
-      // Validate new password
-      const pwdError = validatePassword(newPassword);
+      const pwdError = validatePassword(newPassword, t);
       if (pwdError) {
         setError(pwdError);
         setLoading(false);
@@ -100,50 +87,73 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
       }
 
       if (newPassword !== confirmPassword) {
-        setError('Passwords do not match');
+        setError(t('passwordsDoNotMatch'));
         setLoading(false);
         return;
       }
 
-      // Get the user from Supabase auth by email
-      const { data: users, error: getUserError } = await sb.auth.admin.listUsers();
+      const { error: rpcError } = await AuthModel.adminSetUserPassword(userEmail, newPassword);
 
-      if (getUserError) {
-        setError('Error fetching users: ' + getUserError.message);
+      if (rpcError) {
+        const msg = rpcError.message || '';
+        if (
+          msg.includes('admin_set_usuario_password') ||
+          msg.includes('Could not find the function') ||
+          rpcError.code === 'PGRST202'
+        ) {
+          setError(t('runUsuariosAuthFix'));
+        } else {
+          setError(msg);
+        }
         setLoading(false);
         return;
       }
 
-      const targetUser = users.find(u => u.email === userEmail);
-
-      if (!targetUser) {
-        setError('User not found');
-        setLoading(false);
-        return;
-      }
-
-      // Update password using admin API
-      const { error: updateError } = await sb.auth.admin.updateUserById(
-        targetUser.id,
-        { password: newPassword }
-      );
-
-      if (updateError) {
-        setError('Error updating password: ' + updateError.message);
-        setLoading(false);
-        return;
-      }
-
-      setSuccess(`✓ Password reset for ${userEmail} successfully!`);
+      setSuccess(`✓ ${t('resetPasswordTitle')}: ${userEmail}`);
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (err) {
-      setError('Error: ' + err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSendResetEmail = async () => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    if (!canResetOthers) {
+      setError(t('error'));
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: emailError } = await AuthModel.sendPasswordResetEmail(userEmail);
+
+      if (emailError) {
+        setError(emailError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(`✓ ${t('passwordResetEmailSent')}: ${userEmail}`);
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const title = isOwnPassword
+    ? t('changePasswordTitle')
+    : `${t('resetPasswordTitle')} - ${userEmail}`;
 
   return (
     <div
@@ -174,7 +184,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0 }}>🔑 {isOwnPassword ? 'Cambiar Contraseña' : `Restablecer Contraseña - ${userEmail}`}</h2>
+          <h2 style={{ margin: 0 }}>🔑 {title}</h2>
           <button
             onClick={onClose}
             style={{
@@ -202,17 +212,16 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
         )}
 
         <form onSubmit={isOwnPassword ? handleChangeOwnPassword : handleResetOtherPassword}>
-          {/* Current Password (only for own password change) */}
           {isOwnPassword && (
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                Contraseña Actual *
+                {t('currentPassword')} *
               </label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
+                placeholder={t('currentPassword')}
                 className="form-input"
                 required
                 disabled={loading}
@@ -220,69 +229,72 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
             </div>
           )}
 
-          {/* New Password */}
+          {!isOwnPassword && (
+            <p className="text-muted" style={{ marginTop: 0, marginBottom: '15px', fontSize: '14px' }}>
+              {t('resetPasswordHint')}
+            </p>
+          )}
+
           <div style={{ marginBottom: '15px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Nueva Contraseña *
+              {t('newPassword')} *
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
+              placeholder={t('newPassword')}
               className="form-input"
               required
               disabled={loading}
             />
             <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-              Mínimo 8 caracteres, 1 mayúscula, 1 número, 1 carácter especial
+              {t('passwordHintShort')}
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Confirmar Contraseña *
+              {t('confirmPassword')} *
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
+              placeholder={t('confirmPassword')}
               className="form-input"
               required
               disabled={loading}
             />
           </div>
 
-          {/* Password Strength Indicator */}
           {newPassword && (
             <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f0f9ff', borderRadius: '4px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>Requisitos de Contraseña:</div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>{t('passwordRequirementsTitle')}:</div>
               <div style={{ fontSize: '12px' }}>
                 <div style={{ color: newPassword.length >= 8 ? '#16a34a' : '#dc2626' }}>
-                  {newPassword.length >= 8 ? '✓' : '✕'} Mínimo 8 caracteres
+                  {newPassword.length >= 8 ? '✓' : '✕'} {t('passwordMinLength')}
                 </div>
                 <div style={{ color: /[A-Z]/.test(newPassword) ? '#16a34a' : '#dc2626' }}>
-                  {/[A-Z]/.test(newPassword) ? '✓' : '✕'} Contiene mayúscula
+                  {/[A-Z]/.test(newPassword) ? '✓' : '✕'} {t('passwordUppercase')}
                 </div>
                 <div style={{ color: /[0-9]/.test(newPassword) ? '#16a34a' : '#dc2626' }}>
-                  {/[0-9]/.test(newPassword) ? '✓' : '✕'} Contiene número
+                  {/[0-9]/.test(newPassword) ? '✓' : '✕'} {t('passwordNumber')}
                 </div>
                 <div style={{ color: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? '#16a34a' : '#dc2626' }}>
-                  {/[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? '✓' : '✕'} Contiene carácter especial
+                  {/[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? '✓' : '✕'} {t('passwordSpecial')}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button
               type="submit"
               disabled={loading}
               style={{
                 flex: 1,
+                minWidth: '140px',
                 padding: '12px',
                 backgroundColor: '#16a34a',
                 color: 'white',
@@ -294,14 +306,37 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
                 opacity: loading ? 0.6 : 1
               }}
             >
-              {loading ? '⏳ Procesando...' : '✓ Guardar Nueva Contraseña'}
+              {loading ? `⏳ ${t('processing')}` : `✓ ${t('saveNewPassword')}`}
             </button>
+            {!isOwnPassword && (
+              <button
+                type="button"
+                onClick={handleSendResetEmail}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  minWidth: '140px',
+                  padding: '12px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
+                {loading ? `⏳ ${t('processing')}` : `📧 ${t('sendPasswordResetEmail')}`}
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
               style={{
                 flex: 1,
+                minWidth: '140px',
                 padding: '12px',
                 backgroundColor: '#6b7280',
                 color: 'white',
@@ -313,18 +348,18 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
                 opacity: loading ? 0.6 : 1
               }}
             >
-              ✕ Cancelar
+              ✕ {t('cancel')}
             </button>
           </div>
         </form>
 
         <div style={{ marginTop: '15px', fontSize: '12px', color: '#666', backgroundColor: '#f3f4f6', padding: '10px', borderRadius: '4px' }}>
-          <strong>🔒 Consejos de Seguridad:</strong>
+          <strong>🔒 {t('securityTips')}:</strong>
           <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            <li>Usa una contraseña única y fuerte</li>
-            <li>No compartas tu contraseña con nadie</li>
-            <li>Cambia tu contraseña regularmente</li>
-            <li>Si sospechas una violación, cambia tu contraseña inmediatamente</li>
+            <li>{t('securityTip1')}</li>
+            <li>{t('securityTip2')}</li>
+            <li>{t('securityTip3')}</li>
+            <li>{t('securityTip4')}</li>
           </ul>
         </div>
       </div>

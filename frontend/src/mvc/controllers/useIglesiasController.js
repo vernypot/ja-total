@@ -1,25 +1,50 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { IglesiaContext } from '../../context/IglesiaContext';
-import { getUserRole, isAdminOrAbove } from '../../utils/permissions';
+import {
+  getUserRole,
+  isSuperAdmin,
+  canCreateIglesia,
+  canManageIglesiaProfile,
+  canDeactivateIglesia,
+} from '../../utils/permissions';
+import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { filterBySearch } from '../../utils/listSearch';
 import * as IglesiasModel from '../models/iglesias.model';
 
 export function useIglesiasController() {
-  const { user } = useContext(AuthContext);
+  const { user, userData } = useContext(AuthContext);
   const { activeIglesia, updateActiveIglesia } = useContext(IglesiaContext);
+  const { effectiveIglesiaId, canSwitchIglesia } = useScopedIglesia();
   const navigate = useNavigate();
-  const userRole = getUserRole(user);
-  const canCreate = isAdminOrAbove(userRole);
+  const userRole = getUserRole(user, userData);
+  const canCreate = canCreateIglesia(userRole);
+  const canManage = canManageIglesiaProfile(userRole);
+  const canToggleEstado = canDeactivateIglesia(userRole);
+  const canSelectChurch = isSuperAdmin(userRole);
 
   const [data, setData] = useState([]);
   const [iglesiaData, setIglesiaData] = useState(null);
   const [nombre, setNombre] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editingNombre, setEditingNombre] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const scopedRows = useMemo(() => {
+    if (canSwitchIglesia) return data;
+    if (!effectiveIglesiaId) return [];
+    return data.filter(i => i.id === effectiveIglesiaId);
+  }, [data, canSwitchIglesia, effectiveIglesiaId]);
+
+  const filteredData = useMemo(
+    () => filterBySearch(scopedRows, searchQuery, i => [i.nombre, i.estado]),
+    [scopedRows, searchQuery]
+  );
 
   async function load() {
     setError('');
@@ -36,12 +61,15 @@ export function useIglesiasController() {
 
       setData(rows || []);
 
-      if (activeIglesia) {
-        const active = rows.find(i => i.id === activeIglesia);
+      const scopeId = canSwitchIglesia ? activeIglesia : effectiveIglesiaId;
+      if (scopeId) {
+        const active = (rows || []).find(i => i.id === scopeId);
         setIglesiaData(active || null);
-      } else if (rows?.length > 0) {
+      } else if (canSwitchIglesia && rows?.length > 0) {
         setIglesiaData(rows[0]);
         updateActiveIglesia(rows[0].id);
+      } else {
+        setIglesiaData(null);
       }
     } catch (err) {
       setError('Error inesperado: ' + err.message);
@@ -51,10 +79,7 @@ export function useIglesiasController() {
   }
 
   async function save() {
-    if (!canCreate) {
-      alert('Solo admin puede crear iglesias');
-      return;
-    }
+    if (!canCreate) return;
 
     setError('');
     if (!nombre.trim()) {
@@ -69,15 +94,20 @@ export function useIglesiasController() {
     }
 
     setNombre('');
+    setShowForm(false);
     load();
   }
 
   function startEdit(iglesia) {
+    if (!canManage) return;
+    if (!canSwitchIglesia && iglesia.id !== effectiveIglesiaId) return;
     setEditingId(iglesia.id);
     setEditingNombre(iglesia.nombre);
   }
 
   async function saveEdit() {
+    if (!canManage) return;
+
     if (!editingNombre.trim()) {
       setError('Nombre de iglesia es requerido');
       return;
@@ -98,6 +128,8 @@ export function useIglesiasController() {
   }
 
   async function toggleEstado(iglesia) {
+    if (!canToggleEstado) return;
+
     setError('');
     const nuevo = iglesia.estado === 'activo' ? 'inactivo' : 'activo';
 
@@ -123,6 +155,7 @@ export function useIglesiasController() {
   }
 
   function selectIglesia(iglesia) {
+    if (!canSelectChurch) return;
     updateActiveIglesia(iglesia.id);
     setIglesiaData(iglesia);
   }
@@ -131,14 +164,18 @@ export function useIglesiasController() {
     navigate(`/dashboard/clubes?iglesia=${iglesiaId}`);
   }
 
-  useEffect(() => { load(); }, [showInactive]);
+  useEffect(() => { load(); }, [showInactive, effectiveIglesiaId, canSwitchIglesia]);
 
   return {
-    data,
+    data: filteredData,
+    searchQuery,
+    setSearchQuery,
     iglesiaData,
     activeIglesia,
     nombre,
     setNombre,
+    showForm,
+    setShowForm,
     showInactive,
     setShowInactive,
     error,
@@ -148,6 +185,9 @@ export function useIglesiasController() {
     editingNombre,
     setEditingNombre,
     canCreate,
+    canManage,
+    canToggleEstado,
+    canSelectChurch,
     save,
     startEdit,
     saveEdit,

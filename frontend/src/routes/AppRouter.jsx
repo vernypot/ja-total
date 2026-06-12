@@ -15,6 +15,8 @@ import UserProfile from "../pages/UserProfile";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
 import ProtectedRoute from "../components/ProtectedRoute";
+import SuperAdminRoute from "../components/SuperAdminRoute";
+import AdminRoute from "../components/AdminRoute";
 
 
 
@@ -29,14 +31,14 @@ export default function AppRouter() {
           <Route index element={<Navigate to="miembros" />} />
 
           <Route path="miembros" element={<Miembros />} />
-          <Route path="iglesias" element={<Iglesias />} />
+          <Route path="iglesias" element={<AdminRoute element={<Iglesias />} />} />
           <Route path="contactos" element={<Contactos />} />
           <Route path="clubes" element={<Clubes />} />
-          <Route path="especialidades" element={<Especialidades />} />
-          <Route path="clases-progresivas" element={<ClasesProgresivas />} />
-          <Route path="usuarios" element={<Usuarios />} />
-          <Route path="label-settings" element={<LabelSettings />} />
-          <Route path="advanced-settings" element={<AdvancedSettings />} />
+          <Route path="especialidades" element={<SuperAdminRoute element={<Especialidades />} />} />
+          <Route path="clases-progresivas" element={<SuperAdminRoute element={<ClasesProgresivas />} />} />
+          <Route path="usuarios" element={<SuperAdminRoute element={<Usuarios />} />} />
+          <Route path="label-settings" element={<SuperAdminRoute element={<LabelSettings />} />} />
+          <Route path="advanced-settings" element={<SuperAdminRoute element={<AdvancedSettings />} />} />
           <Route path="profile" element={<UserProfile />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />
 
