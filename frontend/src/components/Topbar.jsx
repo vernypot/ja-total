@@ -2,11 +2,10 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import { sb } from "../services/supabase";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Topbar() {
-  const { user, userData, setUser } = useContext(AuthContext);
+  const { user, userData, logout } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -15,9 +14,7 @@ export default function Topbar() {
   const userInitials = (user?.email || 'U').substring(0, 2).toUpperCase();
 
   async function handleLogout() {
-    await sb.auth.signOut();
-    setUser(null);
-    navigate('/');
+    await logout();
   }
 
   return (

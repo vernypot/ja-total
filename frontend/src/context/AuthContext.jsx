@@ -1,5 +1,5 @@
-import { createContext, useEffect, useState } from "react";
-import { sb } from "../services/supabase";
+import { createContext, useEffect, useState } from 'react';
+import * as AuthModel from '../mvc/models/auth.model';
 
 export const AuthContext = createContext();
 
@@ -8,39 +8,38 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  async function loadUserData(authUser) {
+    if (!authUser?.email) {
+      setUserData(null);
+      return;
+    }
+
+    try {
+      const { data: usuariosData, error: queryError } = await AuthModel.fetchUserByEmail(authUser.email);
+      setUserData(!queryError && usuariosData ? usuariosData : null);
+    } catch {
+      setUserData(null);
+    }
+  }
+
+  async function logout() {
+    await AuthModel.signOut();
+    setUser(null);
+    setUserData(null);
+    window.location.href = '/';
+  }
+
   useEffect(() => {
     async function initializeAuth() {
       try {
-        const { data, error } = await sb.auth.getSession();
-        if (error) {
-          console.error('Failed to get session:', error);
+        const { data, error } = await AuthModel.getSession();
+        if (error || !data.session?.user) {
           setUser(null);
           setUserData(null);
-        } else if (data.session?.user) {
+        } else {
           const authUser = data.session.user;
           setUser(authUser);
-          
-          // Fetch user data from usuarios table
-          try {
-            const { data: usuariosData, error: queryError } = await sb
-              .from('usuarios')
-              .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado')
-              .eq('email', authUser.email)
-              .single();
-            
-            if (queryError) {
-              console.warn('Could not fetch usuarios data:', queryError);
-              setUserData(null);
-            } else if (usuariosData) {
-              setUserData(usuariosData);
-            }
-          } catch (err) {
-            console.error('Error fetching usuarios data:', err);
-            setUserData(null);
-          }
-        } else {
-          setUser(null);
-          setUserData(null);
+          await loadUserData(authUser);
         }
       } finally {
         setLoading(false);
@@ -49,39 +48,21 @@ export function AuthProvider({ children }) {
 
     initializeAuth();
 
-    // Listen for auth state changes
-    const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = AuthModel.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        try {
-          const { data: usuariosData, error: queryError } = await sb
-            .from('usuarios')
-            .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado')
-            .eq('email', session.user.email)
-            .single();
-          
-          if (!queryError && usuariosData) {
-            setUserData(usuariosData);
-          } else {
-            setUserData(null);
-          }
-        } catch (err) {
-          console.error('Error fetching usuarios data on auth change:', err);
-          setUserData(null);
-        }
+        await loadUserData(session.user);
       } else {
         setUser(null);
         setUserData(null);
       }
     });
 
-    return () => {
-      subscription?.unsubscribe();
-    };
+    return () => subscription?.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, setUser, setUserData }}>
+    <AuthContext.Provider value={{ user, userData, loading, setUser, setUserData, logout }}>
       {children}
     </AuthContext.Provider>
   );
