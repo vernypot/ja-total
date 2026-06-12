@@ -37,6 +37,8 @@ export function ClubProvider({ children }) {
       nombre: club.nombre,
       tipoNombre: club.tipos_club?.nombre || club.tipoNombre || '',
       tipoId: club.tipo_id || club.tipoId || null,
+      logoUrl: club.logo_url || null,
+      tipoLogoUrl: club.tipos_club?.logo_url || null,
       iglesia_id: club.iglesia_id || activeIglesia || null,
     });
   }

@@ -260,6 +260,22 @@ export async function updateMiembro(id, miembro) {
   return sb.from('miembros').update(miembro).eq('id', id);
 }
 
+export async function fetchMiembroClubsWithLogos(miembroId) {
+  const { data, error } = await sb
+    .from('miembro_club')
+    .select('club_id, clubes(id, nombre, logo_url, tipos_club(id, nombre, logo_url))')
+    .eq('miembro_id', miembroId);
+
+  if (error) return { data: [], error };
+
+  const clubs = (data || [])
+    .map(row => row.clubes)
+    .filter(Boolean)
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+
+  return { data: clubs, error: null };
+}
+
 export async function fetchMiembroClubTipoIds(miembroId) {
   const { data, error } = await sb
     .from('miembro_club')

@@ -33,6 +33,7 @@ export function useClubesController() {
   const [clubForm, setClubForm] = useState({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
   const [tipos, setTipos] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [logoUploading, setLogoUploading] = useState({ clubId: '', kind: '' });
 
   const filteredData = useMemo(
     () => filterBySearch(data, searchQuery, c => [c.nombre, c.tipos_club?.nombre, c.estado]),
@@ -150,6 +151,63 @@ export function useClubesController() {
     updateActiveClub(club);
   }
 
+  async function handleClubLogoUpload(clubId, file) {
+    if (!canManage) return;
+    setError('');
+    setLogoUploading({ clubId, kind: 'club' });
+    const { error: uploadError, errorStage } = await ClubesModel.uploadClubLogo(clubId, file);
+    setLogoUploading({ clubId: '', kind: '' });
+    if (uploadError) {
+      const prefix = errorStage === 'database' ? 'Error saving club logo: ' : 'Error uploading club logo: ';
+      setError(prefix + uploadError.message);
+      return;
+    }
+    load();
+  }
+
+  async function handleClubLogoRemove(club) {
+    if (!canManage) return;
+    setError('');
+    setLogoUploading({ clubId: club.id, kind: 'club' });
+    const { error: removeError } = await ClubesModel.removeClubLogo(club.id, club.logo_url);
+    setLogoUploading({ clubId: '', kind: '' });
+    if (removeError) {
+      setError('Error removing club logo: ' + removeError.message);
+      return;
+    }
+    load();
+  }
+
+  async function handleTipoLogoUpload(club, file) {
+    if (!canManage || !club.tipo_id) return;
+    setError('');
+    setLogoUploading({ clubId: club.id, kind: 'tipo' });
+    const { error: uploadError, errorStage } = await ClubesModel.uploadTipoClubLogo(club.tipo_id, file);
+    setLogoUploading({ clubId: '', kind: '' });
+    if (uploadError) {
+      const prefix = errorStage === 'database' ? 'Error saving type logo: ' : 'Error uploading type logo: ';
+      setError(prefix + uploadError.message);
+      return;
+    }
+    load();
+  }
+
+  async function handleTipoLogoRemove(club) {
+    if (!canManage || !club.tipo_id) return;
+    setError('');
+    setLogoUploading({ clubId: club.id, kind: 'tipo' });
+    const { error: removeError } = await ClubesModel.removeTipoClubLogo(
+      club.tipo_id,
+      club.tipos_club?.logo_url
+    );
+    setLogoUploading({ clubId: '', kind: '' });
+    if (removeError) {
+      setError('Error removing type logo: ' + removeError.message);
+      return;
+    }
+    load();
+  }
+
   useEffect(() => {
     setClubForm(prev => ({ ...prev, iglesia_id: iglesiaId || '' }));
   }, [iglesiaId]);
@@ -184,5 +242,10 @@ export function useClubesController() {
     navigateToEventos,
     selectClub,
     activeClub,
+    logoUploading,
+    handleClubLogoUpload,
+    handleClubLogoRemove,
+    handleTipoLogoUpload,
+    handleTipoLogoRemove,
   };
 }

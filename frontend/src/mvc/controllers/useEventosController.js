@@ -42,6 +42,7 @@ export function useEventosController() {
   const [editingAttendeesEventId, setEditingAttendeesEventId] = useState('');
   const [attendeeEditIds, setAttendeeEditIds] = useState([]);
   const [savingAttendees, setSavingAttendees] = useState(false);
+  const [checkinNotice, setCheckinNotice] = useState('');
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -213,6 +214,21 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
+  async function checkinByScan(eventoId, token) {
+    if (!canManage) return;
+    setError('');
+    setCheckinNotice('');
+
+    const { error: checkinError } = await EventosModel.checkinEventoByToken(eventoId, token);
+    if (checkinError) {
+      setError('Check-in failed: ' + checkinError.message);
+      return;
+    }
+
+    setCheckinNotice('checkinRecorded');
+    await loadAssignments(eventoId);
+  }
+
   async function openAttendeeEditor(eventoId) {
     if (!canManage) return;
     setError('');
@@ -325,8 +341,11 @@ export function useEventosController() {
     toggleAttendeeEditSelection,
     selectAllAttendeeEdit,
     saveEventAttendees,
+    checkinByScan,
+    checkinNotice,
     isEventInFuture: EventosModel.isEventInFuture,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     memberDisplayName: EventosModel.memberDisplayName,
   };
 }

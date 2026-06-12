@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import EventCheckinScanner from '../../components/EventCheckinScanner';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 
@@ -88,7 +89,10 @@ export default function EventosView({
   toggleAttendeeEditSelection,
   selectAllAttendeeEdit,
   saveEventAttendees,
+  checkinByScan,
+  checkinNotice,
   isEventInFuture,
+  getCheckedInAtFromRow,
   getAsistenciaFromRow,
   memberDisplayName,
 }) {
@@ -126,6 +130,7 @@ export default function EventosView({
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {checkinNotice && <div className="alert" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>{t(checkinNotice)}</div>}
       {!iglesiaScopeReady && (
         <div className="alert alert-error">{t('noActiveIglesiaAssignment')}</div>
       )}
@@ -381,13 +386,29 @@ export default function EventosView({
                     {expanded && (
                       <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>{t('attendanceList')}</h4>
+                        {canManage && (
+                          <EventCheckinScanner
+                            eventoId={evento.id}
+                            disabled={isFuture}
+                            onCheckin={token => checkinByScan(evento.id, token)}
+                          />
+                        )}
                         {rows.length === 0 ? (
                           <p className="text-muted" style={{ margin: 0 }}>{t('noMembersAssignedToEvent')}</p>
                         ) : (
-                          <div style={{ display: 'grid', gap: '10px' }}>
-                            {rows.map(row => (
+                          <div style={{ display: 'grid', gap: '10px', marginTop: canManage ? '12px' : 0 }}>
+                            {rows.map(row => {
+                              const checkedInAt = getCheckedInAtFromRow(row);
+                              return (
                               <div key={row.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                                <span>{memberDisplayName(row.miembros)}</span>
+                                <div>
+                                  <span>{memberDisplayName(row.miembros)}</span>
+                                  {checkedInAt && (
+                                    <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                      {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
                                 <AttendanceControls
                                   eventoMiembroId={row.id}
                                   eventoId={evento.id}
@@ -397,7 +418,7 @@ export default function EventosView({
                                   t={t}
                                 />
                               </div>
-                            ))}
+                            );})}
                           </div>
                         )}
                       </div>

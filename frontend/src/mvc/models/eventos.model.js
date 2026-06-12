@@ -33,7 +33,8 @@ export async function fetchMiembroEventos(miembroId) {
       evento_asistencia (
         id,
         estado,
-        updated_at
+        updated_at,
+        checked_in_at
       )
     `)
     .eq('miembro_id', miembroId)
@@ -47,7 +48,7 @@ export async function fetchEventoAssignments(eventoId) {
       id,
       miembro_id,
       miembros ( id, nombre, apellido1, apellido2, estado ),
-      evento_asistencia ( id, estado, updated_at )
+      evento_asistencia ( id, estado, updated_at, checked_in_at )
     `)
     .eq('evento_id', eventoId);
 }
@@ -177,6 +178,19 @@ export function isEventInFuture(evento) {
 
   const today = new Date().toISOString().slice(0, 10);
   return evento.fecha >= today;
+}
+
+export async function checkinEventoByToken(eventoId, token) {
+  return sb.rpc('admin_checkin_evento', {
+    p_evento_id: eventoId,
+    p_token: token,
+  });
+}
+
+export function getCheckedInAtFromRow(row) {
+  const nested = row?.evento_asistencia;
+  if (Array.isArray(nested)) return nested[0]?.checked_in_at || null;
+  return nested?.checked_in_at || null;
 }
 
 export function getAsistenciaFromRow(row) {

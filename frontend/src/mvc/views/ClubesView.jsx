@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
+import LogoAssetField from '../../components/LogoAssetField';
 import '../../styles/form.css';
 
 export default function ClubesView({
@@ -28,6 +29,11 @@ export default function ClubesView({
   navigateToMiembros,
   navigateToEventos,
   selectClub,
+  logoUploading,
+  handleClubLogoUpload,
+  handleClubLogoRemove,
+  handleTipoLogoUpload,
+  handleTipoLogoRemove,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -146,33 +152,67 @@ export default function ClubesView({
                     borderRadius: '8px',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
+                    gap: '16px',
                     backgroundColor: isActive ? '#dbeafe' : '#fff',
                     transition: 'all 0.2s',
+                    flexWrap: 'wrap',
                   }}
                   className="hover-shadow"
                 >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <strong>{c.nombre}</strong>
-                      {tipoNombre && (
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          padding: '3px 8px',
-                          borderRadius: '999px',
-                          backgroundColor: '#e0e7ff',
-                          color: '#3730a3',
-                        }}>
-                          {tipoNombre}
-                        </span>
-                      )}
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: 1, minWidth: '240px' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                      <LogoAssetField
+                        label={tipoNombre
+                          ? t('clubTypeLogoNamed').replace('{type}', tipoNombre)
+                          : t('clubTypeLogo')}
+                        logoUrl={c.tipos_club?.logo_url}
+                        canManage={canManage && Boolean(c.tipo_id)}
+                        uploading={logoUploading.clubId === c.id && logoUploading.kind === 'tipo'}
+                        onUpload={file => handleTipoLogoUpload(c, file)}
+                        onRemove={() => handleTipoLogoRemove(c)}
+                        uploadLabel={t('uploadLogo')}
+                        changeLabel={t('changeLogo')}
+                        removeLabel={t('removeLogo')}
+                        emptyLabel={t('noLogo')}
+                        hint={c.tipo_id ? t('clubTypeLogoHint') : t('clubTypeLogoMissing')}
+                      />
+                      <LogoAssetField
+                        label={t('clubLocalLogo')}
+                        logoUrl={c.logo_url}
+                        canManage={canManage}
+                        uploading={logoUploading.clubId === c.id && logoUploading.kind === 'club'}
+                        onUpload={file => handleClubLogoUpload(c.id, file)}
+                        onRemove={() => handleClubLogoRemove(c)}
+                        uploadLabel={t('uploadLogo')}
+                        changeLabel={t('changeLogo')}
+                        removeLabel={t('removeLogo')}
+                        emptyLabel={t('noLogo')}
+                        hint={t('clubLocalLogoHint')}
+                      />
                     </div>
-                    <span className={`badge badge-${c.estado}`} style={{ marginTop: '8px', display: 'inline-block' }}>
-                      {estadoLabel(c.estado, t)}
-                    </span>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <strong>{c.nombre}</strong>
+                        {tipoNombre && (
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                            backgroundColor: '#e0e7ff',
+                            color: '#3730a3',
+                          }}>
+                            {tipoNombre}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`badge badge-${c.estado}`} style={{ marginTop: '8px', display: 'inline-block' }}>
+                        {estadoLabel(c.estado, t)}
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
                     <button
                       onClick={() => selectClub(c)}
                       style={{
