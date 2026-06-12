@@ -26,6 +26,7 @@ export default function ClubesView({
   addClub,
   toggleEstado,
   navigateToMiembros,
+  navigateToEventos,
   selectClub,
 }) {
   const { t } = useLanguage();
@@ -187,6 +188,7 @@ export default function ClubesView({
                       ★ {t('select')}
                     </button>
                     <button onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
+                    <button onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
                     {canManage && (
                       <button onClick={() => toggleEstado(c)} className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
                         {c.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}

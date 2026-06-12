@@ -1,5 +1,119 @@
 import { sb } from '../../services/supabase';
 
+const MIEMBRO_FOTOS_BUCKET = 'miembro-fotos';
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+function isRlsError(error) {
+  const msg = error?.message || '';
+  return msg.includes('row-level security') || msg.includes('permission denied');
+}
+
+function extensionForFile(file) {
+  const fromName = file.name.split('.').pop()?.toLowerCase();
+  if (fromName && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fromName)) {
+    return fromName === 'jpeg' ? 'jpg' : fromName;
+  }
+  if (file.type === 'image/jpeg') return 'jpg';
+  if (file.type === 'image/png') return 'png';
+  if (file.type === 'image/webp') return 'webp';
+  if (file.type === 'image/gif') return 'gif';
+  return 'jpg';
+}
+
+function buildPhotoPath(miembroId, ext) {
+  return `${miembroId}/avatar.${ext}`;
+}
+
+export function validateMiembroPhotoFile(file) {
+  if (!file) return 'No file selected';
+  if (!ALLOWED_PHOTO_TYPES.has(file.type)) return 'Invalid image type. Use JPEG, PNG, WebP, or GIF.';
+  if (file.size > MAX_PHOTO_BYTES) return 'Image must be 5 MB or smaller.';
+  return null;
+}
+
+export function getMiembroPhotoDisplayUrl(fotoUrl) {
+  if (!fotoUrl) return null;
+  const separator = fotoUrl.includes('?') ? '&' : '?';
+  return `${fotoUrl}${separator}t=${Date.now()}`;
+}
+
+async function setMiembroFotoUrl(miembroId, fotoUrl) {
+  const rpc = await sb.rpc('admin_update_miembro_foto', {
+    p_miembro_id: miembroId,
+    p_foto_url: fotoUrl,
+  });
+  if (!rpc.error) return rpc;
+
+  const direct = await sb.from('miembros').update({ foto_url: fotoUrl }).eq('id', miembroId);
+  if (!direct.error) return direct;
+  if (!isRlsError(direct.error)) return direct;
+
+  return rpc;
+}
+
+export async function uploadMiembroPhoto(miembroId, file) {
+  const validationError = validateMiembroPhotoFile(file);
+  if (validationError) return { data: null, error: new Error(validationError) };
+
+  const ext = extensionForFile(file);
+  const path = buildPhotoPath(miembroId, ext);
+
+  let uploadError = null;
+  const upload = await sb.storage
+    .from(MIEMBRO_FOTOS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  uploadError = upload.error;
+
+  if (uploadError && isRlsError(uploadError)) {
+    const retry = await sb.storage
+      .from(MIEMBRO_FOTOS_BUCKET)
+      .upload(path, file, { contentType: file.type });
+    uploadError = retry.error;
+  }
+
+  if (uploadError) {
+    return {
+      data: null,
+      error: uploadError,
+      errorStage: 'storage',
+    };
+  }
+
+  const { data: urlData } = sb.storage.from(MIEMBRO_FOTOS_BUCKET).getPublicUrl(path);
+  const fotoUrl = urlData?.publicUrl || null;
+  if (!fotoUrl) return { data: null, error: new Error('Unable to resolve photo URL'), errorStage: 'storage' };
+
+  const updateResult = await setMiembroFotoUrl(miembroId, fotoUrl);
+  if (updateResult.error) {
+    return {
+      data: null,
+      error: updateResult.error,
+      errorStage: 'database',
+    };
+  }
+
+  return { data: { foto_url: fotoUrl }, error: null };
+}
+
+export async function removeMiembroPhoto(miembroId, currentFotoUrl) {
+  if (currentFotoUrl) {
+    const marker = `/object/public/${MIEMBRO_FOTOS_BUCKET}/`;
+    const idx = currentFotoUrl.indexOf(marker);
+    if (idx !== -1) {
+      const path = decodeURIComponent(currentFotoUrl.slice(idx + marker.length).split('?')[0]);
+      await sb.storage.from(MIEMBRO_FOTOS_BUCKET).remove([path]);
+    } else {
+      for (const ext of ['jpg', 'png', 'webp', 'gif']) {
+        await sb.storage.from(MIEMBRO_FOTOS_BUCKET).remove([buildPhotoPath(miembroId, ext)]);
+      }
+    }
+  }
+
+  return setMiembroFotoUrl(miembroId, null);
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }

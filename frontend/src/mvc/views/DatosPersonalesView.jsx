@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import '../../styles/form.css';
 
@@ -14,6 +15,116 @@ const FIELDS = [
   { key: 'direccion', labelKey: 'address', fullWidth: true },
 ];
 
+function MemberPhoto({
+  displayPhotoUrl,
+  canManage,
+  editing,
+  uploadingPhoto,
+  onSelect,
+  onRemove,
+  hasPhoto,
+  t,
+}) {
+  const inputRef = useRef(null);
+
+  return (
+    <div style={{ flexShrink: 0 }}>
+      <div style={{
+        width: '120px',
+        height: '120px',
+        borderRadius: '8px',
+        border: '2px solid #e5e7eb',
+        overflow: 'hidden',
+        backgroundColor: '#e5e7eb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+        {displayPhotoUrl ? (
+          <img
+            src={displayPhotoUrl}
+            alt={t('photo')}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span style={{ fontSize: '40px', color: '#9ca3af' }}>👤</span>
+        )}
+        {uploadingPhoto && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(255,255,255,0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            color: '#2563eb',
+          }}>
+            …
+          </div>
+        )}
+      </div>
+
+      {canManage && editing && (
+        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) onSelect(file);
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploadingPhoto}
+            style={{
+              padding: '6px 10px',
+              fontSize: '12px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
+              opacity: uploadingPhoto ? 0.7 : 1,
+            }}
+          >
+            {hasPhoto ? t('changePhoto') : t('uploadPhoto')}
+          </button>
+          {hasPhoto && (
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={uploadingPhoto}
+              style={{
+                padding: '6px 10px',
+                fontSize: '12px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
+                opacity: uploadingPhoto ? 0.7 : 1,
+              }}
+            >
+              {t('removePhoto')}
+            </button>
+          )}
+          <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', maxWidth: '120px' }}>
+            {t('photoHint')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DatosPersonalesView({
   data,
   form,
@@ -21,12 +132,17 @@ export default function DatosPersonalesView({
   editing,
   error,
   saveError,
+  photoError,
   loading,
   saving,
+  uploadingPhoto,
+  displayPhotoUrl,
   canManage,
   startEdit,
   cancelEdit,
   save,
+  handlePhotoSelect,
+  handleRemovePhoto,
   calcularEdad,
 }) {
   const { t } = useLanguage();
@@ -63,6 +179,7 @@ export default function DatosPersonalesView({
       </div>
 
       {saveError && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{saveError}</div>}
+      {photoError && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{photoError}</div>}
 
       <div style={{
         display: 'flex',
@@ -73,19 +190,16 @@ export default function DatosPersonalesView({
         backgroundColor: '#f9f9f9',
         borderRadius: '8px',
       }}>
-        {data.foto_url && (
-          <img
-            src={data.foto_url}
-            alt={t('photo')}
-            style={{
-              width: '120px',
-              height: '120px',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              border: '2px solid #e5e7eb',
-            }}
-          />
-        )}
+        <MemberPhoto
+          displayPhotoUrl={displayPhotoUrl}
+          canManage={canManage}
+          editing={editing}
+          uploadingPhoto={uploadingPhoto}
+          onSelect={handlePhotoSelect}
+          onRemove={handleRemovePhoto}
+          hasPhoto={Boolean(displayPhotoUrl)}
+          t={t}
+        />
         <div>
           <h2 style={{ margin: '0 0 10px 0' }}>{displayName}</h2>
           {!editing && data.fecha_nacimiento && (
@@ -134,16 +248,16 @@ export default function DatosPersonalesView({
           <button
             type="button"
             onClick={save}
-            disabled={saving}
+            disabled={saving || uploadingPhoto}
             style={{
               padding: '10px 20px',
               backgroundColor: '#16a34a',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: saving ? 'not-allowed' : 'pointer',
+              cursor: saving || uploadingPhoto ? 'not-allowed' : 'pointer',
               fontSize: '14px',
-              opacity: saving ? 0.7 : 1,
+              opacity: saving || uploadingPhoto ? 0.7 : 1,
             }}
           >
             ✓ {saving ? t('saving') : t('save')}
@@ -151,14 +265,14 @@ export default function DatosPersonalesView({
           <button
             type="button"
             onClick={cancelEdit}
-            disabled={saving}
+            disabled={saving || uploadingPhoto}
             style={{
               padding: '10px 20px',
               backgroundColor: '#6b7280',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: saving ? 'not-allowed' : 'pointer',
+              cursor: saving || uploadingPhoto ? 'not-allowed' : 'pointer',
               fontSize: '14px',
             }}
           >

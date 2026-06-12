@@ -36,6 +36,14 @@ export default function Sidebar() {
         >
           🎯 {t('clubs')}
         </Link>
+        {adminOrAbove && (
+          <Link
+            to="/dashboard/eventos"
+            className={`nav-link ${isActive('/dashboard/eventos') ? 'active' : ''}`}
+          >
+            📅 {t('events')}
+          </Link>
+        )}
         <Link
           to="/dashboard/miembros"
           className={`nav-link ${isActive('/dashboard/miembros') ? 'active' : ''}`}

@@ -139,6 +139,12 @@ export function useClubesController() {
     navigate(`/dashboard/miembros?club=${clubId}`);
   }
 
+  function navigateToEventos(clubId) {
+    const club = data.find(c => c.id === clubId);
+    if (club) updateActiveClub(club);
+    navigate(`/dashboard/eventos?club=${clubId}`);
+  }
+
   function selectClub(club) {
     if (!canSwitchIglesia && club.iglesia_id && club.iglesia_id !== effectiveIglesiaId) return;
     updateActiveClub(club);
@@ -175,6 +181,7 @@ export function useClubesController() {
     addClub,
     toggleEstado,
     navigateToMiembros,
+    navigateToEventos,
     selectClub,
     activeClub,
   };
