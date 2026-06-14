@@ -1,8 +1,8 @@
-import { useContext, useState } from 'react';
-import { LanguageContext } from '../../context/LanguageContext';
+import { useState } from 'react';
+import { useLanguage } from '../../hooks/useLanguage';
 
 export function useLabelSettingsController() {
-  const { t, customLabels, updateLabel, resetLabels, allKeys, translations } = useContext(LanguageContext);
+  const { t, customLabels, updateLabel, resetLabels, allKeys, translations } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingKey, setEditingKey] = useState(null);
   const [editingValue, setEditingValue] = useState('');

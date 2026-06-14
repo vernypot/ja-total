@@ -7,6 +7,7 @@ import { filterBySearch } from '../../utils/listSearch';
 import { validatePassword } from '../../utils/passwordValidation';
 import * as UsuariosModel from '../models/usuarios.model';
 import * as IglesiasModel from '../models/iglesias.model';
+import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
 
 const EMPTY_FORM = {
   nombre: '',
@@ -58,7 +59,7 @@ export function useUsuariosController() {
   );
 
   useEffect(() => {
-    if (!isSuperAdmin(userRole)) navigate('/dashboard');
+    if (!isSuperAdmin(userRole)) navigate(DASHBOARD_HOME_PATH);
   }, [userRole, navigate]);
 
   async function loadUsuarios() {

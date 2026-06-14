@@ -30,8 +30,11 @@ export function useMiembroEspecialidadesController(miembroId) {
   );
 
   const unassigned = useMemo(
-    () => catalog.filter(e => !assignedIds.has(e.id)),
-    [catalog, assignedIds]
+    () => EspecialidadesModel.filterAssignableEspecialidades(
+      catalog.filter(e => !assignedIds.has(e.id)),
+      requisitosByEsp
+    ),
+    [catalog, assignedIds, requisitosByEsp]
   );
 
   async function load() {
@@ -84,7 +87,9 @@ export function useMiembroEspecialidadesController(miembroId) {
       ]),
     ];
     if (espIds.length) {
-      const { data: reqs } = await EspecialidadesModel.fetchRequisitosForEspecialidades(espIds);
+      const { data: reqs } = await EspecialidadesModel.fetchRequisitosForEspecialidades(espIds, {
+        showInactive: true,
+      });
       const map = {};
       for (const r of reqs || []) {
         if (!map[r.especialidad_id]) map[r.especialidad_id] = [];

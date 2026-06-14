@@ -1,0 +1,371 @@
+import { useEffect, useMemo, useState } from 'react';
+import { groupRequisitosBySeccion } from '../mvc/models/clases.model';
+
+function sectionTitle(seccion) {
+  const roman = seccion.numero_romano ? `${seccion.numero_romano}. ` : '';
+  return `${roman}${seccion.nombre}`;
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildDraft(completion, defaultValidatorName) {
+  return {
+    completado: completion?.completado || false,
+    fecha_completado: completion?.fecha_completado || '',
+    validado_por_nombre: completion?.validado_por_nombre || defaultValidatorName || '',
+    comentarios: completion?.comentarios || '',
+  };
+}
+
+const actionBtnStyle = (completed) => ({
+  padding: '3px 9px',
+  minWidth: '30px',
+  backgroundColor: completed ? '#059669' : '#2563eb',
+  color: '#ffffff',
+  border: `1px solid ${completed ? '#047857' : '#1d4ed8'}`,
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '12px',
+  fontWeight: 700,
+  flexShrink: 0,
+  lineHeight: 1.3,
+  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+});
+
+function RequisitoCompletionModal({
+  req,
+  completion,
+  canManage,
+  saving,
+  defaultValidatorName,
+  t,
+  onClose,
+  onSave,
+}) {
+  const [draft, setDraft] = useState(() => buildDraft(completion, defaultValidatorName));
+
+  useEffect(() => {
+    setDraft(buildDraft(completion, defaultValidatorName));
+  }, [completion, defaultValidatorName]);
+
+  const readOnly = !canManage;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+        padding: '16px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          padding: '20px',
+          backgroundColor: 'white',
+          borderRadius: '10px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px', color: '#111827' }}>{t('requirementDetails')}</h3>
+            <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#4b5563', lineHeight: 1.45 }}>
+              {req.numero != null && <strong>{req.numero}. </strong>}
+              {req.descripcion}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('cancel')}
+            style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gap: '12px', fontSize: '13px' }}>
+          {readOnly ? (
+            <>
+              <div>
+                <span style={{ color: '#6b7280' }}>{t('requirementCompleted')}: </span>
+                <strong style={{ color: draft.completado ? '#059669' : '#6b7280' }}>
+                  {draft.completado ? '✓' : t('requirementPending')}
+                </strong>
+              </div>
+              {draft.completado && draft.fecha_completado && (
+                <div>
+                  <span style={{ color: '#6b7280' }}>{t('dateCompleted')}: </span>
+                  <strong>{draft.fecha_completado}</strong>
+                </div>
+              )}
+              {draft.validado_por_nombre && (
+                <div>
+                  <span style={{ color: '#6b7280' }}>{t('validatedBy')}: </span>
+                  <strong>{draft.validado_por_nombre}</strong>
+                </div>
+              )}
+              {draft.comentarios && (
+                <div>
+                  <span style={{ color: '#6b7280', display: 'block', marginBottom: '4px' }}>{t('requirementComments')}</span>
+                  <p style={{ margin: 0, color: '#374151', whiteSpace: 'pre-wrap' }}>{draft.comentarios}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={draft.completado}
+                  disabled={saving}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setDraft(prev => ({
+                      ...prev,
+                      completado: checked,
+                      fecha_completado: checked ? (prev.fecha_completado || todayIsoDate()) : '',
+                    }));
+                  }}
+                />
+                <span>{t('requirementCompleted')}</span>
+              </label>
+              <label style={{ display: 'grid', gap: '4px' }}>
+                <span style={{ color: '#6b7280' }}>{t('dateCompleted')}</span>
+                <input
+                  type="date"
+                  value={draft.fecha_completado}
+                  disabled={saving || !draft.completado}
+                  onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: '4px' }}>
+                <span style={{ color: '#6b7280' }}>{t('validatedBy')}</span>
+                <input
+                  type="text"
+                  value={draft.validado_por_nombre}
+                  disabled={saving}
+                  placeholder={t('validatedByPlaceholder')}
+                  onChange={e => setDraft(prev => ({ ...prev, validado_por_nombre: e.target.value }))}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: '4px' }}>
+                <span style={{ color: '#6b7280' }}>{t('requirementComments')}</span>
+                <textarea
+                  value={draft.comentarios}
+                  disabled={saving}
+                  rows={3}
+                  placeholder={t('requirementCommentsPlaceholder')}
+                  onChange={e => setDraft(prev => ({ ...prev, comentarios: e.target.value }))}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb', resize: 'vertical' }}
+                />
+              </label>
+            </>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
+          {!canManage && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ padding: '8px 14px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+            >
+              {t('close')}
+            </button>
+          )}
+          {canManage && (
+            <>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{ padding: '8px 14px', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={saving || (draft.completado && !draft.fecha_completado)}
+                onClick={() => onSave(draft)}
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: saving ? 'wait' : 'pointer',
+                  fontSize: '13px',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? t('saving') : t('save')}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequisitoRow({
+  req,
+  completion,
+  saving,
+  onOpen,
+  t,
+}) {
+  const completed = completion?.completado;
+  const title = completed ? t('requirementCompleted') : t('requirementDetails');
+
+  return (
+    <li style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+      <span
+        style={{
+          flex: 1,
+          fontStyle: completed ? 'italic' : 'normal',
+          color: completed ? '#059669' : 'inherit',
+        }}
+      >
+        {completed && (
+          <span style={{ marginRight: '5px', fontStyle: 'normal', fontWeight: 700 }} aria-hidden="true">
+            ✓
+          </span>
+        )}
+        {req.numero != null && <strong style={{ fontStyle: 'normal' }}>{req.numero}. </strong>}
+        {req.descripcion}
+      </span>
+      <button
+        type="button"
+        title={title}
+        aria-label={title}
+        disabled={saving}
+        onClick={() => onOpen(req)}
+        style={actionBtnStyle(completed)}
+      >
+        ⋯
+      </button>
+    </li>
+  );
+}
+
+export default function MiembroClaseRequisitosList({
+  requisitos = [],
+  secciones = [],
+  completions = {},
+  canManage = false,
+  savingRequisitoId = null,
+  onSaveRequisito,
+  defaultValidatorName = '',
+  t,
+  compact = true,
+}) {
+  const [modalReq, setModalReq] = useState(null);
+  const { grouped, ungrouped } = groupRequisitosBySeccion(requisitos, secciones);
+
+  const sortedUngrouped = useMemo(
+    () => [...ungrouped].sort((a, b) => (a.numero ?? 999) - (b.numero ?? 999)),
+    [ungrouped]
+  );
+
+  if (!grouped.length && !sortedUngrouped.length) {
+    return (
+      <p style={{ margin: '8px 0', fontSize: compact ? '12px' : '13px', color: '#6b7280' }}>
+        {t('noRequirements')}
+      </p>
+    );
+  }
+
+  let lastParte = null;
+  const fontSize = compact ? '12px' : '13px';
+
+  async function handleSave(draft) {
+    if (!modalReq) return;
+    const ok = await onSaveRequisito(modalReq.id, draft);
+    if (ok) setModalReq(null);
+  }
+
+  return (
+    <>
+      <div style={{ display: 'grid', gap: compact ? '10px' : '14px', marginTop: compact ? '6px' : '8px' }}>
+        {grouped.map(({ seccion, requisitos: sectionReqs }) => {
+          const showParte = seccion.parte && seccion.parte !== lastParte;
+          lastParte = seccion.parte;
+          return (
+            <div key={seccion.id}>
+              {showParte && (
+                <div style={{
+                  fontSize: compact ? '11px' : '12px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: '#4338ca',
+                  marginBottom: '6px',
+                }}>
+                  {seccion.parte === 'avanzado' ? t('classReqPartAdvanced') : t('classReqPartBasic')}
+                </div>
+              )}
+              <div style={{ fontWeight: 600, fontSize: compact ? '12px' : '13px', color: '#374151', marginBottom: '4px' }}>
+                {sectionTitle(seccion)}
+              </div>
+              <ol style={{ margin: 0, paddingLeft: '20px', fontSize, color: '#4b5563' }}>
+                {sectionReqs.map(req => (
+                  <RequisitoRow
+                    key={req.id}
+                    req={req}
+                    completion={completions[req.id]}
+                    saving={savingRequisitoId === req.id}
+                    onOpen={setModalReq}
+                    t={t}
+                  />
+                ))}
+              </ol>
+            </div>
+          );
+        })}
+
+        {sortedUngrouped.length > 0 && (
+          <ol style={{ margin: 0, paddingLeft: '20px', fontSize, color: '#4b5563' }}>
+            {sortedUngrouped.map(req => (
+              <RequisitoRow
+                key={req.id}
+                req={req}
+                completion={completions[req.id]}
+                saving={savingRequisitoId === req.id}
+                onOpen={setModalReq}
+                t={t}
+              />
+            ))}
+          </ol>
+        )}
+      </div>
+
+      {modalReq && (
+        <RequisitoCompletionModal
+          req={modalReq}
+          completion={completions[modalReq.id]}
+          canManage={canManage}
+          saving={savingRequisitoId === modalReq.id}
+          defaultValidatorName={defaultValidatorName}
+          t={t}
+          onClose={() => setModalReq(null)}
+          onSave={handleSave}
+        />
+      )}
+    </>
+  );
+}

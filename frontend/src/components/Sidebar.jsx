@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions";
+import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
 
 export default function Sidebar() {
   const { user, userData } = useContext(AuthContext);
@@ -17,11 +18,27 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h3>{t('appName')}</h3>
+        <Link to={DASHBOARD_HOME_PATH} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <h3>{t('appName')}</h3>
+        </Link>
         <span className={`role-badge role-${userRole}`}>{userRole}</span>
       </div>
 
       <nav className="sidebar-nav">
+        <Link
+          to={DASHBOARD_HOME_PATH}
+          className={`nav-link ${isDashboardHomePath(location.pathname) ? 'active' : ''}`}
+        >
+          🏠 {t('home')}
+        </Link>
+        {adminOrAbove && (
+          <Link
+            to="/dashboard/noticias"
+            className={`nav-link ${isActive('/dashboard/noticias') ? 'active' : ''}`}
+          >
+            📰 {t('noticias')}
+          </Link>
+        )}
         {adminOrAbove && (
           <Link
             to="/dashboard/iglesias"

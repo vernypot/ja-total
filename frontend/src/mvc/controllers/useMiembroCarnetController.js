@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo, useContext } from 'react';
-import { LanguageContext } from '../../context/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as MiembrosModel from '../models/miembros.model';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
 import * as CarnetModel from '../models/carnet.model';
 
 export function useMiembroCarnetController(miembroId) {
-  const { language } = useContext(LanguageContext);
+  const { language } = useLanguage();
   const [member, setMember] = useState(null);
   const [medical, setMedical] = useState(null);
   const [clubs, setClubs] = useState([]);

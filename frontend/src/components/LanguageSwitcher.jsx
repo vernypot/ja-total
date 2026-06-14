@@ -1,8 +1,7 @@
-import { useContext } from 'react';
-import { LanguageContext } from '../context/LanguageContext';
+import { useLanguage } from '../hooks/useLanguage';
 
 export default function LanguageSwitcher() {
-  const { language, setLanguage, t } = useContext(LanguageContext);
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <div style={{

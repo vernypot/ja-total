@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Landing from "../pages/Landing";
+import Home from "../pages/Home";
+import Noticias from "../pages/Noticias";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 
@@ -19,6 +22,7 @@ import MiembroDetalle from "../pages/MiembroDetalle";
 import ProtectedRoute from "../components/ProtectedRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
+import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 
 
 
@@ -27,11 +31,15 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
 
         <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />}>
-          <Route index element={<Navigate to="miembros" />} />
+          <Route index element={<Navigate to={DASHBOARD_HOME_PATH} replace />} />
+          <Route path="home" element={<Home />} />
+          <Route path="inicio" element={<Home />} />
 
+          <Route path="noticias" element={<AdminRoute element={<Noticias />} />} />
           <Route path="miembros" element={<Miembros />} />
           <Route path="iglesias" element={<AdminRoute element={<Iglesias />} />} />
           <Route path="contactos" element={<Contactos />} />
@@ -46,7 +54,10 @@ export default function AppRouter() {
           <Route path="profile" element={<UserProfile />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />
 
+          <Route path="*" element={<Navigate to={DASHBOARD_HOME_PATH} replace />} />
         </Route>
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

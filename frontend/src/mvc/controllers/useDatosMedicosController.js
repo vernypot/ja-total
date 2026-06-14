@@ -1,12 +1,18 @@
 import { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
+import * as MiembrosModel from '../models/miembros.model';
+import * as ContactosModel from '../models/contactos.model';
 
 export const EMPTY_MEDICAL_FORM = {
   tipo_sangre: '',
   factor_rh: '',
   aseguradora: '',
+  poliza: '',
+  seguro_denominacional: false,
+  seguro_denominacional_fecha: '',
   alergias: '',
   medicamentos: '',
   enfermedades: '',
@@ -16,22 +22,29 @@ export const EMPTY_MEDICAL_FORM = {
 function recordToForm(data) {
   if (!data) return { ...EMPTY_MEDICAL_FORM };
   return {
-    tipo_sangre: data.tipo_sangre || '',
-    factor_rh: data.factor_rh || '',
-    alergias: data.alergias || '',
-    medicamentos: data.medicamentos || '',
-    enfermedades: data.enfermedades || '',
-    observaciones: data.observaciones || '',
-    aseguradora: data.aseguradora || '',
+    tipo_sangre: data.tipo_sangre ?? '',
+    factor_rh: data.factor_rh ?? '',
+    aseguradora: data.aseguradora ?? '',
+    poliza: data.poliza ?? '',
+    seguro_denominacional: Boolean(data.seguro_denominacional),
+    seguro_denominacional_fecha: data.seguro_denominacional_fecha ?? '',
+    alergias: data.alergias ?? '',
+    medicamentos: data.medicamentos ?? '',
+    enfermedades: data.enfermedades ?? '',
+    observaciones: data.observaciones ?? '',
   };
 }
 
 export function useDatosMedicosController(miembroId) {
   const { user, userData } = useContext(AuthContext);
+  const { language } = useLanguage();
   const userRole = getUserRole(user, userData);
   const canManage = canManageChurchData(userRole);
 
   const [data, setData] = useState(null);
+  const [member, setMember] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [clubs, setClubs] = useState([]);
   const [form, setForm] = useState(EMPTY_MEDICAL_FORM);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +62,21 @@ export function useDatosMedicosController(miembroId) {
     setLoading(true);
     setError('');
 
-    const { data: record, error: queryError } = await DatosMedicosModel.fetchDatosMedicosByMiembro(miembroId);
+    const [
+      { data: record, error: queryError },
+      { data: memberData },
+      { data: contactRows },
+      { data: clubRows },
+    ] = await Promise.all([
+      DatosMedicosModel.fetchDatosMedicosByMiembro(miembroId),
+      MiembrosModel.fetchMiembroById(miembroId),
+      ContactosModel.fetchContactosByMiembro(miembroId),
+      MiembrosModel.fetchMiembroClubsWithLogos(miembroId),
+    ]);
+
+    setMember(memberData || null);
+    setContacts(contactRows || []);
+    setClubs(clubRows || []);
 
     if (queryError) {
       const msg = queryError.message || '';
@@ -110,12 +137,22 @@ export function useDatosMedicosController(miembroId) {
     load();
   }
 
+  function printFicha() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.print());
+    });
+  }
+
   useEffect(() => {
     load();
   }, [miembroId]);
 
   return {
     data,
+    member,
+    contacts,
+    clubs,
+    language,
     form,
     setForm,
     editing,
@@ -128,6 +165,7 @@ export function useDatosMedicosController(miembroId) {
     startAdd,
     cancelEdit,
     save,
+    printFicha,
     hasRecord: Boolean(data?.id),
   };
 }

@@ -1,7 +1,6 @@
-import { createContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { defaultTranslations } from '../i18n/translations';
-
-export const LanguageContext = createContext();
+import { LanguageContext } from './i18nContext';
 
 export default function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {

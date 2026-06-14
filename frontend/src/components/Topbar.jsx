@@ -2,8 +2,9 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { getUserRole } from "../utils/permissions";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 
 export default function Topbar() {
   const { user, userData, logout } = useContext(AuthContext);
@@ -20,7 +21,9 @@ export default function Topbar() {
   return (
     <div className="topbar">
       <div className="topbar-left">
-        <h2 className="topbar-title">{t('dashboard')}</h2>
+        <Link to={DASHBOARD_HOME_PATH} className="topbar-title" style={{ textDecoration: 'none', color: 'inherit' }}>
+          {t('home')}
+        </Link>
       </div>
 
       <div className="topbar-right">

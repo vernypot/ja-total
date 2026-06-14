@@ -1,15 +1,20 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import * as AuthModel from '../models/auth.model';
+import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
 
 export function useLoginController() {
-  const { setUser } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate(DASHBOARD_HOME_PATH, { replace: true });
+  }, [user, navigate]);
 
   async function handleLogin() {
     setError('');
@@ -22,7 +27,7 @@ export function useLoginController() {
         return;
       }
       setUser(data.user);
-      navigate('/dashboard');
+      navigate(DASHBOARD_HOME_PATH);
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {

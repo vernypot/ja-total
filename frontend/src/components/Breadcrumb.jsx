@@ -6,6 +6,7 @@ import { IglesiaContext } from "../context/IglesiaContext";
 import { ClubContext } from "../context/ClubContext";
 import { clubDisplayName } from "../utils/club";
 import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions";
+import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
 import * as IglesiasModel from "../mvc/models/iglesias.model";
 
 export default function Breadcrumb() {
@@ -35,32 +36,27 @@ export default function Breadcrumb() {
 
   const churchLabel = iglesiaNombre || t('clubs');
 
+  const onHomePage = isDashboardHomePath(location.pathname);
+
   return (
     <div style={{ marginBottom: "10px", fontSize: '14px' }}>
+      {!onHomePage && (
+        <>
+          <Link to={DASHBOARD_HOME_PATH}>{t('home')}</Link>
+          {(iglesiaId || clubId || onMembersPage) && ' > '}
+        </>
+      )}
+
       {superadmin ? (
-        <Link to="/dashboard/iglesias">{t('churches')}</Link>
+        iglesiaId ? (
+          <Link to={`/dashboard/clubes?iglesia=${iglesiaId}`}>{churchLabel}</Link>
+        ) : null
       ) : adminOrAbove ? (
-        <Link to="/dashboard/iglesias">{t('myChurch')}</Link>
+        iglesiaId ? <span>{churchLabel}</span> : null
       ) : (
-        <Link to="/dashboard/clubes">{t('clubs')}</Link>
-      )}
-
-      {iglesiaId && (
-        <>
-          {" > "}
-          {superadmin ? (
-            <Link to={`/dashboard/clubes?iglesia=${iglesiaId}`}>{churchLabel}</Link>
-          ) : (
-            <span>{churchLabel}</span>
-          )}
-        </>
-      )}
-
-      {!iglesiaId && superadmin && (
-        <>
-          {" > "}
+        iglesiaId ? null : (
           <Link to="/dashboard/clubes">{t('clubs')}</Link>
-        </>
+        )
       )}
 
       {clubId && activeClub && (

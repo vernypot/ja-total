@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useContext } from 'react';
+import { useEffect, useState, useMemo, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import * as ClasesModel from '../models/clases.model';
@@ -12,16 +12,25 @@ function getLinkClaseId(row) {
   return row.clase_progresiva_id || row.clase_id || row.clases_progresivas?.id;
 }
 
+function userDisplayName(userData) {
+  if (!userData) return '';
+  return [userData.nombre, userData.apellido1, userData.apellido2].filter(Boolean).join(' ');
+}
+
 export function useMiembroClasesController(miembroId) {
   const { user, userData } = useContext(AuthContext);
   const canManage = canManageChurchData(getUserRole(user, userData));
+  const defaultValidatorName = userDisplayName(userData);
   const [assigned, setAssigned] = useState([]);
   const [available, setAvailable] = useState([]);
   const [requisitosByClase, setRequisitosByClase] = useState({});
+  const [completionsByAssignment, setCompletionsByAssignment] = useState({});
   const [memberTipos, setMemberTipos] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedClaseId, setSelectedClaseId] = useState('');
+  const [savingRequisitoKey, setSavingRequisitoKey] = useState(null);
+  const [savingAssignmentId, setSavingAssignmentId] = useState(null);
 
   const assignedIds = useMemo(
     () => new Set(assigned.map(row => getLinkClaseId(row)).filter(Boolean)),
@@ -71,6 +80,13 @@ export function useMiembroClasesController(miembroId) {
     setAvailable(filtered);
     setMemberTipos(tipos);
 
+    const assignmentIds = (assignedRows || []).map(row => row.id).filter(Boolean);
+    if (assignmentIds.length) {
+      await Promise.all(
+        assignmentIds.map(id => ClasesModel.initMiembroClaseRequisitos(id))
+      );
+    }
+
     const claseIds = [
       ...new Set([
         ...filtered.map(c => c.id),
@@ -78,15 +94,27 @@ export function useMiembroClasesController(miembroId) {
       ]),
     ];
     if (claseIds.length) {
-      const { data: reqs } = await ClasesModel.fetchRequisitosForClases(claseIds);
+      const [{ data: reqs }, { data: completionRows, error: completionError }] = await Promise.all([
+        ClasesModel.fetchRequisitosForClases(claseIds),
+        assignmentIds.length
+          ? ClasesModel.fetchMiembroClaseRequisitos(assignmentIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (completionError) {
+        setError('Error loading requirement progress: ' + completionError.message);
+      }
+
       const map = {};
       for (const r of reqs || []) {
         if (!map[r.clase_id]) map[r.clase_id] = [];
         map[r.clase_id].push(r);
       }
       setRequisitosByClase(map);
+      setCompletionsByAssignment(ClasesModel.mapCompletionsByAssignment(completionRows));
     } else {
       setRequisitosByClase({});
+      setCompletionsByAssignment({});
     }
 
     setLoading(false);
@@ -109,11 +137,77 @@ export function useMiembroClasesController(miembroId) {
     setError('');
     const { error: unassignError } = await ClasesModel.unassignClaseFromMiembro(linkId);
     if (unassignError) {
-      setError('Error removing class: ' + unassignError.message);
+      setError('Error deactivating class: ' + unassignError.message);
       return;
     }
     load();
   }
+
+  const saveRequisitoCompletion = useCallback(async (assignmentId, claseRequisitoId, draft) => {
+    if (!canManage || !assignmentId) return;
+    setError('');
+    setSavingRequisitoKey(`${assignmentId}:${claseRequisitoId}`);
+
+    const { data, error: saveError } = await ClasesModel.upsertMiembroClaseRequisito({
+      assignmentId,
+      claseRequisitoId,
+      completado: draft.completado,
+      fechaCompletado: draft.completado ? (draft.fecha_completado || null) : null,
+      validadoPorUsuarioId: userData?.id || user?.id || null,
+      validadoPorNombre: draft.validado_por_nombre?.trim() || null,
+      comentarios: draft.comentarios?.trim() || null,
+    });
+
+    setSavingRequisitoKey(null);
+
+    if (saveError) {
+      setError('Error saving requirement: ' + saveError.message);
+      return false;
+    }
+
+    if (data) {
+      setCompletionsByAssignment(prev => ({
+        ...prev,
+        [assignmentId]: {
+          ...(prev[assignmentId] || {}),
+          [claseRequisitoId]: data,
+        },
+      }));
+    }
+
+    return true;
+  }, [canManage, user?.id, userData?.id]);
+
+  const saveAssignmentProgress = useCallback(async (assignmentId, draft) => {
+    if (!canManage || !assignmentId) return false;
+    setError('');
+    setSavingAssignmentId(assignmentId);
+
+    const { data, error: saveError } = await ClasesModel.updateMiembroClaseProgresiva(assignmentId, {
+      completado: draft.completado,
+      fechaCompletado: draft.completado ? (draft.fecha_completado || null) : null,
+      tieneInvestidura: draft.tiene_investidura,
+      investiduraFecha: draft.tiene_investidura ? (draft.investidura_fecha || null) : null,
+      investiduraLugar: draft.tiene_investidura ? (draft.investidura_lugar?.trim() || null) : null,
+      investiduraValidadoPorUsuarioId: draft.tiene_investidura ? (userData?.id || user?.id || null) : null,
+      investiduraValidadoPorNombre: draft.tiene_investidura
+        ? (draft.investidura_validado_por_nombre?.trim() || null)
+        : null,
+    });
+
+    setSavingAssignmentId(null);
+
+    if (saveError) {
+      setError('Error saving class progress: ' + saveError.message);
+      return false;
+    }
+
+    if (data) {
+      setAssigned(prev => prev.map(row => (row.id === assignmentId ? { ...row, ...data } : row)));
+    }
+
+    return true;
+  }, [canManage, user?.id, userData?.id]);
 
   useEffect(() => {
     load();
@@ -123,6 +217,7 @@ export function useMiembroClasesController(miembroId) {
     assigned,
     unassigned,
     requisitosByClase,
+    completionsByAssignment,
     memberTipos,
     error,
     loading,
@@ -130,7 +225,12 @@ export function useMiembroClasesController(miembroId) {
     setSelectedClaseId,
     assignClase,
     unassignClase,
+    saveRequisitoCompletion,
+    saveAssignmentProgress,
+    savingRequisitoKey,
+    savingAssignmentId,
     canManage,
+    defaultValidatorName,
     getClaseFromLink,
     getLinkClaseId,
   };

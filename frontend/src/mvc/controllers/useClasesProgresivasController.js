@@ -28,8 +28,26 @@ export function useClasesProgresivasController() {
   const [editingId, setEditingId] = useState(null);
   const [expandedClassId, setExpandedClassId] = useState(null);
   const [requisitosByClase, setRequisitosByClase] = useState({});
-  const [newRequisito, setNewRequisito] = useState('');
+  const [seccionesByClase, setSeccionesByClase] = useState({});
+  const [newRequisitoForm, setNewRequisitoForm] = useState({ seccion_id: '', numero: '', descripcion: '' });
+  const [newSeccionForm, setNewSeccionForm] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
+  const [editingRequisitoId, setEditingRequisitoId] = useState(null);
+  const [requisitoDraft, setRequisitoDraft] = useState({ seccion_id: '', numero: '', descripcion: '' });
+  const [editingSeccionId, setEditingSeccionId] = useState(null);
+  const [seccionDraft, setSeccionDraft] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [searchQuery, setSearchQuery] = useState('');
+
+  function resetRequisitoForms(secciones = []) {
+    setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '' });
+    setNewSeccionForm({
+      parte: 'basico',
+      numero_romano: '',
+      nombre: '',
+      orden: String(ClasesModel.nextSeccionOrden(secciones)),
+    });
+    setEditingRequisitoId(null);
+    setEditingSeccionId(null);
+  }
 
   const effectiveTipoId = showAllTypes
     ? (tipoFilter || '')
@@ -199,39 +217,107 @@ export function useClasesProgresivasController() {
   }
 
   async function loadRequisitos(claseId) {
-    const { data, error: reqError } = await ClasesModel.fetchRequisitosByClase(claseId);
+    const [{ data, error: reqError }, { data: secciones, error: secError }] = await Promise.all([
+      ClasesModel.fetchRequisitosByClase(claseId),
+      ClasesModel.fetchRequisitoSeccionesByClase(claseId),
+    ]);
     if (reqError) {
       setError('Error loading requirements: ' + reqError.message);
       return;
     }
+    if (secError) {
+      setError('Error loading requirement sections: ' + secError.message);
+      return;
+    }
     setRequisitosByClase(prev => ({ ...prev, [claseId]: data || [] }));
+    setSeccionesByClase(prev => ({ ...prev, [claseId]: secciones || [] }));
+    if (expandedClassId === claseId) {
+      setNewSeccionForm(f => ({
+        ...f,
+        orden: String(ClasesModel.nextSeccionOrden(secciones || [])),
+      }));
+    }
   }
 
   async function toggleExpandClass(claseId) {
     if (expandedClassId === claseId) {
       setExpandedClassId(null);
-      setNewRequisito('');
+      resetRequisitoForms();
       return;
     }
     setExpandedClassId(claseId);
-    setNewRequisito('');
-    if (!requisitosByClase[claseId]) {
-      await loadRequisitos(claseId);
-    }
+    resetRequisitoForms();
+    await loadRequisitos(claseId);
   }
 
   async function addRequisito(claseId) {
     if (!canManage) return;
-    const text = newRequisito.trim();
-    if (!text) return;
+    const descripcion = newRequisitoForm.descripcion.trim();
+    if (!descripcion) return;
+
+    const secciones = seccionesByClase[claseId] || [];
+    const requisitos = requisitosByClase[claseId] || [];
+    const seccionId = newRequisitoForm.seccion_id || null;
+    const seccion = secciones.find(s => s.id === seccionId);
+    const numero = newRequisitoForm.numero
+      ? Number(newRequisitoForm.numero)
+      : (seccionId ? ClasesModel.nextRequisitoNumero(requisitos, seccionId) : null);
+    const orden = seccion
+      ? ClasesModel.computeRequisitoOrden(seccion.orden, numero)
+      : (requisitos.length + 1);
 
     setError('');
-    const { error: insertError } = await ClasesModel.createClaseRequisito(claseId, text);
+    const { error: insertError } = await ClasesModel.createClaseRequisito(claseId, descripcion, {
+      seccion_id: seccionId,
+      numero,
+      orden,
+    });
     if (insertError) {
       setError('Error adding requirement: ' + insertError.message);
       return;
     }
-    setNewRequisito('');
+    setNewRequisitoForm({ seccion_id: seccionId || '', numero: '', descripcion: '' });
+    await loadRequisitos(claseId);
+  }
+
+  function startEditRequisito(req) {
+    setEditingRequisitoId(req.id);
+    setRequisitoDraft({
+      seccion_id: req.seccion_id || req.clase_requisito_secciones?.id || '',
+      numero: req.numero ?? '',
+      descripcion: req.descripcion || '',
+    });
+  }
+
+  function cancelEditRequisito() {
+    setEditingRequisitoId(null);
+  }
+
+  async function saveRequisito(claseId) {
+    if (!canManage || !editingRequisitoId) return;
+    const descripcion = requisitoDraft.descripcion.trim();
+    if (!descripcion) return;
+
+    const secciones = seccionesByClase[claseId] || [];
+    const seccionId = requisitoDraft.seccion_id || null;
+    const seccion = secciones.find(s => s.id === seccionId);
+    const numero = requisitoDraft.numero === '' ? null : Number(requisitoDraft.numero);
+    const orden = seccion
+      ? ClasesModel.computeRequisitoOrden(seccion.orden, numero)
+      : undefined;
+
+    setError('');
+    const { error: updateError } = await ClasesModel.updateClaseRequisito(editingRequisitoId, {
+      descripcion,
+      seccion_id: seccionId,
+      numero,
+      ...(orden !== undefined ? { orden } : {}),
+    });
+    if (updateError) {
+      setError('Error updating requirement: ' + updateError.message);
+      return;
+    }
+    setEditingRequisitoId(null);
     await loadRequisitos(claseId);
   }
 
@@ -243,6 +329,80 @@ export function useClasesProgresivasController() {
       setError('Error deleting requirement: ' + deleteError.message);
       return;
     }
+    if (editingRequisitoId === requisitoId) setEditingRequisitoId(null);
+    await loadRequisitos(claseId);
+  }
+
+  async function addSeccion(claseId) {
+    if (!canManage) return;
+    const nombre = newSeccionForm.nombre.trim();
+    if (!nombre) return;
+
+    const secciones = seccionesByClase[claseId] || [];
+    setError('');
+    const { error: insertError } = await ClasesModel.createClaseRequisitoSeccion(claseId, {
+      parte: newSeccionForm.parte,
+      numero_romano: newSeccionForm.numero_romano,
+      nombre,
+      orden: newSeccionForm.orden || ClasesModel.nextSeccionOrden(secciones),
+    });
+    if (insertError) {
+      setError('Error adding section: ' + insertError.message);
+      return;
+    }
+    await loadRequisitos(claseId);
+    setNewSeccionForm({
+      parte: 'basico',
+      numero_romano: '',
+      nombre: '',
+      orden: String(ClasesModel.nextSeccionOrden(secciones) + 1),
+    });
+  }
+
+  function startEditSeccion(seccion) {
+    setEditingSeccionId(seccion.id);
+    setSeccionDraft({
+      parte: seccion.parte || 'basico',
+      numero_romano: seccion.numero_romano || '',
+      nombre: seccion.nombre || '',
+      orden: seccion.orden ?? '',
+    });
+  }
+
+  function cancelEditSeccion() {
+    setEditingSeccionId(null);
+  }
+
+  async function saveSeccion(claseId) {
+    if (!canManage || !editingSeccionId) return;
+    const nombre = seccionDraft.nombre.trim();
+    if (!nombre) return;
+
+    setError('');
+    const { error: updateError } = await ClasesModel.updateClaseRequisitoSeccion(editingSeccionId, {
+      parte: seccionDraft.parte,
+      numero_romano: seccionDraft.numero_romano,
+      nombre,
+      orden: seccionDraft.orden,
+    });
+    if (updateError) {
+      setError('Error updating section: ' + updateError.message);
+      return;
+    }
+    setEditingSeccionId(null);
+    await loadRequisitos(claseId);
+  }
+
+  async function removeSeccion(claseId, seccionId) {
+    if (!canManage) return;
+    if (!window.confirm('Delete this section and all its requirements?')) return;
+    setError('');
+    const { error: deleteError } = await ClasesModel.deleteClaseRequisitoSeccion(seccionId);
+    if (deleteError) {
+      setError('Error deleting section: ' + deleteError.message);
+      return;
+    }
+    if (editingSeccionId === seccionId) setEditingSeccionId(null);
     await loadRequisitos(claseId);
   }
 
@@ -291,10 +451,27 @@ export function useClasesProgresivasController() {
     showAllTypes,
     expandedClassId,
     requisitosByClase,
-    newRequisito,
-    setNewRequisito,
+    seccionesByClase,
+    newRequisitoForm,
+    setNewRequisitoForm,
+    newSeccionForm,
+    setNewSeccionForm,
+    editingRequisitoId,
+    requisitoDraft,
+    setRequisitoDraft,
+    editingSeccionId,
+    seccionDraft,
+    setSeccionDraft,
     toggleExpandClass,
     addRequisito,
     removeRequisito,
+    startEditRequisito,
+    cancelEditRequisito,
+    saveRequisito,
+    addSeccion,
+    startEditSeccion,
+    cancelEditSeccion,
+    saveSeccion,
+    removeSeccion,
   };
 }

@@ -1,0 +1,80 @@
+.noticia-html-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.noticia-html-editor-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.noticia-html-editor-title {
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+}
+
+.noticia-html-editor-hint {
+  font-size: 12px;
+  color: var(--gray-500, #6b7280);
+}
+
+.noticia-html-editor-quill .ql-toolbar.ql-snow {
+  border: 1px solid var(--gray-300, #d1d5db);
+  border-bottom: none;
+  border-radius: var(--radius-md, 6px) var(--radius-md, 6px) 0 0;
+  background: var(--gray-50, #f9fafb);
+}
+
+.noticia-html-editor-quill .ql-container.ql-snow {
+  border: 1px solid var(--gray-300, #d1d5db);
+  border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
+  background: var(--white, #fff);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.noticia-html-editor-quill .ql-editor {
+  min-height: var(--noticia-editor-min-height, 120px);
+  line-height: 1.55;
+}
+
+.noticia-html-editor-quill--title .ql-editor {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.noticia-html-editor-quill .ql-editor.ql-blank::before {
+  color: var(--gray-400, #9ca3af);
+  font-style: normal;
+}
+
+.noticia-html-editor-quill .ql-snow .ql-stroke {
+  stroke: var(--gray-600, #4b5563);
+}
+
+.noticia-html-editor-quill .ql-snow .ql-fill {
+  fill: var(--gray-600, #4b5563);
+}
+
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:hover,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:hover,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active {
+  color: var(--primary, #2563eb);
+}
+
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:hover .ql-stroke,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:hover .ql-stroke,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: var(--primary, #2563eb);
+}
+
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:hover .ql-fill,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:hover .ql-fill,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active .ql-fill,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-fill {
+  fill: var(--primary, #2563eb);
+}

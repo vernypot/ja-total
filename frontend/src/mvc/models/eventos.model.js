@@ -199,6 +199,40 @@ export function getAsistenciaFromRow(row) {
   return nested?.estado || null;
 }
 
+export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4) {
+  if (!iglesiaId) return { data: [], error: null };
+
+  const { data: clubs, error: clubsError } = await sb
+    .from('clubes')
+    .select('id')
+    .eq('iglesia_id', iglesiaId)
+    .eq('estado', 'activo');
+
+  if (clubsError) return { data: [], error: clubsError };
+  if (!clubs?.length) return { data: [], error: null };
+
+  const clubIds = clubs.map(c => c.id);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await sb
+    .from('eventos')
+    .select(EVENTO_SELECT)
+    .in('club_id', clubIds)
+    .eq('estado', 'activo')
+    .gte('fecha', today)
+    .order('fecha', { ascending: true })
+    .order('hora', { ascending: true })
+    .limit(Math.max(limit * 2, limit));
+
+  if (error) return { data: [], error };
+
+  const upcoming = (data || [])
+    .filter(isEventInFuture)
+    .slice(0, limit);
+
+  return { data: upcoming, error: null };
+}
+
 export function getEventoFromRow(row) {
   return row?.eventos || null;
 }

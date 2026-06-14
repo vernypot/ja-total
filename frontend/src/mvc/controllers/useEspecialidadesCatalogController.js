@@ -13,8 +13,10 @@ export function useEspecialidadesCatalogController() {
 
   const [data, setData] = useState([]);
   const [tipos, setTipos] = useState([]);
-  const [form, setForm] = useState({ nombre: '', tipo_id: '' });
+  const [secciones, setSecciones] = useState([]);
+  const [form, setForm] = useState({ nombre: '', tipo_id: '', seccion_id: '' });
   const [tipoFilter, setTipoFilter] = useState('');
+  const [seccionFilter, setSeccionFilter] = useState('');
   const [showAllTypes, setShowAllTypes] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
@@ -31,19 +33,29 @@ export function useEspecialidadesCatalogController() {
     : (tipoFilter || activeClub?.tipoId || '');
 
   const filteredData = useMemo(
-    () => filterBySearch(data, searchQuery, e => [e.nombre, e.club_tipo, e.tipos_club?.nombre]),
+    () => filterBySearch(data, searchQuery, e => [
+      e.nombre,
+      e.club_tipo,
+      e.tipos_club?.nombre,
+      e.especialidad_secciones?.nombre,
+    ]),
     [data, searchQuery]
   );
 
   const groupedData = useMemo(() => {
+    if (seccionFilter) return null;
+    if (secciones.length) {
+      return EspecialidadesModel.groupEspecialidadesBySeccion(filteredData, secciones);
+    }
     if (effectiveTipoId) return null;
     return tipos
       .map(tipo => ({
+        seccion: null,
         tipo,
         especialidades: filteredData.filter(e => e.tipo_id === tipo.id || e.club_tipo === tipo.nombre),
       }))
       .filter(group => group.especialidades.length > 0);
-  }, [filteredData, tipos, effectiveTipoId]);
+  }, [filteredData, secciones, tipos, effectiveTipoId, seccionFilter]);
 
   async function load() {
     setError('');
@@ -56,25 +68,48 @@ export function useEspecialidadesCatalogController() {
       return;
     }
 
-    const { data: rows, error: loadError, hasEstado: estadoSupported } =
+    const { data: rows, error: loadError, hasEstado: estadoSupported, secciones: seccionesData } =
       await EspecialidadesModel.fetchEspecialidadesCatalogSorted({ showInactive });
 
     if (loadError) {
       setError('Error loading specialties: ' + loadError.message);
       setData([]);
       setTipos(tiposData || []);
+      setSecciones([]);
       return;
     }
 
-    const filtered = EspecialidadesModel.filterEspecialidadesByTipo(
+    let scoped = EspecialidadesModel.filterEspecialidadesByTipo(
       rows || [],
       effectiveTipoId || undefined,
       tiposData || []
     );
 
+    if (seccionFilter) {
+      scoped = scoped.filter(e =>
+        e.seccion_id === seccionFilter || e.especialidad_secciones?.id === seccionFilter
+      );
+    }
+
     setHasEstado(Boolean(estadoSupported));
     setTipos(tiposData || []);
-    setData(filtered);
+    setSecciones(seccionesData || []);
+    setData(scoped);
+
+    const ids = (scoped || []).map(e => e.id);
+    if (ids.length) {
+      const { data: reqs } = await EspecialidadesModel.fetchRequisitosForEspecialidades(ids, {
+        showInactive: true,
+      });
+      const map = {};
+      for (const r of reqs || []) {
+        if (!map[r.especialidad_id]) map[r.especialidad_id] = [];
+        map[r.especialidad_id].push(r);
+      }
+      setRequisitosByEsp(map);
+    } else {
+      setRequisitosByEsp({});
+    }
   }
 
   async function save() {
@@ -89,7 +124,7 @@ export function useEspecialidadesCatalogController() {
     }
 
     setError('');
-    const payload = { nombre: form.nombre, tipo_id: form.tipo_id };
+    const payload = { nombre: form.nombre, tipo_id: form.tipo_id, seccion_id: form.seccion_id || null };
     const { error: saveError } = editingId
       ? await EspecialidadesModel.updateEspecialidad(editingId, payload)
       : await EspecialidadesModel.createEspecialidad(payload);
@@ -99,7 +134,7 @@ export function useEspecialidadesCatalogController() {
       return;
     }
 
-    setForm({ nombre: '', tipo_id: effectiveTipoId || '' });
+    setForm({ nombre: '', tipo_id: effectiveTipoId || '', seccion_id: seccionFilter || '' });
     setEditingId(null);
     setShowForm(false);
     load();
@@ -111,6 +146,7 @@ export function useEspecialidadesCatalogController() {
     setForm({
       nombre: item.nombre,
       tipo_id: item.tipo_id || tipos.find(t => t.nombre === item.club_tipo)?.id || '',
+      seccion_id: item.seccion_id || item.especialidad_secciones?.id || '',
     });
     setShowForm(true);
   }
@@ -130,14 +166,14 @@ export function useEspecialidadesCatalogController() {
   function cancelForm() {
     setShowForm(false);
     setEditingId(null);
-    setForm({ nombre: '', tipo_id: effectiveTipoId || '' });
+    setForm({ nombre: '', tipo_id: effectiveTipoId || '', seccion_id: seccionFilter || '' });
   }
 
   function toggleForm() {
     setShowForm(prev => {
       const next = !prev;
       if (next && !editingId) {
-        setForm({ nombre: '', tipo_id: effectiveTipoId || '' });
+        setForm({ nombre: '', tipo_id: effectiveTipoId || '', seccion_id: seccionFilter || '' });
       }
       return next;
     });
@@ -184,6 +220,7 @@ export function useEspecialidadesCatalogController() {
     }
     setNewRequisito('');
     await loadRequisitos(especialidadId);
+    await load();
   }
 
   async function removeRequisito(especialidadId, requisitoId) {
@@ -195,9 +232,23 @@ export function useEspecialidadesCatalogController() {
       return;
     }
     await loadRequisitos(especialidadId);
+    await load();
   }
 
-  useEffect(() => { load(); }, [showInactive, effectiveTipoId]);
+  async function toggleRequisitoEstado(especialidadId, requisito) {
+    if (!canManage) return;
+    const next = requisito.estado === 'activo' ? 'inactivo' : 'activo';
+    setError('');
+    const { error: updateError } = await EspecialidadesModel.setEspecialidadRequisitoEstado(requisito.id, next);
+    if (updateError) {
+      setError('Error updating requirement status: ' + updateError.message);
+      return;
+    }
+    await loadRequisitos(especialidadId);
+    await load();
+  }
+
+  useEffect(() => { load(); }, [showInactive, effectiveTipoId, seccionFilter]);
   useEffect(() => {
     if (activeClub?.tipoId && !tipoFilter) {
       setForm(prev => ({ ...prev, tipo_id: prev.tipo_id || activeClub.tipoId }));
@@ -209,6 +260,9 @@ export function useEspecialidadesCatalogController() {
     groupedData,
     searchQuery,
     setSearchQuery,
+    secciones,
+    seccionFilter,
+    setSeccionFilter,
     tipos,
     activeClub,
     tipoFilter,
@@ -234,6 +288,7 @@ export function useEspecialidadesCatalogController() {
     toggleExpand,
     addRequisito,
     removeRequisito,
+    toggleRequisitoEstado,
     hasEstado,
     clearTipoFilter,
     showAllTypes,

@@ -1,9 +1,9 @@
-import { useContext, useState, useEffect } from 'react';
-import { LanguageContext } from '../../context/LanguageContext';
+import { useState, useEffect } from 'react';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as LabelsModel from '../models/labels.model';
 
 export function useAdvancedSettingsController() {
-  const { translations } = useContext(LanguageContext);
+  const { translations } = useLanguage();
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

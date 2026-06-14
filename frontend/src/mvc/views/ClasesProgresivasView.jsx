@@ -2,61 +2,71 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
+import ClaseRequisitosList from '../../components/ClaseRequisitosList';
+import ClaseRequisitosEditor from '../../components/ClaseRequisitosEditor';
 import '../../styles/form.css';
 
 function RequisitosSection({
   expanded,
   requisitos,
-  newRequisito,
-  setNewRequisito,
+  secciones,
   canManage,
-  onAdd,
-  onRemove,
   t,
+  claseId,
+  newRequisitoForm,
+  setNewRequisitoForm,
+  newSeccionForm,
+  setNewSeccionForm,
+  editingRequisitoId,
+  requisitoDraft,
+  setRequisitoDraft,
+  editingSeccionId,
+  seccionDraft,
+  setSeccionDraft,
+  addRequisito,
+  addSeccion,
+  startEditRequisito,
+  cancelEditRequisito,
+  saveRequisito,
+  removeRequisito,
+  startEditSeccion,
+  cancelEditSeccion,
+  saveSeccion,
+  removeSeccion,
 }) {
   if (!expanded) return null;
 
   return (
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
       <strong style={{ fontSize: '13px' }}>{t('requirements')}</strong>
-      {requisitos.length === 0 ? (
-        <p style={{ margin: '8px 0', fontSize: '13px', color: '#6b7280' }}>{t('noRequirements')}</p>
+      {canManage ? (
+        <ClaseRequisitosEditor
+          requisitos={requisitos}
+          secciones={secciones}
+          t={t}
+          newRequisitoForm={newRequisitoForm}
+          setNewRequisitoForm={setNewRequisitoForm}
+          newSeccionForm={newSeccionForm}
+          setNewSeccionForm={setNewSeccionForm}
+          editingRequisitoId={editingRequisitoId}
+          requisitoDraft={requisitoDraft}
+          setRequisitoDraft={setRequisitoDraft}
+          editingSeccionId={editingSeccionId}
+          seccionDraft={seccionDraft}
+          setSeccionDraft={setSeccionDraft}
+          addRequisito={() => addRequisito(claseId)}
+          addSeccion={() => addSeccion(claseId)}
+          startEditRequisito={startEditRequisito}
+          cancelEditRequisito={cancelEditRequisito}
+          saveRequisito={() => saveRequisito(claseId)}
+          removeRequisito={id => removeRequisito(claseId, id)}
+          startEditSeccion={startEditSeccion}
+          cancelEditSeccion={cancelEditSeccion}
+          saveSeccion={() => saveSeccion(claseId)}
+          removeSeccion={id => removeSeccion(claseId, id)}
+        />
       ) : (
-        <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '13px' }}>
-          {requisitos.map(r => (
-            <li key={r.id} style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span>{r.descripcion}</span>
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => onRemove(r.id)}
-                  style={{ padding: '2px 8px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
-                >
-                  ✕
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {canManage && (
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          <input
-            value={newRequisito}
-            onChange={e => setNewRequisito(e.target.value)}
-            placeholder={t('requirementDescription')}
-            className="form-input"
-            style={{ margin: 0, flex: 1, fontSize: '13px' }}
-            onKeyDown={e => e.key === 'Enter' && onAdd()}
-          />
-          <button
-            type="button"
-            onClick={onAdd}
-            style={{ padding: '6px 12px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-          >
-            ➕ {t('addRequirement')}
-          </button>
-        </div>
+        <ClaseRequisitosList requisitos={requisitos} secciones={secciones} t={t} />
       )}
     </div>
   );
@@ -70,14 +80,32 @@ function ClassRow({
   toggleEstado,
   expandedClassId,
   requisitosByClase,
-  newRequisito,
-  setNewRequisito,
+  seccionesByClase,
+  newRequisitoForm,
+  setNewRequisitoForm,
+  newSeccionForm,
+  setNewSeccionForm,
+  editingRequisitoId,
+  requisitoDraft,
+  setRequisitoDraft,
+  editingSeccionId,
+  seccionDraft,
+  setSeccionDraft,
   toggleExpandClass,
   addRequisito,
   removeRequisito,
+  startEditRequisito,
+  cancelEditRequisito,
+  saveRequisito,
+  addSeccion,
+  startEditSeccion,
+  cancelEditSeccion,
+  saveSeccion,
+  removeSeccion,
 }) {
   const expanded = expandedClassId === clase.id;
   const requisitos = requisitosByClase[clase.id] || [];
+  const secciones = seccionesByClase[clase.id] || [];
 
   return (
     <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff' }}>
@@ -114,11 +142,29 @@ function ClassRow({
       <RequisitosSection
         expanded={expanded}
         requisitos={requisitos}
-        newRequisito={newRequisito}
-        setNewRequisito={setNewRequisito}
+        secciones={secciones}
         canManage={canManage}
-        onAdd={() => addRequisito(clase.id)}
-        onRemove={id => removeRequisito(clase.id, id)}
+        claseId={clase.id}
+        newRequisitoForm={newRequisitoForm}
+        setNewRequisitoForm={setNewRequisitoForm}
+        newSeccionForm={newSeccionForm}
+        setNewSeccionForm={setNewSeccionForm}
+        editingRequisitoId={editingRequisitoId}
+        requisitoDraft={requisitoDraft}
+        setRequisitoDraft={setRequisitoDraft}
+        editingSeccionId={editingSeccionId}
+        seccionDraft={seccionDraft}
+        setSeccionDraft={setSeccionDraft}
+        addRequisito={addRequisito}
+        addSeccion={addSeccion}
+        startEditRequisito={startEditRequisito}
+        cancelEditRequisito={cancelEditRequisito}
+        saveRequisito={saveRequisito}
+        removeRequisito={removeRequisito}
+        startEditSeccion={startEditSeccion}
+        cancelEditSeccion={cancelEditSeccion}
+        saveSeccion={saveSeccion}
+        removeSeccion={removeSeccion}
         t={t}
       />
     </div>
@@ -155,11 +201,28 @@ export default function ClasesProgresivasView({
   showAllTypes,
   expandedClassId,
   requisitosByClase,
-  newRequisito,
-  setNewRequisito,
+  seccionesByClase,
+  newRequisitoForm,
+  setNewRequisitoForm,
+  newSeccionForm,
+  setNewSeccionForm,
+  editingRequisitoId,
+  requisitoDraft,
+  setRequisitoDraft,
+  editingSeccionId,
+  seccionDraft,
+  setSeccionDraft,
   toggleExpandClass,
   addRequisito,
   removeRequisito,
+  startEditRequisito,
+  cancelEditRequisito,
+  saveRequisito,
+  addSeccion,
+  startEditSeccion,
+  cancelEditSeccion,
+  saveSeccion,
+  removeSeccion,
 }) {
   const { t } = useLanguage();
   const activeTipo = tipos.find(tipo => tipo.id === effectiveTipoId);
@@ -172,11 +235,28 @@ export default function ClasesProgresivasView({
     toggleEstado,
     expandedClassId,
     requisitosByClase,
-    newRequisito,
-    setNewRequisito,
+    seccionesByClase,
+    newRequisitoForm,
+    setNewRequisitoForm,
+    newSeccionForm,
+    setNewSeccionForm,
+    editingRequisitoId,
+    requisitoDraft,
+    setRequisitoDraft,
+    editingSeccionId,
+    seccionDraft,
+    setSeccionDraft,
     toggleExpandClass,
     addRequisito,
     removeRequisito,
+    startEditRequisito,
+    cancelEditRequisito,
+    saveRequisito,
+    addSeccion,
+    startEditSeccion,
+    cancelEditSeccion,
+    saveSeccion,
+    removeSeccion,
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
+import { isEspecialidadAssignable } from '../models/especialidades.model';
 import ListSearchInput from '../../components/ListSearchInput';
 import '../../styles/form.css';
 
@@ -12,6 +13,7 @@ function RequisitosSection({
   canManage,
   onAdd,
   onRemove,
+  onToggleEstado,
   t,
 }) {
   if (!expanded) return null;
@@ -25,15 +27,31 @@ function RequisitosSection({
         <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '13px' }}>
           {requisitos.map(r => (
             <li key={r.id} style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span>{r.descripcion}</span>
+              <span style={{ opacity: r.estado === 'activo' ? 1 : 0.55 }}>
+                {r.descripcion}
+                {r.estado !== 'activo' && (
+                  <span style={{ marginLeft: '6px', fontSize: '11px', color: '#9ca3af' }}>
+                    ({estadoLabel(r.estado, t)})
+                  </span>
+                )}
+              </span>
               {canManage && (
-                <button
-                  type="button"
-                  onClick={() => onRemove(r.id)}
-                  style={{ padding: '2px 8px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
-                >
-                  ✕
-                </button>
+                <span style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleEstado(r)}
+                    style={{ padding: '2px 8px', backgroundColor: r.estado === 'activo' ? '#6b7280' : '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                  >
+                    {r.estado === 'activo' ? t('deactivate') : t('activate')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(r.id)}
+                    style={{ padding: '2px 8px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                  >
+                    ✕
+                  </button>
+                </span>
               )}
             </li>
           ))}
@@ -76,9 +94,11 @@ function SpecialtyRow({
   toggleExpand,
   addRequisito,
   removeRequisito,
+  toggleRequisitoEstado,
 }) {
   const expanded = expandedId === item.id;
   const requisitos = requisitosByEsp[item.id] || [];
+  const assignable = isEspecialidadAssignable(item, requisitos);
 
   return (
     <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff' }}>
@@ -86,6 +106,9 @@ function SpecialtyRow({
         <div>
           <strong>{item.nombre}</strong>
           <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
+            {item.especialidad_secciones?.nombre && (
+              <span>{t('specialtySection')}: {item.especialidad_secciones.nombre} · </span>
+            )}
             {t('clubType')}: {item.tipos_club?.nombre || item.club_tipo || '—'}
           </div>
           {hasEstado && item.estado && (
@@ -93,6 +116,9 @@ function SpecialtyRow({
               {estadoLabel(item.estado, t)}
             </span>
           )}
+          <div style={{ marginTop: '8px', fontSize: '12px', color: assignable ? '#15803d' : '#b45309' }}>
+            {assignable ? t('honorAssignable') : t('honorNotAssignable')}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
@@ -124,6 +150,7 @@ function SpecialtyRow({
         canManage={canManage}
         onAdd={() => addRequisito(item.id)}
         onRemove={id => removeRequisito(item.id, id)}
+        onToggleEstado={req => toggleRequisitoEstado(item.id, req)}
         t={t}
       />
     </div>
@@ -136,6 +163,9 @@ export default function EspecialidadesCatalogView({
   searchQuery,
   setSearchQuery,
   tipos,
+  secciones,
+  seccionFilter,
+  setSeccionFilter,
   activeClub,
   tipoFilter,
   setTipoFilter,
@@ -160,6 +190,7 @@ export default function EspecialidadesCatalogView({
   toggleExpand,
   addRequisito,
   removeRequisito,
+  toggleRequisitoEstado,
   hasEstado,
   clearTipoFilter,
   showAllTypes,
@@ -182,6 +213,7 @@ export default function EspecialidadesCatalogView({
     toggleExpand,
     addRequisito,
     removeRequisito,
+    toggleRequisitoEstado,
   };
 
   return (
@@ -195,7 +227,7 @@ export default function EspecialidadesCatalogView({
             </p>
           )}
           <p style={{ margin: '8px 0 0 0', color: '#888', fontSize: '13px' }}>
-            {t('specialtiesLinkedByType')}
+            {t('specialtiesGroupedBySection')}
           </p>
         </div>
         {canManage && (
@@ -226,6 +258,18 @@ export default function EspecialidadesCatalogView({
               <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
               {t('showInactiveSpecialties')}
             </label>
+          )}
+          {secciones.length > 0 && (
+            <select
+              value={seccionFilter}
+              onChange={e => setSeccionFilter(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '14px' }}
+            >
+              <option value="">{t('allSections')}</option>
+              {secciones.map(seccion => (
+                <option key={seccion.id} value={seccion.id}>{seccion.nombre}</option>
+              ))}
+            </select>
           )}
           <select
             value={tipoFilter}
@@ -260,7 +304,7 @@ export default function EspecialidadesCatalogView({
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
             <h4 style={{ marginTop: 0 }}>{editingId ? t('editSpecialty') : t('newSpecialty')}</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('name')} *</label>
                 <input
@@ -269,6 +313,20 @@ export default function EspecialidadesCatalogView({
                   className="form-input"
                   style={{ margin: 0 }}
                 />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('specialtySection')}</label>
+                <select
+                  value={form.seccion_id}
+                  onChange={e => setForm({ ...form, seccion_id: e.target.value })}
+                  className="form-input"
+                  style={{ margin: 0 }}
+                >
+                  <option value="">{t('selectSection')}</option>
+                  {secciones.map(seccion => (
+                    <option key={seccion.id} value={seccion.id}>{seccion.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('clubTypeRequired')} *</label>
@@ -303,16 +361,20 @@ export default function EspecialidadesCatalogView({
           </p>
         ) : groupedData ? (
           <div style={{ display: 'grid', gap: '20px' }}>
-            {groupedData.map(({ tipo, especialidades }) => (
-              <div key={tipo.id}>
-                <h5 style={{ margin: '0 0 10px 0', color: '#3730a3' }}>{tipo.nombre}</h5>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {especialidades.map(item => (
-                    <SpecialtyRow key={item.id} item={item} {...rowProps} />
-                  ))}
+            {groupedData.map(group => {
+              const groupKey = group.seccion?.id || group.tipo?.id || 'group';
+              const groupTitle = group.seccion?.nombre || group.tipo?.nombre || t('uncategorized');
+              return (
+                <div key={groupKey}>
+                  <h5 style={{ margin: '0 0 10px 0', color: '#3730a3' }}>{groupTitle}</h5>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    {group.especialidades.map(item => (
+                      <SpecialtyRow key={item.id} item={item} {...rowProps} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>

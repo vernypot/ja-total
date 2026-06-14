@@ -1,12 +1,13 @@
 import { useLanguage } from '../../hooks/useLanguage';
 
 function RequirementsList({ requisitos, t }) {
-  if (!requisitos?.length) {
+  const active = (requisitos || []).filter(r => (r.estado || 'activo') === 'activo');
+  if (!active.length) {
     return <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6b7280' }}>{t('noRequirements')}</p>;
   }
   return (
     <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px', fontSize: '12px', color: '#4b5563' }}>
-      {requisitos.map(r => (
+      {active.map(r => (
         <li key={r.id}>{r.descripcion}</li>
       ))}
     </ul>
@@ -71,6 +72,11 @@ export default function MiembroEspecialidadesView({
             ➕ {t('add')}
           </button>
         </div>
+        {memberTipos.length > 0 && unassigned.length === 0 && (
+          <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#6b7280' }}>
+            {t('noAssignableHonors')}
+          </p>
+        )}
       </div>
       )}
 
