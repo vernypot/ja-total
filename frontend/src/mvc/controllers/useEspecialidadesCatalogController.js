@@ -27,10 +27,13 @@ export function useEspecialidadesCatalogController() {
   const [newRequisito, setNewRequisito] = useState('');
   const [hasEstado, setHasEstado] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
 
   const effectiveTipoId = showAllTypes
     ? (tipoFilter || '')
     : (tipoFilter || activeClub?.tipoId || '');
+
+  const catalogTipoId = showAllTypes ? (tipoFilter || undefined) : (effectiveTipoId || undefined);
 
   const filteredData = useMemo(
     () => filterBySearch(data, searchQuery, e => [
@@ -44,10 +47,18 @@ export function useEspecialidadesCatalogController() {
 
   const groupedData = useMemo(() => {
     if (seccionFilter) return null;
-    if (secciones.length) {
-      return EspecialidadesModel.groupEspecialidadesBySeccion(filteredData, secciones);
+
+    const hasSectionLinks = filteredData.some(
+      e => e.seccion_id || e.especialidad_secciones?.id
+    );
+    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(filteredData, secciones);
+
+    if (sectionCatalog.length || hasSectionLinks) {
+      return EspecialidadesModel.groupEspecialidadesBySeccion(filteredData, sectionCatalog);
     }
+
     if (effectiveTipoId) return null;
+
     return tipos
       .map(tipo => ({
         seccion: null,
@@ -68,22 +79,23 @@ export function useEspecialidadesCatalogController() {
       return;
     }
 
-    const { data: rows, error: loadError, hasEstado: estadoSupported, secciones: seccionesData } =
-      await EspecialidadesModel.fetchEspecialidadesCatalogSorted({ showInactive });
+    const { data: rows, error: loadError, hasEstado: estadoSupported, secciones: seccionesData, totalCount: loadedCount } =
+      await EspecialidadesModel.fetchEspecialidadesCatalogSorted({
+        showInactive,
+        tipoId: catalogTipoId,
+        tipos: tiposData || [],
+      });
 
     if (loadError) {
       setError('Error loading specialties: ' + loadError.message);
       setData([]);
       setTipos(tiposData || []);
       setSecciones([]);
+      setTotalCount(0);
       return;
     }
 
-    let scoped = EspecialidadesModel.filterEspecialidadesByTipo(
-      rows || [],
-      effectiveTipoId || undefined,
-      tiposData || []
-    );
+    let scoped = rows || [];
 
     if (seccionFilter) {
       scoped = scoped.filter(e =>
@@ -94,6 +106,7 @@ export function useEspecialidadesCatalogController() {
     setHasEstado(Boolean(estadoSupported));
     setTipos(tiposData || []);
     setSecciones(seccionesData || []);
+    setTotalCount(loadedCount || scoped.length);
     setData(scoped);
 
     const ids = (scoped || []).map(e => e.id);
@@ -248,7 +261,7 @@ export function useEspecialidadesCatalogController() {
     await load();
   }
 
-  useEffect(() => { load(); }, [showInactive, effectiveTipoId, seccionFilter]);
+  useEffect(() => { load(); }, [showInactive, catalogTipoId, seccionFilter]);
   useEffect(() => {
     if (activeClub?.tipoId && !tipoFilter) {
       setForm(prev => ({ ...prev, tipo_id: prev.tipo_id || activeClub.tipoId }));
@@ -293,5 +306,6 @@ export function useEspecialidadesCatalogController() {
     clearTipoFilter,
     showAllTypes,
     setShowAllTypes,
+    totalCount,
   };
 }

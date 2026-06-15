@@ -17,6 +17,7 @@ function RequirementsList({ requisitos, t }) {
 export default function MiembroEspecialidadesView({
   assigned,
   unassigned,
+  unassignedGrouped,
   requisitosByEsp,
   memberTipos,
   error,
@@ -57,11 +58,26 @@ export default function MiembroEspecialidadesView({
             disabled={unassigned.length === 0}
           >
             <option value="">{t('selectSpecialty')}</option>
-            {unassigned.map(e => (
-              <option key={e.id} value={e.id}>
-                {e.nombre}{e.club_tipo ? ` (${e.club_tipo})` : ''}
-              </option>
-            ))}
+            {unassignedGrouped ? (
+              unassignedGrouped.map(group => {
+                const label = group.seccion?.nombre || t('uncategorized');
+                return (
+                  <optgroup key={group.seccion?.id || 'uncategorized'} label={label}>
+                    {group.especialidades.map(e => (
+                      <option key={e.id} value={e.id}>
+                        {e.nombre}{e.club_tipo ? ` (${e.club_tipo})` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })
+            ) : (
+              unassigned.map(e => (
+                <option key={e.id} value={e.id}>
+                  {e.nombre}{e.club_tipo ? ` (${e.club_tipo})` : ''}
+                </option>
+              ))
+            )}
           </select>
           <button
             type="button"

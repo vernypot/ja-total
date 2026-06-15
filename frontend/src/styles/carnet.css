@@ -340,21 +340,21 @@
 }
 
 @media print {
-  @page {
+  @page carnet-size {
     size: 54mm 85.6mm;
     margin: 0;
   }
 
-  body * {
+  body.carnet-printing * {
     visibility: hidden;
   }
 
-  .carnet-print-area,
-  .carnet-print-area * {
+  body.carnet-printing .carnet-print-area,
+  body.carnet-printing .carnet-print-area * {
     visibility: visible;
   }
 
-  .carnet-print-area {
+  body.carnet-printing .carnet-print-area {
     position: absolute;
     left: 0;
     top: 0;
@@ -362,6 +362,7 @@
   }
 
   .carnet-page {
+    page: carnet-size;
     page-break-after: always;
     box-shadow: none;
     border: none;

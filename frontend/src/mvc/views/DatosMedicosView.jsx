@@ -182,6 +182,14 @@ export default function DatosMedicosView({
 }) {
   const { t } = useLanguage();
   const canPrint = Boolean(member);
+  const fichaProps = {
+    member,
+    medical: editing ? form : data,
+    contacts,
+    clubs,
+    language,
+    t,
+  };
 
   if (loading) return <div className="loading">{t('loadingData')}</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
@@ -283,15 +291,8 @@ export default function DatosMedicosView({
       )}
 
       {canPrint && (
-        <div className="ficha-medica-print-area">
-          <FichaMedicaPrint
-            member={member}
-            medical={editing ? form : data}
-            contacts={contacts}
-            clubs={clubs}
-            language={language}
-            t={t}
-          />
+        <div className="ficha-medica-print-source" aria-hidden="true">
+          <FichaMedicaPrint {...fichaProps} />
         </div>
       )}
     </div>

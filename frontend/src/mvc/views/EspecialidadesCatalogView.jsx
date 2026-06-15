@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
@@ -95,6 +96,7 @@ function SpecialtyRow({
   addRequisito,
   removeRequisito,
   toggleRequisitoEstado,
+  hideSection = false,
 }) {
   const expanded = expandedId === item.id;
   const requisitos = requisitosByEsp[item.id] || [];
@@ -106,7 +108,7 @@ function SpecialtyRow({
         <div>
           <strong>{item.nombre}</strong>
           <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
-            {item.especialidad_secciones?.nombre && (
+            {!hideSection && item.especialidad_secciones?.nombre && (
               <span>{t('specialtySection')}: {item.especialidad_secciones.nombre} · </span>
             )}
             {t('clubType')}: {item.tipos_club?.nombre || item.club_tipo || '—'}
@@ -157,6 +159,47 @@ function SpecialtyRow({
   );
 }
 
+function SpecialtySectionGroup({ group, groupKey, groupTitle, rowProps, t, collapsed, onToggle }) {
+  const countLabel = t('specialtySectionCount').replace('{{count}}', String(group.especialidades.length));
+
+  return (
+    <section style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', backgroundColor: '#fafafa' }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          padding: '12px 16px',
+          border: 'none',
+          background: 'linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%)',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <span style={{ fontSize: '12px', color: '#4338ca' }}>{collapsed ? '▶' : '▼'}</span>
+          <strong style={{ color: '#312e81', fontSize: '15px' }}>{groupTitle}</strong>
+        </span>
+        <span style={{ fontSize: '12px', color: '#4338ca', backgroundColor: '#fff', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+          {countLabel}
+        </span>
+      </button>
+      {!collapsed && (
+        <div style={{ display: 'grid', gap: '12px', padding: '12px' }}>
+          {group.especialidades.map(item => (
+            <SpecialtyRow key={item.id} item={item} hideSection {...rowProps} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function EspecialidadesCatalogView({
   data,
   groupedData,
@@ -170,6 +213,7 @@ export default function EspecialidadesCatalogView({
   tipoFilter,
   setTipoFilter,
   effectiveTipoId,
+  totalCount,
   form,
   setForm,
   showInactive,
@@ -197,8 +241,13 @@ export default function EspecialidadesCatalogView({
   setShowAllTypes,
 }) {
   const { t } = useLanguage();
+  const [collapsedSections, setCollapsedSections] = useState({});
   const activeTipo = tipos.find(tipo => tipo.id === effectiveTipoId);
   const isSearching = searchQuery.trim().length > 0;
+
+  function toggleSectionCollapse(groupKey) {
+    setCollapsedSections(prev => ({ ...prev, [groupKey]: !(prev[groupKey] ?? true) }));
+  }
 
   const rowProps = {
     canManage,
@@ -301,6 +350,13 @@ export default function EspecialidadesCatalogView({
           </p>
         )}
 
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6b7280' }}>
+          {t('specialtyListCount').replace('{{count}}', String(data.length))}
+          {effectiveTipoId && !showAllTypes && (
+            <span> · {t('specialtyListFilteredByClub')}</span>
+          )}
+        </p>
+
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
             <h4 style={{ marginTop: 0 }}>{editingId ? t('editSpecialty') : t('newSpecialty')}</h4>
@@ -360,19 +416,22 @@ export default function EspecialidadesCatalogView({
             {isSearching ? t('noSearchResults') : t('noSpecialties')}
           </p>
         ) : groupedData ? (
-          <div style={{ display: 'grid', gap: '20px' }}>
+          <div style={{ display: 'grid', gap: '16px' }}>
             {groupedData.map(group => {
-              const groupKey = group.seccion?.id || group.tipo?.id || 'group';
+              const groupKey = group.seccion?.id || group.tipo?.id || 'uncategorized';
               const groupTitle = group.seccion?.nombre || group.tipo?.nombre || t('uncategorized');
+              const collapsed = collapsedSections[groupKey] ?? true;
               return (
-                <div key={groupKey}>
-                  <h5 style={{ margin: '0 0 10px 0', color: '#3730a3' }}>{groupTitle}</h5>
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    {group.especialidades.map(item => (
-                      <SpecialtyRow key={item.id} item={item} {...rowProps} />
-                    ))}
-                  </div>
-                </div>
+                <SpecialtySectionGroup
+                  key={groupKey}
+                  group={group}
+                  groupKey={groupKey}
+                  groupTitle={groupTitle}
+                  rowProps={rowProps}
+                  t={t}
+                  collapsed={collapsed}
+                  onToggle={() => toggleSectionCollapse(groupKey)}
+                />
               );
             })}
           </div>

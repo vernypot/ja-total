@@ -45,6 +45,18 @@ export function useMiembroEventosController(miembroId) {
     load();
   }
 
+  async function updateConfirmation(eventoMiembroId, confirmacionEstado) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    if (saveError) {
+      setError('Error saving confirmation: ' + saveError.message);
+      return;
+    }
+    load();
+  }
+
   useEffect(() => {
     load();
   }, [miembroId]);
@@ -55,7 +67,11 @@ export function useMiembroEventosController(miembroId) {
     loading,
     canManage,
     updateAttendance,
+    updateConfirmation,
     getEventoFromRow: EventosModel.getEventoFromRow,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
+    eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
+    getTipoEventoNombre: EventosModel.getTipoEventoNombre,
   };
 }

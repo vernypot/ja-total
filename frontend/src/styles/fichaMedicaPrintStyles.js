@@ -1,61 +1,22 @@
-.ficha-medica-screen {
+// Compact print-only styles for iframe ficha médica (letter size).
+export default `
+@page {
+  size: letter portrait;
+  margin: 0.45in;
+}
+
+html, body {
+  margin: 0;
   padding: 0;
-}
-
-.ficha-medica-print-btn {
-  padding: 10px 18px;
-  background-color: #1d4ed8;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.ficha-medica-print-btn:hover {
-  background-color: #1e40af;
-}
-
-.ficha-medica-print-hint {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.ficha-medica-print-source {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  background: #fff;
+  color: #111827;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.35;
 }
 
 .ficha-medica-document {
-  --ficha-navy: #1a2744;
-  --ficha-border: #d1d5db;
-  --ficha-label: #4338ca;
-  --ficha-page-width: 8.5in;
-  box-sizing: border-box;
-  color: #111827;
-  font-family: 'Source Sans 3', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 10pt;
-  line-height: 1.35;
-  max-width: var(--ficha-page-width);
-  margin: 0 auto;
-  padding: 0.45in;
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-.ficha-medica-document *,
-.ficha-medica-document *::before,
-.ficha-medica-document *::after {
-  box-sizing: border-box;
+  width: 100%;
 }
 
 .ficha-medica-header {
@@ -63,13 +24,9 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  border-bottom: 2px solid var(--ficha-navy);
+  border-bottom: 2px solid #1a2744;
   padding-bottom: 8px;
   margin-bottom: 10px;
-}
-
-.ficha-medica-header-main {
-  min-width: 0;
 }
 
 .ficha-medica-eyebrow {
@@ -77,7 +34,7 @@
   font-size: 8pt;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ficha-label);
+  color: #4338ca;
   font-weight: 700;
 }
 
@@ -86,11 +43,10 @@
   font-size: 16pt;
   line-height: 1.15;
   font-weight: 700;
-  color: var(--ficha-navy);
+  color: #1a2744;
 }
 
 .ficha-medica-printed-at {
-  flex-shrink: 0;
   font-size: 8pt;
   color: #6b7280;
   text-align: right;
@@ -102,10 +58,6 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 10px;
-}
-
-.ficha-medica-photo-wrap {
-  flex-shrink: 0;
 }
 
 .ficha-medica-photo {
@@ -126,16 +78,11 @@
   border-radius: 4px;
 }
 
-.ficha-medica-member-summary {
-  min-width: 0;
-}
-
 .ficha-medica-member-name {
   margin: 0 0 2px;
   font-size: 13pt;
-  line-height: 1.2;
   font-weight: 700;
-  color: var(--ficha-navy);
+  color: #1a2744;
 }
 
 .ficha-medica-clubs {
@@ -146,15 +93,15 @@
 
 .ficha-medica-block {
   margin-bottom: 10px;
+  page-break-inside: avoid;
 }
 
 .ficha-medica-block-title {
   margin: 0 0 6px;
   font-size: 10.5pt;
-  line-height: 1.2;
   font-weight: 700;
-  color: var(--ficha-navy);
-  border-bottom: 1px solid var(--ficha-border);
+  color: #1a2744;
+  border-bottom: 1px solid #d1d5db;
   padding-bottom: 2px;
 }
 
@@ -180,29 +127,28 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--ficha-label);
+  color: #4338ca;
 }
 
 .ficha-medica-value {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #111827;
   font-size: 9.5pt;
+  color: #111827;
 }
 
 .ficha-medica-contacts {
   width: 100%;
   border-collapse: collapse;
   font-size: 9pt;
-  table-layout: fixed;
 }
 
 .ficha-medica-contacts th {
   text-align: left;
   font-size: 8pt;
   font-weight: 700;
-  color: var(--ficha-navy);
+  color: #1a2744;
   padding: 4px 0;
   border-bottom: 1px solid #9ca3af;
 }
@@ -210,23 +156,7 @@
 .ficha-medica-contacts td {
   padding: 4px 8px 4px 0;
   vertical-align: top;
-  word-break: break-word;
   border-bottom: 1px solid #e5e7eb;
-}
-
-.ficha-medica-contacts th:nth-child(1),
-.ficha-medica-contacts td:nth-child(1) {
-  width: 40%;
-}
-
-.ficha-medica-contacts th:nth-child(2),
-.ficha-medica-contacts td:nth-child(2) {
-  width: 30%;
-}
-
-.ficha-medica-contacts th:nth-child(3),
-.ficha-medica-contacts td:nth-child(3) {
-  width: 30%;
 }
 
 .ficha-medica-empty {
@@ -239,7 +169,7 @@
 .ficha-medica-footer {
   margin-top: 12px;
   padding-top: 6px;
-  border-top: 1px solid var(--ficha-border);
+  border-top: 1px solid #d1d5db;
   font-size: 7.5pt;
   color: #6b7280;
 }
@@ -247,3 +177,4 @@
 .ficha-medica-footer p {
   margin: 0;
 }
+`;

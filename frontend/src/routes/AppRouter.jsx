@@ -9,6 +9,7 @@ import Miembros from "../pages/Miembros";
 import Iglesias from "../pages/Iglesias";
 import Clubes from "../pages/Clubes";
 import Eventos from "../pages/Eventos";
+import TiposEvento from "../pages/TiposEvento";
 import Checkin from "../pages/Checkin";
 import Contactos from "../pages/Contactos";
 import Especialidades from "../pages/Especialidades";
@@ -45,6 +46,7 @@ export default function AppRouter() {
           <Route path="contactos" element={<Contactos />} />
           <Route path="clubes" element={<Clubes />} />
           <Route path="eventos" element={<Eventos />} />
+          <Route path="tipos-evento" element={<AdminRoute element={<TiposEvento />} />} />
           <Route path="checkin" element={<AdminRoute element={<Checkin />} />} />
           <Route path="especialidades" element={<SuperAdminRoute element={<Especialidades />} />} />
           <Route path="clases-progresivas" element={<SuperAdminRoute element={<ClasesProgresivas />} />} />

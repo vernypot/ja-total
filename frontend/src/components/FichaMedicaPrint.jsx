@@ -23,8 +23,8 @@ function formatPrintedAt(language = 'es') {
 function FieldRow({ label, value, fullWidth = false }) {
   return (
     <div className={`ficha-medica-field${fullWidth ? ' ficha-medica-field-full' : ''}`}>
-      <dt>{label}</dt>
-      <dd>{value || '—'}</dd>
+      <div className="ficha-medica-label">{label}</div>
+      <div className="ficha-medica-value">{value || '—'}</div>
     </div>
   );
 }
@@ -32,8 +32,8 @@ function FieldRow({ label, value, fullWidth = false }) {
 function Block({ title, children }) {
   return (
     <section className="ficha-medica-block">
-      <h2>{title}</h2>
-      <dl className="ficha-medica-grid">{children}</dl>
+      <h2 className="ficha-medica-block-title">{title}</h2>
+      <div className="ficha-medica-grid">{children}</div>
     </section>
   );
 }
@@ -51,16 +51,20 @@ export default function FichaMedicaPrint({
   const bloodType = formatBloodType(medical?.tipo_sangre, medical?.factor_rh);
   const activeContacts = contacts.filter(c => (c.estado || 'activo') === 'activo');
   const clubNames = clubs.map(c => c.nombre).filter(Boolean).join(', ');
+  const printedAt = formatPrintedAt(language);
+  const denominationalInsurance = medical?.seguro_denominacional
+    ? `${t('yes')}${medical?.seguro_denominacional_fecha ? ` — ${medical.seguro_denominacional_fecha}` : ''}`
+    : t('no');
 
   return (
-    <div className="ficha-medica-sheet">
+    <div className="ficha-medica-document">
       <header className="ficha-medica-header">
-        <div>
+        <div className="ficha-medica-header-main">
           <p className="ficha-medica-eyebrow">JA Total</p>
-          <h1>{t('medicalRecordSheet')}</h1>
+          <h1 className="ficha-medica-title">{t('medicalRecordSheet')}</h1>
         </div>
         <div className="ficha-medica-printed-at">
-          {t('printedOn')}: {formatPrintedAt(language)}
+          {t('printedOn')}: {printedAt}
         </div>
       </header>
 
@@ -73,7 +77,7 @@ export default function FichaMedicaPrint({
           )}
         </div>
         <div className="ficha-medica-member-summary">
-          <h2>{fullName || '—'}</h2>
+          <h2 className="ficha-medica-member-name">{fullName || '—'}</h2>
           {clubNames && <p className="ficha-medica-clubs">{clubNames}</p>}
         </div>
       </div>
@@ -89,19 +93,10 @@ export default function FichaMedicaPrint({
       </Block>
 
       <Block title={t('tabMedicalData')}>
-        <FieldRow label={t('bloodType')} value={medical?.tipo_sangre} />
-        <FieldRow label={t('rhFactor')} value={medical?.factor_rh} />
-        <FieldRow label={t('bloodTypeFull')} value={bloodType} />
+        <FieldRow label={t('bloodType')} value={bloodType} />
         <FieldRow label={t('healthInsurance')} value={medical?.aseguradora} />
         <FieldRow label={t('insurancePolicy')} value={medical?.poliza} />
-        <FieldRow
-          label={t('denominationalInsurance')}
-          value={
-            medical?.seguro_denominacional
-              ? `${t('yes')}${medical?.seguro_denominacional_fecha ? ` — ${medical.seguro_denominacional_fecha}` : ''}`
-              : t('no')
-          }
-        />
+        <FieldRow label={t('denominationalInsurance')} value={denominationalInsurance} />
         <FieldRow label={t('allergies')} value={medical?.alergias} fullWidth />
         <FieldRow label={t('medications')} value={medical?.medicamentos} fullWidth />
         <FieldRow label={t('medicalConditions')} value={medical?.enfermedades} fullWidth />
@@ -109,7 +104,7 @@ export default function FichaMedicaPrint({
       </Block>
 
       <section className="ficha-medica-block">
-        <h2>{t('tabContacts')}</h2>
+        <h2 className="ficha-medica-block-title">{t('tabContacts')}</h2>
         {activeContacts.length === 0 ? (
           <p className="ficha-medica-empty">{t('noContacts')}</p>
         ) : (

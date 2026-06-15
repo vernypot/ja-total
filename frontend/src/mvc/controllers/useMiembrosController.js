@@ -126,7 +126,7 @@ export function useMiembrosController() {
   }
 
   function navigateToNewMiembro() {
-    navigate('/dashboard/miembro/new');
+    navigate(clubId ? `/dashboard/miembro/new?club=${clubId}` : '/dashboard/miembro/new');
   }
 
   function filterByClub(newClubId) {

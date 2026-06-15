@@ -23,6 +23,7 @@ export function useMiembroEspecialidadesController(miembroId) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedEspecialidadId, setSelectedEspecialidadId] = useState('');
+  const [secciones, setSecciones] = useState([]);
 
   const assignedIds = useMemo(
     () => new Set(assigned.map(row => getLinkEspecialidadId(row)).filter(Boolean)),
@@ -37,6 +38,14 @@ export function useMiembroEspecialidadesController(miembroId) {
     [catalog, assignedIds, requisitosByEsp]
   );
 
+  const unassignedGrouped = useMemo(() => {
+    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(unassigned, secciones);
+    if (!sectionCatalog.length && !unassigned.some(e => e.seccion_id || e.especialidad_secciones?.id)) {
+      return null;
+    }
+    return EspecialidadesModel.groupEspecialidadesBySeccion(unassigned, sectionCatalog);
+  }, [unassigned, secciones]);
+
   async function load() {
     if (!miembroId) return;
     setLoading(true);
@@ -46,7 +55,7 @@ export function useMiembroEspecialidadesController(miembroId) {
       { data: assignedRows, error: assignedError },
       { tipoIds, tipos, error: tiposError },
       { data: tiposClub },
-      { data: catalogRows, error: catalogError },
+      { data: catalogRows, error: catalogError, secciones: seccionesData },
     ] = await Promise.all([
       EspecialidadesModel.fetchMiembroEspecialidades(miembroId),
       MiembrosModel.fetchMiembroClubTipoIds(miembroId),
@@ -79,6 +88,7 @@ export function useMiembroEspecialidadesController(miembroId) {
     setAssigned(assignedRows || []);
     setCatalog(filtered);
     setMemberTipos(tipos);
+    setSecciones(seccionesData || []);
 
     const espIds = [
       ...new Set([
@@ -136,6 +146,7 @@ export function useMiembroEspecialidadesController(miembroId) {
   return {
     assigned,
     unassigned,
+    unassignedGrouped,
     requisitosByEsp,
     memberTipos,
     error,

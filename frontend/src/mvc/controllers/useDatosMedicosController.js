@@ -5,6 +5,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as ContactosModel from '../models/contactos.model';
+import { printFichaMedica } from '../../utils/printFichaMedica';
 
 export const EMPTY_MEDICAL_FORM = {
   tipo_sangre: '',
@@ -138,9 +139,7 @@ export function useDatosMedicosController(miembroId) {
   }
 
   function printFicha() {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.print());
-    });
+    printFichaMedica();
   }
 
   useEffect(() => {

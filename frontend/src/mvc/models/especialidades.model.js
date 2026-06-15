@@ -6,9 +6,7 @@ function isRlsError(error) {
 }
 import { fetchTiposClub } from './clases.model';
 
-function sortByNombre(rows) {
-  return [...rows].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
-}
+const PAGE_SIZE = 1000;
 
 function isMissingColumnError(error, column) {
   const msg = error?.message || '';
@@ -19,6 +17,38 @@ async function resolveClubTipoName(tipoId) {
   if (!tipoId) return null;
   const { data } = await sb.from('tipos_club').select('nombre').eq('id', tipoId).single();
   return data?.nombre || null;
+}
+
+function sortByNombre(rows) {
+  return [...rows].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+}
+
+function normalizeClubTipo(value) {
+  return (value || '').trim().toLowerCase();
+}
+
+async function fetchAllPaginated(runPage) {
+  let from = 0;
+  const all = [];
+
+  while (true) {
+    const { data, error } = await runPage(from, from + PAGE_SIZE - 1);
+    if (error) return { data: all, error };
+    const rows = data || [];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return { data: all, error: null };
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
 }
 
 function enrichEspecialidadRows(rows, tipos = [], secciones = []) {
@@ -43,9 +73,17 @@ function enrichEspecialidadRows(rows, tipos = [], secciones = []) {
 export function filterEspecialidadesByTipo(especialidades, tipoId, tipos = []) {
   if (!tipoId) return especialidades;
   const tipo = tipos.find(t => t.id === tipoId);
-  return especialidades.filter(e =>
-    e.tipo_id === tipoId || (tipo?.nombre && e.club_tipo === tipo.nombre)
-  );
+  const tipoName = normalizeClubTipo(tipo?.nombre);
+  if (!tipoName) return especialidades;
+
+  return especialidades.filter(e => {
+    if (e.tipo_id === tipoId) return true;
+    const clubTipo = normalizeClubTipo(e.club_tipo);
+    if (!clubTipo) return false;
+    return clubTipo === tipoName
+      || clubTipo.startsWith(tipoName)
+      || tipoName.startsWith(clubTipo);
+  });
 }
 
 export function filterEspecialidadesByTipos(especialidades, tipoIds = [], tipos = []) {
@@ -92,8 +130,27 @@ export async function fetchEspecialidadSecciones({ showInactive = false } = {}) 
   return { data: data || [], error: null, hasSecciones: true };
 }
 
+export function collectSeccionesFromEspecialidades(especialidades, secciones = []) {
+  const byId = new Map((secciones || []).map(s => [s.id, s]));
+
+  for (const row of especialidades || []) {
+    const sec = row.especialidad_secciones;
+    if (sec?.id && !byId.has(sec.id)) {
+      byId.set(sec.id, sec);
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => {
+    const ao = a.orden ?? 9999;
+    const bo = b.orden ?? 9999;
+    if (ao !== bo) return ao - bo;
+    return (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' });
+  });
+}
+
 export function groupEspecialidadesBySeccion(especialidades, secciones = []) {
-  const byId = new Map(secciones.map(s => [s.id, s]));
+  const sectionCatalog = collectSeccionesFromEspecialidades(especialidades, secciones);
+  const byId = new Map(sectionCatalog.map(s => [s.id, s]));
   const groups = new Map();
 
   for (const row of especialidades) {
@@ -121,7 +178,7 @@ export function groupEspecialidadesBySeccion(especialidades, secciones = []) {
     }));
 }
 
-export async function fetchEspecialidades({ showInactive = false } = {}) {
+export async function fetchEspecialidades({ showInactive = false, clubTipo = null } = {}) {
   let lastError = null;
 
   const selects = [
@@ -138,12 +195,24 @@ export async function fetchEspecialidades({ showInactive = false } = {}) {
   ];
 
   for (const select of selects) {
-    let query = sb.from('especialidades').select(select).order('nombre', { ascending: true });
-    if (!showInactive && select.includes('estado')) {
-      query = query.eq('estado', 'activo');
-    }
+    const runPage = (from, to) => {
+      let query = sb
+        .from('especialidades')
+        .select(select)
+        .order('nombre', { ascending: true })
+        .range(from, to);
 
-    const { data, error } = await query;
+      if (!showInactive && select.includes('estado')) {
+        query = query.or('estado.eq.activo,estado.is.null');
+      }
+      if (clubTipo) {
+        query = query.eq('club_tipo', clubTipo);
+      }
+
+      return query;
+    };
+
+    const { data, error } = await fetchAllPaginated(runPage);
     if (!error) {
       const hasEstado = select.includes('estado') && data?.some(row => row.estado != null);
       return { data: data || [], error: null, hasEstado };
@@ -341,43 +410,62 @@ export async function fetchRequisitosForEspecialidades(especialidadIds, { showIn
   ];
 
   for (const select of selects) {
-    let query = sb
-      .from('especialidad_requisitos')
-      .select(select)
-      .in('especialidad_id', especialidadIds);
+    const allRows = [];
+    let missingEstado = false;
 
-    if (!showInactive && select.includes('estado')) {
-      query = query.eq('estado', 'activo');
+    for (const chunk of chunkArray(especialidadIds, 150)) {
+      let query = sb
+        .from('especialidad_requisitos')
+        .select(select)
+        .in('especialidad_id', chunk);
+
+      if (!showInactive && select.includes('estado')) {
+        query = query.or('estado.eq.activo,estado.is.null');
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        if (isMissingColumnError(error, 'estado')) {
+          missingEstado = true;
+          break;
+        }
+        return { data: [], error };
+      }
+      allRows.push(...(data || []));
     }
 
-    const { data, error } = await query;
-    if (!error) {
-      return {
-        data: (data || []).map(row => ({ ...row, estado: row.estado || 'activo' })),
-        error: null,
-      };
-    }
-    if (isMissingColumnError(error, 'estado')) continue;
-    return { data: [], error };
+    if (missingEstado) continue;
+
+    return {
+      data: allRows.map(row => ({ ...row, estado: row.estado || 'activo' })),
+      error: null,
+    };
   }
 
   return { data: [], error: null };
 }
 
-export async function fetchEspecialidadesCatalogSorted({ showInactive = false } = {}) {
-  const [{ data, error, hasEstado }, { data: tipos }, { data: secciones }] = await Promise.all([
+export async function fetchEspecialidadesCatalogSorted({ showInactive = false, tipoId = null, tipos = [] } = {}) {
+  const tiposList = tipos.length ? tipos : (await fetchTiposClub()).data || [];
+
+  const [{ data, error, hasEstado }, { data: secciones }] = await Promise.all([
     fetchEspecialidades({ showInactive }),
-    fetchTiposClub(),
     fetchEspecialidadSecciones({ showInactive }),
   ]);
 
-  if (error) return { data: [], error, hasEstado: false, secciones: [] };
+  if (error) return { data: [], error, hasEstado: false, secciones: [], totalCount: 0 };
+
+  const enriched = sortByNombre(enrichEspecialidadRows(data, tiposList, secciones));
+  const scoped = tipoId
+    ? filterEspecialidadesByTipo(enriched, tipoId, tiposList)
+    : enriched;
 
   return {
-    data: sortByNombre(enrichEspecialidadRows(data, tipos, secciones)),
+    data: scoped,
     error: null,
     hasEstado: Boolean(hasEstado),
     secciones: secciones || [],
+    totalCount: scoped.length,
   };
 }
 

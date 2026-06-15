@@ -61,6 +61,14 @@ export default function Sidebar() {
             📅 {t('events')}
           </Link>
         )}
+        {adminOrAbove && (
+          <Link
+            to="/dashboard/tipos-evento"
+            className={`nav-link ${isActive('/dashboard/tipos-evento') ? 'active' : ''}`}
+          >
+            🏷️ {t('eventTypes')}
+          </Link>
+        )}
         <Link
           to="/dashboard/miembros"
           className={`nav-link ${isActive('/dashboard/miembros') ? 'active' : ''}`}

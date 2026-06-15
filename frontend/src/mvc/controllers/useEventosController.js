@@ -3,22 +3,27 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import * as EventosModel from '../models/eventos.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as ClubesModel from '../models/clubes.model';
+import * as TiposEventoModel from '../models/tiposEvento.model';
 
 const emptyForm = () => ({
   nombre: '',
   fecha: '',
   hora: '',
   lugar: '',
+  tipo_evento_id: '',
+  requiere_confirmacion: true,
   memberAssignmentMode: 'all',
   selectedMemberIds: [],
 });
 
 export function useEventosController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, canSwitchIglesia, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
@@ -31,6 +36,7 @@ export function useEventosController() {
 
   const [clubs, setClubs] = useState([]);
   const [events, setEvents] = useState([]);
+  const [tiposEvento, setTiposEvento] = useState([]);
   const [clubMembers, setClubMembers] = useState([]);
   const [expandedEventId, setExpandedEventId] = useState('');
   const [assignments, setAssignments] = useState({});
@@ -43,6 +49,10 @@ export function useEventosController() {
   const [attendeeEditIds, setAttendeeEditIds] = useState([]);
   const [savingAttendees, setSavingAttendees] = useState(false);
   const [checkinNotice, setCheckinNotice] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
+  const [editingEventId, setEditingEventId] = useState('');
+  const [savingEvent, setSavingEvent] = useState(false);
+  const [bulkUpdatingEventId, setBulkUpdatingEventId] = useState('');
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -58,6 +68,11 @@ export function useEventosController() {
     ]),
     [events, searchQuery]
   );
+
+  async function loadTiposEvento() {
+    const { data } = await TiposEventoModel.fetchTiposEvento({ showInactive: false });
+    setTiposEvento(data || []);
+  }
 
   async function loadClubs() {
     const { data, error: clubsError } = await ClubesModel.fetchClubes({
@@ -98,7 +113,7 @@ export function useEventosController() {
     setLoading(true);
     setError('');
 
-    const { data, error: eventsError } = await EventosModel.fetchEventosByClub(clubId);
+    const { data, error: eventsError } = await EventosModel.fetchEventosByClub(clubId, { showInactive });
     if (eventsError) {
       setError('Error loading events: ' + eventsError.message);
       setEvents([]);
@@ -108,6 +123,25 @@ export function useEventosController() {
 
     setEvents(data || []);
     setLoading(false);
+
+    if (canManage && data?.length) {
+      await loadAllAssignments(data);
+    }
+  }
+
+  async function loadAllAssignments(eventList) {
+    const eventoIds = eventList
+      .filter(evento => EventosModel.eventRequiresConfirmation(evento))
+      .map(evento => evento.id);
+    if (!eventoIds.length) return;
+
+    const { data, error: assignError } = await EventosModel.fetchAssignmentsForEventIds(eventoIds);
+    if (assignError) {
+      setError('Error loading assignments: ' + assignError.message);
+      return;
+    }
+
+    setAssignments(data || {});
   }
 
   async function loadAssignments(eventoId) {
@@ -125,6 +159,7 @@ export function useEventosController() {
       setExpandedEventId('');
       return;
     }
+    if (editingEventId && editingEventId !== eventoId) closeEditForm();
     setExpandedEventId(eventoId);
     if (!assignments[eventoId]) {
       await loadAssignments(eventoId);
@@ -132,6 +167,9 @@ export function useEventosController() {
   }
 
   function openEventForm() {
+    setEditingEventId('');
+    setExpandedEventId('');
+    closeAttendeeEditor();
     setEventForm(emptyForm());
     setShowForm(true);
   }
@@ -139,6 +177,104 @@ export function useEventosController() {
   function closeEventForm() {
     setEventForm(emptyForm());
     setShowForm(false);
+  }
+
+  function openEditForm(evento) {
+    if (!canManage) return;
+    setShowForm(false);
+    setExpandedEventId('');
+    closeAttendeeEditor();
+    setEditingEventId(evento.id);
+    setEventForm({
+      nombre: evento.nombre || '',
+      fecha: evento.fecha || '',
+      hora: String(evento.hora || '').slice(0, 5),
+      lugar: evento.lugar || '',
+      tipo_evento_id: evento.tipo_evento_id || '',
+      requiere_confirmacion: EventosModel.eventRequiresConfirmation(evento),
+      memberAssignmentMode: 'all',
+      selectedMemberIds: [],
+    });
+  }
+
+  function closeEditForm() {
+    setEditingEventId('');
+    setEventForm(emptyForm());
+  }
+
+  async function saveEvent() {
+    if (!canManage || !clubId) return;
+    setError('');
+
+    if (!eventForm.fecha || !eventForm.hora || !eventForm.lugar.trim()) {
+      setError('Date, time, and place are required');
+      return;
+    }
+
+    if (editingEventId) {
+      setSavingEvent(true);
+      const { error: saveError } = await EventosModel.updateEvento(editingEventId, {
+        nombre: eventForm.nombre,
+        fecha: eventForm.fecha,
+        hora: eventForm.hora,
+        lugar: eventForm.lugar,
+        tipoEventoId: eventForm.tipo_evento_id || null,
+      });
+      setSavingEvent(false);
+
+      if (saveError) {
+        setError('Error updating event: ' + saveError.message);
+        return;
+      }
+
+      closeEditForm();
+      loadEvents();
+      return;
+    }
+
+    await createEvent();
+  }
+
+  async function createEvent() {
+    if (!canManage || !clubId) return;
+    setError('');
+
+    if (!eventForm.fecha || !eventForm.hora || !eventForm.lugar.trim()) {
+      setError('Date, time, and place are required');
+      return;
+    }
+
+    const miembroIds = eventForm.requiere_confirmacion
+      ? (eventForm.memberAssignmentMode === 'all'
+        ? clubMembers.map(m => m.id)
+        : eventForm.selectedMemberIds)
+      : [];
+
+    if (eventForm.requiere_confirmacion && eventForm.memberAssignmentMode === 'specific' && miembroIds.length === 0) {
+      setError('Select at least one member');
+      return;
+    }
+
+    setSavingEvent(true);
+    const { error: saveError } = await EventosModel.createEvento({
+      clubId,
+      nombre: eventForm.nombre,
+      fecha: eventForm.fecha,
+      hora: eventForm.hora,
+      lugar: eventForm.lugar,
+      tipoEventoId: eventForm.tipo_evento_id || null,
+      requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
+      miembroIds,
+    });
+    setSavingEvent(false);
+
+    if (saveError) {
+      setError('Error creating event: ' + saveError.message);
+      return;
+    }
+
+    closeEventForm();
+    loadEvents();
   }
 
   function setMemberAssignmentMode(mode) {
@@ -165,40 +301,60 @@ export function useEventosController() {
     }));
   }
 
-  async function createEvent() {
-    if (!canManage || !clubId) return;
+  async function cancelEvent(eventoId) {
+    if (!canManage) return;
+    if (!window.confirm(t('cancelEventConfirm'))) return;
     setError('');
 
-    if (!eventForm.fecha || !eventForm.hora || !eventForm.lugar.trim()) {
-      setError('Date, time, and place are required');
-      return;
-    }
-
-    const miembroIds = eventForm.memberAssignmentMode === 'all'
-      ? clubMembers.map(m => m.id)
-      : eventForm.selectedMemberIds;
-
-    if (eventForm.memberAssignmentMode === 'specific' && miembroIds.length === 0) {
-      setError('Select at least one member');
-      return;
-    }
-
-    const { error: saveError } = await EventosModel.createEvento({
-      clubId,
-      nombre: eventForm.nombre,
-      fecha: eventForm.fecha,
-      hora: eventForm.hora,
-      lugar: eventForm.lugar,
-      miembroIds,
-    });
-
+    const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'cancelado');
     if (saveError) {
-      setError('Error creating event: ' + saveError.message);
+      setError('Error cancelling event: ' + saveError.message);
       return;
     }
 
-    closeEventForm();
+    if (editingEventId === eventoId) closeEditForm();
     loadEvents();
+  }
+
+  async function deactivateEvent(eventoId) {
+    if (!canManage) return;
+    if (!window.confirm(t('deactivateEventConfirm'))) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'inactivo');
+    if (saveError) {
+      setError('Error deactivating event: ' + saveError.message);
+      return;
+    }
+
+    if (editingEventId === eventoId) closeEditForm();
+    loadEvents();
+  }
+
+  async function reactivateEvent(eventoId) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'activo');
+    if (saveError) {
+      setError('Error reactivating event: ' + saveError.message);
+      return;
+    }
+
+    loadEvents();
+  }
+
+  async function setConfirmation(eventoMiembroId, confirmacionEstado, eventoId) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    if (saveError) {
+      setError('Error saving confirmation: ' + saveError.message);
+      return;
+    }
+
+    await loadAssignments(eventoId);
   }
 
   async function setAttendance(eventoMiembroId, estado, eventoId) {
@@ -231,6 +387,8 @@ export function useEventosController() {
 
   async function openAttendeeEditor(eventoId) {
     if (!canManage) return;
+    const evento = events.find(e => e.id === eventoId);
+    if (!EventosModel.eventRequiresConfirmation(evento)) return;
     setError('');
     const rows = assignments[eventoId] || await loadAssignments(eventoId);
     setAttendeeEditIds(rows.map(row => row.miembro_id));
@@ -257,6 +415,8 @@ export function useEventosController() {
 
   async function saveEventAttendees(eventoId) {
     if (!canManage) return;
+    const evento = events.find(e => e.id === eventoId);
+    if (!EventosModel.eventRequiresConfirmation(evento)) return;
     if (attendeeEditIds.length === 0) {
       setError('Select at least one member');
       return;
@@ -265,7 +425,9 @@ export function useEventosController() {
     setSavingAttendees(true);
     setError('');
 
-    const { error: saveError } = await EventosModel.syncEventoAttendees(eventoId, attendeeEditIds);
+    const { error: saveError } = await EventosModel.syncEventoAttendees(eventoId, attendeeEditIds, {
+      requiereConfirmacion: EventosModel.eventRequiresConfirmation(evento),
+    });
     setSavingAttendees(false);
 
     if (saveError) {
@@ -277,8 +439,55 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
+  async function confirmAllPending(eventoId) {
+    if (!canManage) return;
+    if (!window.confirm(t('confirmAllPendingConfirm'))) return;
+
+    const rows = assignments[eventoId] || await loadAssignments(eventoId);
+    const pending = rows.filter(row => EventosModel.getConfirmacionFromRow(row) === 'pendiente');
+    if (!pending.length) return;
+
+    setBulkUpdatingEventId(eventoId);
+    setError('');
+
+    for (const row of pending) {
+      const { error: saveError } = await EventosModel.setEventoConfirmacion(row.id, 'confirmado');
+      if (saveError) {
+        setError('Error saving confirmation: ' + saveError.message);
+        break;
+      }
+    }
+
+    setBulkUpdatingEventId('');
+    await loadAssignments(eventoId);
+  }
+
+  async function setAllAttendance(eventoId, estado) {
+    if (!canManage) return;
+    const confirmKey = estado === 'a_tiempo' ? 'markAllOnTimeConfirm' : 'markAllAbsentConfirm';
+    if (!window.confirm(t(confirmKey))) return;
+
+    const rows = assignments[eventoId] || await loadAssignments(eventoId);
+    if (!rows.length) return;
+
+    setBulkUpdatingEventId(eventoId);
+    setError('');
+
+    for (const row of rows) {
+      const { error: saveError } = await EventosModel.setEventoAsistencia(row.id, estado);
+      if (saveError) {
+        setError('Error saving attendance: ' + saveError.message);
+        break;
+      }
+    }
+
+    setBulkUpdatingEventId('');
+    await loadAssignments(eventoId);
+  }
+
   useEffect(() => {
     loadClubs();
+    loadTiposEvento();
   }, [effectiveIglesiaId]);
 
   useEffect(() => {
@@ -292,9 +501,10 @@ export function useEventosController() {
     setExpandedEventId('');
     setAssignments({});
     closeAttendeeEditor();
+    closeEditForm();
     loadEvents();
     loadMembersForClub(clubId);
-  }, [clubId]);
+  }, [clubId, showInactive]);
 
   function setClubId(nextClubId) {
     if (nextClubId) {
@@ -311,6 +521,7 @@ export function useEventosController() {
     clubId,
     activeClubData,
     events: filteredEvents,
+    tiposEvento,
     clubMembers,
     expandedEventId,
     assignments,
@@ -331,8 +542,22 @@ export function useEventosController() {
     toggleMemberSelection,
     selectAllMembers,
     createEvent,
+    saveEvent,
+    setConfirmation,
     setAttendance,
     setClubId,
+    showInactive,
+    setShowInactive,
+    editingEventId,
+    openEditForm,
+    closeEditForm,
+    cancelEvent,
+    deactivateEvent,
+    reactivateEvent,
+    savingEvent,
+    bulkUpdatingEventId,
+    confirmAllPending,
+    setAllAttendance,
     editingAttendeesEventId,
     attendeeEditIds,
     savingAttendees,
@@ -346,6 +571,9 @@ export function useEventosController() {
     isEventInFuture: EventosModel.isEventInFuture,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
+    getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
+    eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
+    getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     memberDisplayName: EventosModel.memberDisplayName,
   };
 }

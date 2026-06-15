@@ -12,6 +12,12 @@ export function attendanceLabel(estado, t) {
   return t('attendancePending');
 }
 
+export function confirmationLabel(estado, t) {
+  if (estado === 'confirmado') return t('confirmationConfirmed');
+  if (estado === 'rechazado') return t('confirmationDeclined');
+  return t('confirmationPending');
+}
+
 export function roleLabel(rol, t) {
   const map = {
     user: 'roleUser',

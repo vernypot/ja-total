@@ -138,6 +138,8 @@ export default function DatosPersonalesView({
   uploadingPhoto,
   displayPhotoUrl,
   canManage,
+  isNew,
+  clubId,
   startEdit,
   cancelEdit,
   save,
@@ -149,12 +151,14 @@ export default function DatosPersonalesView({
 
   if (loading) return <div className="loading">{t('loadingData')}</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
-  if (!data) return <div className="text-muted">{t('noMemberData')}</div>;
+  if (!data && !isNew) return <div className="text-muted">{t('noMemberData')}</div>;
 
-  const nombreCompleto = [data.nombre, data.apellido1, data.apellido2].filter(Boolean).join(' ');
-  const displayName = editing
-    ? [form.nombre, form.apellido1, form.apellido2].filter(Boolean).join(' ') || t('personalData')
-    : nombreCompleto;
+  const nombreCompleto = [data?.nombre, data?.apellido1, data?.apellido2].filter(Boolean).join(' ');
+  const displayName = isNew
+    ? t('newMember')
+    : editing
+      ? [form.nombre, form.apellido1, form.apellido2].filter(Boolean).join(' ') || t('personalData')
+      : nombreCompleto;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -180,6 +184,11 @@ export default function DatosPersonalesView({
 
       {saveError && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{saveError}</div>}
       {photoError && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{photoError}</div>}
+      {isNew && !clubId && (
+        <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+          {t('selectClubToCreateMember')}
+        </div>
+      )}
 
       <div style={{
         display: 'flex',
@@ -191,8 +200,8 @@ export default function DatosPersonalesView({
         borderRadius: '8px',
       }}>
         <MemberPhoto
-          displayPhotoUrl={displayPhotoUrl}
-          canManage={canManage}
+          displayPhotoUrl={isNew ? null : displayPhotoUrl}
+          canManage={canManage && !isNew}
           editing={editing}
           uploadingPhoto={uploadingPhoto}
           onSelect={handlePhotoSelect}
@@ -202,7 +211,7 @@ export default function DatosPersonalesView({
         />
         <div>
           <h2 style={{ margin: '0 0 10px 0' }}>{displayName}</h2>
-          {!editing && data.fecha_nacimiento && (
+          {!editing && !isNew && data?.fecha_nacimiento && (
             <p style={{ margin: '5px 0', color: '#666' }}>
               {calcularEdad(data.fecha_nacimiento)} {t('yearsOld')} • {data.fecha_nacimiento}
             </p>
@@ -237,7 +246,7 @@ export default function DatosPersonalesView({
                 style={{ margin: 0 }}
               />
             ) : (
-              <div>{data[key] || '-'}</div>
+              <div>{isNew ? '' : (data?.[key] || '-')}</div>
             )}
           </div>
         ))}
@@ -260,7 +269,7 @@ export default function DatosPersonalesView({
               opacity: saving || uploadingPhoto ? 0.7 : 1,
             }}
           >
-            ✓ {saving ? t('saving') : t('save')}
+            ✓ {saving ? t('saving') : (isNew ? t('create') : t('save'))}
           </button>
           <button
             type="button"
