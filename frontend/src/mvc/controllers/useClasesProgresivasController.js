@@ -29,16 +29,16 @@ export function useClasesProgresivasController() {
   const [expandedClassId, setExpandedClassId] = useState(null);
   const [requisitosByClase, setRequisitosByClase] = useState({});
   const [seccionesByClase, setSeccionesByClase] = useState({});
-  const [newRequisitoForm, setNewRequisitoForm] = useState({ seccion_id: '', numero: '', descripcion: '' });
+  const [newRequisitoForm, setNewRequisitoForm] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
   const [newSeccionForm, setNewSeccionForm] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [editingRequisitoId, setEditingRequisitoId] = useState(null);
-  const [requisitoDraft, setRequisitoDraft] = useState({ seccion_id: '', numero: '', descripcion: '' });
+  const [requisitoDraft, setRequisitoDraft] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
   const [editingSeccionId, setEditingSeccionId] = useState(null);
   const [seccionDraft, setSeccionDraft] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [searchQuery, setSearchQuery] = useState('');
 
   function resetRequisitoForms(secciones = []) {
-    setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '' });
+    setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
     setNewSeccionForm({
       parte: 'basico',
       numero_romano: '',
@@ -271,12 +271,13 @@ export function useClasesProgresivasController() {
       seccion_id: seccionId,
       numero,
       orden,
+      texto_opcional: newRequisitoForm.texto_opcional,
     });
     if (insertError) {
       setError('Error adding requirement: ' + insertError.message);
       return;
     }
-    setNewRequisitoForm({ seccion_id: seccionId || '', numero: '', descripcion: '' });
+    setNewRequisitoForm({ seccion_id: seccionId || '', numero: '', descripcion: '', texto_opcional: '' });
     await loadRequisitos(claseId);
   }
 
@@ -286,6 +287,7 @@ export function useClasesProgresivasController() {
       seccion_id: req.seccion_id || req.clase_requisito_secciones?.id || '',
       numero: req.numero ?? '',
       descripcion: req.descripcion || '',
+      texto_opcional: req.texto_opcional || '',
     });
   }
 
@@ -309,6 +311,7 @@ export function useClasesProgresivasController() {
     setError('');
     const { error: updateError } = await ClasesModel.updateClaseRequisito(editingRequisitoId, {
       descripcion,
+      texto_opcional: requisitoDraft.texto_opcional,
       seccion_id: seccionId,
       numero,
       ...(orden !== undefined ? { orden } : {}),

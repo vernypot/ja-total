@@ -148,6 +148,46 @@ export function groupRequisitosBySeccion(requisitos = [], secciones = [], { incl
   return { grouped, ungrouped: sortReqs(ungrouped) };
 }
 
+export function groupRequisitosByClaseAndSeccion(requisitos = [], planClases = []) {
+  const byClaseId = {};
+  for (const req of requisitos) {
+    const claseId = req.clase_id || req.clases_progresivas?.id;
+    if (!claseId) continue;
+    if (!byClaseId[claseId]) byClaseId[claseId] = [];
+    byClaseId[claseId].push(req);
+  }
+
+  const claseEntries = [];
+  const seen = new Set();
+
+  for (const link of planClases) {
+    const id = link.clase_progresiva_id || link.clases_progresivas?.id;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    claseEntries.push({
+      id,
+      nombre: link.clases_progresivas?.nombre || '',
+    });
+  }
+
+  for (const claseId of Object.keys(byClaseId)) {
+    if (seen.has(claseId)) continue;
+    const sample = byClaseId[claseId][0];
+    claseEntries.push({
+      id: claseId,
+      nombre: sample?.clases_progresivas?.nombre || '',
+    });
+  }
+
+  return claseEntries
+    .map(clase => {
+      const { grouped, ungrouped } = groupRequisitosBySeccion(byClaseId[clase.id] || []);
+      const total = grouped.reduce((sum, group) => sum + group.requisitos.length, 0) + ungrouped.length;
+      return { clase, sections: grouped, ungrouped, total };
+    })
+    .filter(group => group.total > 0);
+}
+
 export function nextRequisitoNumero(requisitos = [], seccionId) {
   if (!seccionId) return 1;
   const inSection = requisitos.filter(
@@ -202,9 +242,25 @@ export async function deleteClaseRequisitoSeccion(id) {
   return sb.from('clase_requisito_secciones').delete().eq('id', id);
 }
 
-export async function updateClaseRequisito(id, { descripcion, seccion_id, numero, orden } = {}) {
+export function getRequisitoDisplayText(req, completion = null) {
+  const original = req?.descripcion || '';
+  if (!completion?.usar_texto_alternativo) return original;
+
+  const memberText = completion?.texto_reemplazo?.trim();
+  if (memberText) return memberText;
+
+  const catalogAlt = req?.texto_opcional?.trim();
+  if (catalogAlt) return catalogAlt;
+
+  return original;
+}
+
+export async function updateClaseRequisito(id, { descripcion, texto_opcional, seccion_id, numero, orden } = {}) {
   const payload = {};
   if (descripcion !== undefined) payload.descripcion = descripcion.trim();
+  if (texto_opcional !== undefined) {
+    payload.texto_opcional = texto_opcional?.trim() || null;
+  }
   if (seccion_id !== undefined) payload.seccion_id = seccion_id || null;
   if (numero !== undefined) payload.numero = numero === '' || numero == null ? null : Number(numero);
   if (orden !== undefined) payload.orden = Number(orden) || 0;
@@ -226,6 +282,7 @@ export async function fetchRequisitoSeccionesByClase(claseId) {
 
 export async function fetchRequisitosByClase(claseId) {
   const selects = [
+    'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, seccion_id, numero, orden, descripcion, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, descripcion',
   ];
@@ -246,24 +303,30 @@ export async function fetchRequisitosByClase(claseId) {
     if (!error) {
       return { data: enrichRequisitoRows(data), error: null };
     }
-    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'orden')) continue;
+    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'orden') || isMissingColumnError(error, 'texto_opcional')) continue;
     return { data: [], error };
   }
 
   return { data: [], error: null };
 }
 
-export async function createClaseRequisito(claseId, descripcion, { seccion_id, numero, orden } = {}) {
+export async function createClaseRequisito(claseId, descripcion, { seccion_id, numero, orden, texto_opcional } = {}) {
   const payload = {
     clase_id: claseId,
     descripcion: descripcion.trim(),
     seccion_id: seccion_id || null,
     numero: numero ?? null,
     orden: orden ?? 0,
+    texto_opcional: texto_opcional?.trim() || null,
   };
 
   const full = await sb.from('clase_requisitos').insert([payload]);
   if (!full.error) return full;
+  if (isMissingColumnError(full.error, 'texto_opcional')) {
+    delete payload.texto_opcional;
+    const retry = await sb.from('clase_requisitos').insert([payload]);
+    if (!retry.error) return retry;
+  }
   if (isMissingColumnError(full.error, 'seccion_id')) {
     return sb.from('clase_requisitos').insert([{ clase_id: claseId, descripcion: descripcion.trim() }]);
   }
@@ -476,6 +539,7 @@ export async function fetchRequisitosForClases(claseIds) {
   if (!claseIds.length) return { data: [], error: null };
 
   const selects = [
+    'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, seccion_id, numero, orden, descripcion, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, descripcion',
   ];
@@ -488,7 +552,7 @@ export async function fetchRequisitosForClases(claseIds) {
     if (!error) {
       return { data: enrichRequisitoRows(data), error: null };
     }
-    if (isMissingColumnError(error, 'seccion_id')) continue;
+    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'texto_opcional')) continue;
     return { data: [], error };
   }
 
@@ -498,14 +562,22 @@ export async function fetchRequisitosForClases(claseIds) {
 export async function fetchMiembroClaseRequisitos(assignmentIds) {
   if (!assignmentIds.length) return { data: [], error: null };
 
-  const { data, error } = await sb
-    .from('miembro_clase_requisito')
-    .select(
-      'id, miembro_clase_progresiva_id, clase_requisito_id, completado, fecha_completado, validado_por_usuario_id, validado_por_nombre, comentarios'
-    )
-    .in('miembro_clase_progresiva_id', assignmentIds);
+  const selects = [
+    'id, miembro_clase_progresiva_id, clase_requisito_id, completado, fecha_completado, validado_por_usuario_id, validado_por_nombre, comentarios, texto_reemplazo, usar_texto_alternativo',
+    'id, miembro_clase_progresiva_id, clase_requisito_id, completado, fecha_completado, validado_por_usuario_id, validado_por_nombre, comentarios',
+  ];
 
-  return { data: data || [], error };
+  for (const select of selects) {
+    const { data, error } = await sb
+      .from('miembro_clase_requisito')
+      .select(select)
+      .in('miembro_clase_progresiva_id', assignmentIds);
+    if (!error) return { data: data || [], error: null };
+    if (isMissingColumnError(error, 'texto_reemplazo') || isMissingColumnError(error, 'usar_texto_alternativo')) continue;
+    return { data: [], error };
+  }
+
+  return { data: [], error: null };
 }
 
 export function mapCompletionsByAssignment(rows = []) {
@@ -531,6 +603,8 @@ export async function upsertMiembroClaseRequisito({
   validadoPorUsuarioId = null,
   validadoPorNombre = null,
   comentarios = null,
+  textoReemplazo = null,
+  usarTextoAlternativo = false,
 }) {
   return sb.rpc('upsert_miembro_clase_requisito', {
     p_assignment_id: assignmentId,
@@ -540,5 +614,7 @@ export async function upsertMiembroClaseRequisito({
     p_validado_por_usuario_id: validadoPorUsuarioId,
     p_validado_por_nombre: validadoPorNombre,
     p_comentarios: comentarios,
+    p_texto_reemplazo: textoReemplazo,
+    p_usar_texto_alternativo: usarTextoAlternativo,
   });
 }

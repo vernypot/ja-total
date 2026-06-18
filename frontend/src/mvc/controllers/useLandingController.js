@@ -1,8 +1,9 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as LandingModel from '../models/landing.model';
+import { loadLandingContent } from '../models/landingContent.model';
 import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
 
 const HERO_INTERVAL_MS = 6000;
@@ -12,14 +13,29 @@ export function useLandingController() {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [heroIndex, setHeroIndex] = useState(0);
-
-  const heroSlides = useMemo(() => LandingModel.getHeroSlides(), []);
-  const programs = useMemo(() => LandingModel.getPrograms(), []);
-  const stats = useMemo(() => LandingModel.getStats(), []);
-  const news = useMemo(() => LandingModel.getLandingNews(language), [language]);
-  const events = useMemo(() => LandingModel.getLandingEvents(language), [language]);
+  const [loading, setLoading] = useState(true);
+  const [content, setContent] = useState(null);
 
   useEffect(() => {
+    let active = true;
+
+    async function load() {
+      setLoading(true);
+      const data = await loadLandingContent(language);
+      if (!active) return;
+      setContent(data);
+      setHeroIndex(0);
+      setLoading(false);
+    }
+
+    load();
+    return () => { active = false; };
+  }, [language]);
+
+  const heroSlides = content?.heroSlides || [];
+
+  useEffect(() => {
+    if (!heroSlides.length) return undefined;
     const timer = setInterval(() => {
       setHeroIndex(i => (i + 1) % heroSlides.length);
     }, HERO_INTERVAL_MS);
@@ -44,16 +60,15 @@ export function useLandingController() {
 
   return {
     user,
+    loading,
+    content,
     heroSlides,
     heroIndex,
     setHeroIndex,
-    programs,
-    stats,
-    news,
-    events,
     goToLogin,
     goToDashboard,
     formatDate,
     eventDayParts,
+    language,
   };
 }

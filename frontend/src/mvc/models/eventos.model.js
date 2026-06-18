@@ -45,6 +45,21 @@ export async function fetchEventosByClub(clubId, { showInactive = false } = {}) 
   });
 }
 
+export async function fetchEventosByClubInRange(clubId, startDate, endDate) {
+  if (!clubId || !startDate || !endDate) return { data: [], error: null };
+
+  return queryEventos(select =>
+    sb.from('eventos')
+      .select(select)
+      .eq('club_id', clubId)
+      .eq('estado', 'activo')
+      .gte('fecha', startDate)
+      .lte('fecha', endDate)
+      .order('fecha', { ascending: true })
+      .order('hora', { ascending: true })
+  );
+}
+
 export async function fetchMiembroEventos(miembroId) {
   const selects = [
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,

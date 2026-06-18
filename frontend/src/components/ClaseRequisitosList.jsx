@@ -5,6 +5,20 @@ function sectionTitle(seccion) {
   return `${roman}${seccion.nombre}`;
 }
 
+function RequisitoText({ req, t }) {
+  return (
+    <span>
+      {req.numero != null && <strong>{req.numero}. </strong>}
+        {req.descripcion}
+        {req.texto_opcional?.trim() && (
+          <span style={{ display: 'block', fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '2px' }}>
+            {req.texto_opcional}
+          </span>
+        )}
+    </span>
+  );
+}
+
 export default function ClaseRequisitosList({
   requisitos = [],
   secciones = [],
@@ -51,10 +65,7 @@ export default function ClaseRequisitosList({
             <ol style={{ margin: 0, paddingLeft: '20px', fontSize, color: '#4b5563' }}>
               {sectionReqs.map(req => (
                 <li key={req.id} style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                  <span>
-                    {req.numero != null && <strong>{req.numero}. </strong>}
-                    {req.descripcion}
-                  </span>
+                  <RequisitoText req={req} t={t} />
                   {canManage && onRemove && (
                     <button
                       type="button"
@@ -75,7 +86,7 @@ export default function ClaseRequisitosList({
         <ol style={{ margin: 0, paddingLeft: '20px', fontSize, color: '#4b5563' }}>
           {ungrouped.map(req => (
             <li key={req.id} style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-              <span>{req.descripcion}</span>
+              <RequisitoText req={req} t={t} />
               {canManage && onRemove && (
                 <button
                   type="button"

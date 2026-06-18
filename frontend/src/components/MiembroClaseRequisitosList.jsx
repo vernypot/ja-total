@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { groupRequisitosBySeccion } from '../mvc/models/clases.model';
+import { groupRequisitosBySeccion, getRequisitoDisplayText } from '../mvc/models/clases.model';
 
 function sectionTitle(seccion) {
   const roman = seccion.numero_romano ? `${seccion.numero_romano}. ` : '';
@@ -16,6 +16,8 @@ function buildDraft(completion, defaultValidatorName) {
     fecha_completado: completion?.fecha_completado || '',
     validado_por_nombre: completion?.validado_por_nombre || defaultValidatorName || '',
     comentarios: completion?.comentarios || '',
+    texto_reemplazo: completion?.texto_reemplazo || '',
+    usar_texto_alternativo: completion?.usar_texto_alternativo || false,
   };
 }
 
@@ -33,6 +35,60 @@ const actionBtnStyle = (completed) => ({
   lineHeight: 1.3,
   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
 });
+
+function RequisitoTextSection({ req, draft, setDraft, canManage, saving, t }) {
+  const catalogAlt = req.texto_opcional?.trim();
+  const hasCustomText = draft.usar_texto_alternativo || draft.texto_reemplazo?.trim();
+  const activeText = getRequisitoDisplayText(req, draft);
+
+  if (!canManage) {
+    if (!draft.usar_texto_alternativo) return null;
+    return (
+      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#6b7280' }}>
+        <span>{t('requirementActiveText')}: </span>
+        <span style={{ color: '#374151' }}>{activeText}</span>
+      </div>
+    );
+  }
+
+  return (
+    <details
+      open={hasCustomText || undefined}
+      style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}
+    >
+      <summary style={{ fontSize: '12px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+        {t('requirementTextCustomization')}
+      </summary>
+      <div style={{ display: 'grid', gap: '10px', marginTop: '10px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+          <input
+            type="checkbox"
+            checked={draft.usar_texto_alternativo}
+            disabled={saving}
+            onChange={e => setDraft(prev => ({ ...prev, usar_texto_alternativo: e.target.checked }))}
+          />
+          <span>{t('requirementUseAlternativeText')}</span>
+        </label>
+        {catalogAlt && (
+          <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>
+            {t('requirementOptionalText')}: {catalogAlt}
+          </p>
+        )}
+        <label style={{ display: 'grid', gap: '4px' }}>
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>{t('requirementMemberReplacement')}</span>
+          <textarea
+            value={draft.texto_reemplazo}
+            disabled={saving || !draft.usar_texto_alternativo}
+            rows={2}
+            placeholder={t('requirementMemberReplacementPlaceholder')}
+            onChange={e => setDraft(prev => ({ ...prev, texto_reemplazo: e.target.value }))}
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb', resize: 'vertical', fontSize: '12px' }}
+          />
+        </label>
+      </div>
+    </details>
+  );
+}
 
 function RequisitoCompletionModal({
   req,
@@ -75,6 +131,8 @@ function RequisitoCompletionModal({
           backgroundColor: 'white',
           borderRadius: '10px',
           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -83,7 +141,7 @@ function RequisitoCompletionModal({
             <h3 style={{ margin: 0, fontSize: '15px', color: '#111827' }}>{t('requirementDetails')}</h3>
             <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#4b5563', lineHeight: 1.45 }}>
               {req.numero != null && <strong>{req.numero}. </strong>}
-              {req.descripcion}
+              {getRequisitoDisplayText(req, completion)}
             </p>
           </div>
           <button
@@ -176,6 +234,15 @@ function RequisitoCompletionModal({
               </label>
             </>
           )}
+
+          <RequisitoTextSection
+            req={req}
+            draft={draft}
+            setDraft={setDraft}
+            canManage={canManage}
+            saving={saving}
+            t={t}
+          />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
@@ -230,6 +297,8 @@ function RequisitoRow({
   t,
 }) {
   const completed = completion?.completado;
+  const usingAlt = completion?.usar_texto_alternativo;
+  const displayText = getRequisitoDisplayText(req, completion);
   const title = completed ? t('requirementCompleted') : t('requirementDetails');
 
   return (
@@ -247,7 +316,20 @@ function RequisitoRow({
           </span>
         )}
         {req.numero != null && <strong style={{ fontStyle: 'normal' }}>{req.numero}. </strong>}
-        {req.descripcion}
+        {displayText}
+        {usingAlt && (
+          <span
+            title={t('requirementAlternativeText')}
+            style={{
+              marginLeft: '6px',
+              fontSize: '10px',
+              color: '#6b7280',
+              fontStyle: 'normal',
+            }}
+          >
+            ({t('requirementOptionalTextShort')})
+          </span>
+        )}
       </span>
       <button
         type="button"

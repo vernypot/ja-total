@@ -39,19 +39,17 @@ export default function Sidebar() {
             📰 {t('noticias')}
           </Link>
         )}
-        {adminOrAbove && (
-          <Link
-            to="/dashboard/iglesias"
-            className={`nav-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
-          >
-            ⛪ {superadmin ? t('churches') : t('myChurch')}
-          </Link>
-        )}
         <Link
           to="/dashboard/clubes"
           className={`nav-link ${isActive('/dashboard/clubes') ? 'active' : ''}`}
         >
           🎯 {t('clubs')}
+        </Link>
+        <Link
+          to="/dashboard/calendario"
+          className={`nav-link ${isActive('/dashboard/calendario') ? 'active' : ''}`}
+        >
+          🗓️ {t('clubCalendar')}
         </Link>
         {adminOrAbove && (
           <Link
@@ -63,10 +61,10 @@ export default function Sidebar() {
         )}
         {adminOrAbove && (
           <Link
-            to="/dashboard/tipos-evento"
-            className={`nav-link ${isActive('/dashboard/tipos-evento') ? 'active' : ''}`}
+            to="/dashboard/planificacion"
+            className={`nav-link ${isActive('/dashboard/planificacion') ? 'active' : ''}`}
           >
-            🏷️ {t('eventTypes')}
+            📋 {t('periodPlanning')}
           </Link>
         )}
         <Link
@@ -92,23 +90,45 @@ export default function Sidebar() {
           </>
         )}
 
-        {superadmin && (
+        {adminOrAbove && (
           <>
             <hr />
             <div className="admin-section">
               <h4>{t('administration')}</h4>
               <Link
-                to="/dashboard/usuarios"
-                className={`nav-link admin-link ${isActive('/dashboard/usuarios') ? 'active' : ''}`}
+                to="/dashboard/iglesias"
+                className={`nav-link admin-link ${isActive('/dashboard/iglesias') ? 'active' : ''}`}
               >
-                🔑 {t('userManagement')}
+                ⛪ {superadmin ? t('churches') : t('myChurch')}
               </Link>
               <Link
-                to="/dashboard/advanced-settings"
-                className={`nav-link admin-link ${isActive('/dashboard/advanced-settings') ? 'active' : ''}`}
+                to="/dashboard/tipos-evento"
+                className={`nav-link admin-link ${isActive('/dashboard/tipos-evento') ? 'active' : ''}`}
               >
-                ⚙️ {t('advancedSettings')}
+                🏷️ {t('eventTypes')}
               </Link>
+              {superadmin && (
+                <>
+                  <Link
+                    to="/dashboard/usuarios"
+                    className={`nav-link admin-link ${isActive('/dashboard/usuarios') ? 'active' : ''}`}
+                  >
+                    🔑 {t('userManagement')}
+                  </Link>
+                  <Link
+                    to="/dashboard/landing-cms"
+                    className={`nav-link admin-link ${isActive('/dashboard/landing-cms') ? 'active' : ''}`}
+                  >
+                    🌐 {t('landingCmsTitle')}
+                  </Link>
+                  <Link
+                    to="/dashboard/advanced-settings"
+                    className={`nav-link admin-link ${isActive('/dashboard/advanced-settings') ? 'active' : ''}`}
+                  >
+                    ⚙️ {t('advancedSettings')}
+                  </Link>
+                </>
+              )}
             </div>
           </>
         )}

@@ -61,14 +61,30 @@ function RequisitoRow({
             </select>
           </label>
         </div>
-        <textarea
-          value={requisitoDraft.descripcion}
-          onChange={e => setRequisitoDraft(d => ({ ...d, descripcion: e.target.value }))}
-          className="form-input"
-          rows={2}
-          style={{ margin: 0, width: '100%', fontSize: '12px' }}
-        />
-        <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+        <label style={{ display: 'block', fontSize: '11px', marginBottom: '6px' }}>
+          {t('requirementDescription')}
+          <textarea
+            value={requisitoDraft.descripcion}
+            onChange={e => setRequisitoDraft(d => ({ ...d, descripcion: e.target.value }))}
+            className="form-input"
+            rows={2}
+            style={{ margin: '4px 0 0', width: '100%', fontSize: '12px' }}
+          />
+        </label>
+        <details style={{ marginBottom: '8px' }}>
+          <summary style={{ fontSize: '11px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+            {t('requirementOptionalText')}
+          </summary>
+          <textarea
+            value={requisitoDraft.texto_opcional}
+            onChange={e => setRequisitoDraft(d => ({ ...d, texto_opcional: e.target.value }))}
+            className="form-input"
+            rows={2}
+            placeholder={t('requirementOptionalTextPlaceholder')}
+            style={{ margin: '6px 0 0', width: '100%', fontSize: '12px' }}
+          />
+        </details>
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button type="button" onClick={saveRequisito} style={{ ...btnSmall, backgroundColor: '#16a34a', color: 'white' }}>
             ✓ {t('save')}
           </button>
@@ -85,8 +101,13 @@ function RequisitoRow({
       <span>
         {req.numero != null && <strong>{req.numero}. </strong>}
         {req.descripcion}
+        {req.texto_opcional?.trim() && (
+          <span style={{ display: 'block', fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '2px' }}>
+            {req.texto_opcional}
+          </span>
+        )}
       </span>
-      <span style={{ display: 'flex', gap: '4px' }}>
+      <span style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
         <button
           type="button"
           onClick={() => startEditRequisito(req)}
@@ -319,8 +340,19 @@ export default function ClaseRequisitosEditor({
           placeholder={t('requirementDescription')}
           className="form-input"
           style={{ margin: '8px 0 0', width: '100%', fontSize: '12px' }}
-          onKeyDown={e => e.key === 'Enter' && addRequisito()}
         />
+        <details style={{ marginTop: '8px' }}>
+          <summary style={{ fontSize: '11px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+            {t('requirementOptionalText')}
+          </summary>
+          <input
+            value={newRequisitoForm.texto_opcional}
+            onChange={e => setNewRequisitoForm(f => ({ ...f, texto_opcional: e.target.value }))}
+            placeholder={t('requirementOptionalTextPlaceholder')}
+            className="form-input"
+            style={{ margin: '6px 0 0', width: '100%', fontSize: '12px' }}
+          />
+        </details>
         <button
           type="button"
           onClick={addRequisito}

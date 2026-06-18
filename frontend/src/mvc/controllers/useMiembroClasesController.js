@@ -156,6 +156,8 @@ export function useMiembroClasesController(miembroId) {
       validadoPorUsuarioId: userData?.id || user?.id || null,
       validadoPorNombre: draft.validado_por_nombre?.trim() || null,
       comentarios: draft.comentarios?.trim() || null,
+      textoReemplazo: draft.texto_reemplazo?.trim() || null,
+      usarTextoAlternativo: draft.usar_texto_alternativo || false,
     });
 
     setSavingRequisitoKey(null);

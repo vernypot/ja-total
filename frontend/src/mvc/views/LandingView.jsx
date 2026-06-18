@@ -2,38 +2,68 @@ import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { PathfinderShield, ProgramIcon } from '../../components/landing/YouthClubIcons';
 import { useLanguage } from '../../hooks/useLanguage';
+import { getSectionCopy, resolveSlideText, resolveProgramText, resolveStatText } from '../models/landingContent.model';
 import '../../styles/landing.css';
 
 const HERO_ICONS = ['pathfinders', 'adventurers', 'masterguide'];
 
+function sectionStyle(section) {
+  if (!section?.style_json) return {};
+  const style = typeof section.style_json === 'object' ? section.style_json : {};
+  const css = {};
+  if (style.background_color) css.background = style.background_color;
+  if (style.text_color) css.color = style.text_color;
+  return css;
+}
+
 export default function LandingView({
   user,
+  loading,
+  content,
   heroSlides,
   heroIndex,
   setHeroIndex,
-  programs,
-  stats,
-  news,
-  events,
   goToLogin,
   goToDashboard,
   formatDate,
   eventDayParts,
+  language,
 }) {
   const { t } = useLanguage();
-  const heroIcon = HERO_ICONS[heroIndex] || 'pathfinders';
+
+  if (loading || !content) {
+    return <div className="landing-page" style={{ padding: '3rem', textAlign: 'center' }}>{t('loadingLanding')}</div>;
+  }
+
+  const {
+    themeStyle,
+    sections,
+    visibleSections,
+    heroCard,
+    heroCardIcon,
+    programs,
+    stats,
+    news,
+    events,
+    footerContact,
+  } = content;
+
+  const heroIcon = heroSlides[heroIndex]?.icon || HERO_ICONS[heroIndex] || 'pathfinders';
+  const show = key => !content.fromCms || visibleSections.has(key);
 
   return (
-    <div className="landing-page">
-      <div className="landing-topbar">
-        <div className="landing-topbar-inner">
-          <div className="landing-topbar-tag">
-            <span className="landing-topbar-dot" />
-            {t('landingTopbarTag')}
+    <div className="landing-page" style={themeStyle}>
+      {show('topbar') && (
+        <div className="landing-topbar" style={sectionStyle(sections.topbar)}>
+          <div className="landing-topbar-inner">
+            <div className="landing-topbar-tag">
+              <span className="landing-topbar-dot" />
+              {getSectionCopy(sections, 'topbar', 'eyebrow', language, t)}
+            </div>
+            <span>{getSectionCopy(sections, 'topbar', 'body', language, t)}</span>
           </div>
-          <span>{t('landingTopbarContact')}</span>
         </div>
-      </div>
+      )}
 
       <header className="landing-header">
         <div className="landing-header-inner">
@@ -48,9 +78,9 @@ export default function LandingView({
           <nav className="landing-nav">
             <div className="landing-nav-links">
               <a href="#inicio">{t('landingNavHome')}</a>
-              <a href="#clubes">{t('landingNavClubs')}</a>
-              <a href="#eventos">{t('landingNavEvents')}</a>
-              <a href="#noticias">{t('landingNavNews')}</a>
+              {show('programs') && <a href="#clubes">{t('landingNavClubs')}</a>}
+              {show('events') && <a href="#eventos">{t('landingNavEvents')}</a>}
+              {show('news') && <a href="#noticias">{t('landingNavNews')}</a>}
             </div>
           </nav>
 
@@ -69,187 +99,201 @@ export default function LandingView({
         </div>
       </header>
 
-      <section className="landing-hero" id="inicio">
-        {heroSlides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`landing-hero-slide${index === heroIndex ? ' is-active' : ''}`}
-            aria-hidden={index !== heroIndex}
-          >
-            <div className="landing-hero-bg">
-              <div className="landing-hero-grid" />
-              <div className="landing-hero-shape landing-hero-shape-1" />
-              <div className="landing-hero-shape landing-hero-shape-2" />
-              <div className="landing-hero-shape landing-hero-shape-3" />
-            </div>
-            <div className="landing-hero-inner">
-              <div className="landing-hero-copy">
-                <div className="landing-eyebrow">{t(slide.eyebrowKey)}</div>
-                <h1 className="landing-hero-title">{t(slide.titleKey)}</h1>
-                <p className="landing-hero-text">{t(slide.textKey)}</p>
-                <div className="landing-hero-actions">
-                  <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
-                    {user ? t('landingEnterDashboard') : t('landingHeroCta')}
-                  </button>
-                  <a href="#noticias" className="landing-btn landing-btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
-                    {t('landingHeroSecondary')}
-                  </a>
-                </div>
-              </div>
-              <div className="landing-hero-visual">
-                <div className="landing-hero-card">
-                  <ProgramIcon type={heroIcon} className="landing-hero-card-icon" />
-                  <h3>{t('landingHeroCardTitle')}</h3>
-                  <p>{t('landingHeroCardText')}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        <div className="landing-hero-dots">
+      {show('hero') && heroSlides.length > 0 && (
+        <section className="landing-hero" id="inicio" style={sectionStyle(sections.hero)}>
           {heroSlides.map((slide, index) => (
-            <button
+            <div
               key={slide.id}
-              type="button"
-              className={`landing-hero-dot${index === heroIndex ? ' is-active' : ''}`}
-              aria-label={`${t('landingHeroSlide')} ${index + 1}`}
-              onClick={() => setHeroIndex(index)}
-            />
+              className={`landing-hero-slide${index === heroIndex ? ' is-active' : ''}`}
+              aria-hidden={index !== heroIndex}
+            >
+              <div className="landing-hero-bg">
+                <div className="landing-hero-grid" />
+                <div className="landing-hero-shape landing-hero-shape-1" />
+                <div className="landing-hero-shape landing-hero-shape-2" />
+                <div className="landing-hero-shape landing-hero-shape-3" />
+              </div>
+              <div className="landing-hero-inner">
+                <div className="landing-hero-copy">
+                  <div className="landing-eyebrow">{resolveSlideText(slide, 'eyebrow', t)}</div>
+                  <h1 className="landing-hero-title">{resolveSlideText(slide, 'title', t)}</h1>
+                  <p className="landing-hero-text">{resolveSlideText(slide, 'text', t)}</p>
+                  <div className="landing-hero-actions">
+                    <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
+                      {user ? t('landingEnterDashboard') : t('landingHeroCta')}
+                    </button>
+                    <a href="#noticias" className="landing-btn landing-btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
+                      {t('landingHeroSecondary')}
+                    </a>
+                  </div>
+                </div>
+                <div className="landing-hero-visual">
+                  <div className="landing-hero-card">
+                    <ProgramIcon type={heroIcon} className="landing-hero-card-icon" />
+                    <h3>{heroCard?.title || t('landingHeroCardTitle')}</h3>
+                    <p>{heroCard?.text || t('landingHeroCardText')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
-        </div>
-      </section>
-
-      <section className="landing-section" id="clubes">
-        <div className="landing-section-inner">
-          <div className="landing-section-head">
-            <span className="landing-section-eyebrow">{t('landingProgramsEyebrow')}</span>
-            <h2 className="landing-section-title">{t('landingProgramsTitle')}</h2>
-            <p className="landing-section-text">{t('landingProgramsText')}</p>
-          </div>
-          <div className="landing-programs-grid">
-            {programs.map(program => (
-              <article key={program.id} className="landing-program-card">
-                <ProgramIcon type={program.icon} className="landing-program-icon" />
-                <h3>{t(program.titleKey)}</h3>
-                <p>{t(program.textKey)}</p>
-              </article>
+          <div className="landing-hero-dots">
+            {heroSlides.map((slide, index) => (
+              <button
+                key={slide.id}
+                type="button"
+                className={`landing-hero-dot${index === heroIndex ? ' is-active' : ''}`}
+                aria-label={`${t('landingHeroSlide')} ${index + 1}`}
+                onClick={() => setHeroIndex(index)}
+              />
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="landing-section landing-section-alt">
-        <div className="landing-section-inner landing-about-grid">
-          <div className="landing-about-copy">
+      {show('programs') && (
+        <section className="landing-section" id="clubes" style={sectionStyle(sections.programs)}>
+          <div className="landing-section-inner">
             <div className="landing-section-head">
-              <span className="landing-section-eyebrow">{t('landingAboutEyebrow')}</span>
-              <h2 className="landing-section-title">{t('landingAboutTitle')}</h2>
-              <p className="landing-section-text">{t('landingAboutText')}</p>
+              <span className="landing-section-eyebrow">{getSectionCopy(sections, 'programs', 'eyebrow', language, t)}</span>
+              <h2 className="landing-section-title">{getSectionCopy(sections, 'programs', 'title', language, t)}</h2>
+              <p className="landing-section-text">{getSectionCopy(sections, 'programs', 'body', language, t)}</p>
             </div>
-            <button type="button" className="landing-btn landing-btn-primary" onClick={user ? goToDashboard : goToLogin}>
-              {user ? t('landingEnterDashboard') : t('landingAboutCta')}
+            <div className="landing-programs-grid">
+              {programs.map(program => (
+                <article key={program.id} className="landing-program-card">
+                  <ProgramIcon type={program.icon} className="landing-program-icon" />
+                  <h3>{resolveProgramText(program, 'title', t)}</h3>
+                  <p>{resolveProgramText(program, 'text', t)}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {show('about') && (
+        <section className="landing-section landing-section-alt" style={sectionStyle(sections.about)}>
+          <div className="landing-section-inner landing-about-grid">
+            <div className="landing-about-copy">
+              <div className="landing-section-head">
+                <span className="landing-section-eyebrow">{getSectionCopy(sections, 'about', 'eyebrow', language, t)}</span>
+                <h2 className="landing-section-title">{getSectionCopy(sections, 'about', 'title', language, t)}</h2>
+                <p className="landing-section-text">{getSectionCopy(sections, 'about', 'body', language, t)}</p>
+              </div>
+              <button type="button" className="landing-btn landing-btn-primary" onClick={user ? goToDashboard : goToLogin}>
+                {getSectionCopy(sections, 'about', 'cta_text', language, t) || (user ? t('landingEnterDashboard') : t('landingAboutCta'))}
+              </button>
+            </div>
+            <div className="landing-stats-grid">
+              {stats.map(stat => (
+                <div key={stat.id} className="landing-stat-card">
+                  <div className="landing-stat-value">{resolveStatText(stat, 'value', t)}</div>
+                  <div className="landing-stat-label">{resolveStatText(stat, 'label', t)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {show('events') && (
+        <section className="landing-section" id="eventos" style={sectionStyle(sections.events)}>
+          <div className="landing-section-inner">
+            <div className="landing-section-head">
+              <span className="landing-section-eyebrow">{getSectionCopy(sections, 'events', 'eyebrow', language, t)}</span>
+              <h2 className="landing-section-title">{getSectionCopy(sections, 'events', 'title', language, t)}</h2>
+              <p className="landing-section-text">{getSectionCopy(sections, 'events', 'body', language, t)}</p>
+            </div>
+            <div className="landing-events-list">
+              {events.map(evento => {
+                const parts = eventDayParts(evento.date);
+                return (
+                  <article key={evento.id} className="landing-event-row">
+                    <div className="landing-event-date">
+                      <strong>{parts.day}</strong>
+                      <span>{parts.month}</span>
+                    </div>
+                    <div className="landing-event-info">
+                      <h3>{evento.title}</h3>
+                      <p>{evento.place}</p>
+                    </div>
+                    <div className="landing-event-time">{evento.time}</div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {show('news') && (
+        <section className="landing-section landing-section-alt" id="noticias" style={sectionStyle(sections.news)}>
+          <div className="landing-section-inner">
+            <div className="landing-section-head">
+              <span className="landing-section-eyebrow">{getSectionCopy(sections, 'news', 'eyebrow', language, t)}</span>
+              <h2 className="landing-section-title">{getSectionCopy(sections, 'news', 'title', language, t)}</h2>
+              <p className="landing-section-text">{getSectionCopy(sections, 'news', 'body', language, t)}</p>
+            </div>
+            <div className="landing-news-grid">
+              {news.map(item => (
+                <article key={item.id} className="landing-news-card">
+                  <div className="landing-news-thumb">
+                    <PathfinderShield />
+                  </div>
+                  <div className="landing-news-body">
+                    <div className="landing-news-meta">
+                      <span className="landing-news-category">{item.category}</span>
+                      <span>{formatDate(item.date)}</span>
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p>{item.excerpt}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {show('cta') && (
+        <section className="landing-cta" style={sectionStyle(sections.cta)}>
+          <div className="landing-cta-inner">
+            <div>
+              <h2>{getSectionCopy(sections, 'cta', 'title', language, t)}</h2>
+              <p>{getSectionCopy(sections, 'cta', 'body', language, t)}</p>
+            </div>
+            <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
+              {getSectionCopy(sections, 'cta', 'cta_text', language, t) || (user ? t('landingEnterDashboard') : t('landingCtaButton'))}
             </button>
           </div>
-          <div className="landing-stats-grid">
-            {stats.map(stat => (
-              <div key={stat.id} className="landing-stat-card">
-                <div className="landing-stat-value">{t(stat.valueKey)}</div>
-                <div className="landing-stat-label">{t(stat.labelKey)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="landing-section" id="eventos">
-        <div className="landing-section-inner">
-          <div className="landing-section-head">
-            <span className="landing-section-eyebrow">{t('landingEventsEyebrow')}</span>
-            <h2 className="landing-section-title">{t('landingEventsTitle')}</h2>
-            <p className="landing-section-text">{t('landingEventsText')}</p>
+      {show('footer') && (
+        <footer className="landing-footer" style={sectionStyle(sections.footer)}>
+          <div className="landing-section-inner landing-footer-grid">
+            <div>
+              <h4>{t('appName')}</h4>
+              <p>{getSectionCopy(sections, 'footer', 'body', language, t)}</p>
+            </div>
+            <div>
+              <h4>{t('landingFooterLinks')}</h4>
+              <p><a href="#clubes">{t('landingNavClubs')}</a></p>
+              <p><a href="#eventos">{t('landingNavEvents')}</a></p>
+              <p><Link to="/login">{t('signIn')}</Link></p>
+            </div>
+            <div>
+              <h4>{t('landingFooterContact')}</h4>
+              <p>{footerContact?.email || t('landingFooterEmail')}</p>
+              <p>{footerContact?.phone || t('landingFooterPhone')}</p>
+            </div>
           </div>
-          <div className="landing-events-list">
-            {events.map(evento => {
-              const parts = eventDayParts(evento.date);
-              return (
-                <article key={evento.id} className="landing-event-row">
-                  <div className="landing-event-date">
-                    <strong>{parts.day}</strong>
-                    <span>{parts.month}</span>
-                  </div>
-                  <div className="landing-event-info">
-                    <h3>{evento.title}</h3>
-                    <p>{evento.place}</p>
-                  </div>
-                  <div className="landing-event-time">{evento.time}</div>
-                </article>
-              );
-            })}
+          <div className="landing-section-inner landing-footer-bottom">
+            © {new Date().getFullYear()} {t('appName')}. {t('landingFooterRights')}
           </div>
-        </div>
-      </section>
-
-      <section className="landing-section landing-section-alt" id="noticias">
-        <div className="landing-section-inner">
-          <div className="landing-section-head">
-            <span className="landing-section-eyebrow">{t('landingNewsEyebrow')}</span>
-            <h2 className="landing-section-title">{t('landingNewsTitle')}</h2>
-            <p className="landing-section-text">{t('landingNewsText')}</p>
-          </div>
-          <div className="landing-news-grid">
-            {news.map(item => (
-              <article key={item.id} className="landing-news-card">
-                <div className="landing-news-thumb">
-                  <PathfinderShield />
-                </div>
-                <div className="landing-news-body">
-                  <div className="landing-news-meta">
-                    <span className="landing-news-category">{t(item.categoryKey)}</span>
-                    <span>{formatDate(item.date)}</span>
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.excerpt}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-cta">
-        <div className="landing-cta-inner">
-          <div>
-            <h2>{t('landingCtaTitle')}</h2>
-            <p>{t('landingCtaText')}</p>
-          </div>
-          <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
-            {user ? t('landingEnterDashboard') : t('landingCtaButton')}
-          </button>
-        </div>
-      </section>
-
-      <footer className="landing-footer">
-        <div className="landing-section-inner landing-footer-grid">
-          <div>
-            <h4>{t('appName')}</h4>
-            <p>{t('landingFooterAbout')}</p>
-          </div>
-          <div>
-            <h4>{t('landingFooterLinks')}</h4>
-            <p><a href="#clubes">{t('landingNavClubs')}</a></p>
-            <p><a href="#eventos">{t('landingNavEvents')}</a></p>
-            <p><Link to="/login">{t('signIn')}</Link></p>
-          </div>
-          <div>
-            <h4>{t('landingFooterContact')}</h4>
-            <p>{t('landingFooterEmail')}</p>
-            <p>{t('landingFooterPhone')}</p>
-          </div>
-        </div>
-        <div className="landing-section-inner landing-footer-bottom">
-          © {new Date().getFullYear()} {t('appName')}. {t('landingFooterRights')}
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }
