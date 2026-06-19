@@ -1,11 +1,20 @@
 import { sb } from '../../services/supabase';
 
-const SELECT_WITH_JOIN = 'id,nombre,tipo_id,estado,club_tipo,tipos_club(nombre)';
-const SELECT_PLAIN = 'id,nombre,tipo_id,estado,club_tipo';
+const SELECT_WITH_JOIN = 'id,nombre,tipo_id,estado,club_tipo,orden,tipos_club(nombre)';
+const SELECT_PLAIN = 'id,nombre,tipo_id,estado,club_tipo,orden';
 const SELECT_MINIMAL = 'id,nombre,estado,club_tipo';
 
 function sortByNombre(rows) {
   return [...rows].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+}
+
+export function sortClasesByOrden(rows) {
+  return [...rows].sort((a, b) => {
+    const ao = a.orden ?? Number.MAX_SAFE_INTEGER;
+    const bo = b.orden ?? Number.MAX_SAFE_INTEGER;
+    if (ao !== bo) return ao - bo;
+    return (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' });
+  });
 }
 
 export async function fetchClasesProgresivas({ showInactive = false } = {}) {
@@ -17,7 +26,7 @@ export async function fetchClasesProgresivas({ showInactive = false } = {}) {
 
     const { data, error } = await query;
     if (!error) {
-      return { data: sortByNombre(data || []), error: null };
+      return { data: sortClasesByOrden(data || []), error: null };
     }
     lastError = error;
   }
@@ -62,14 +71,39 @@ async function resolveClubTipoName(tipoId) {
   return data?.nombre || null;
 }
 
+export async function nextClaseOrden(tipoId) {
+  if (!tipoId) return 10;
+  const { data } = await sb.from('clases_progresivas').select('orden').eq('tipo_id', tipoId);
+  const max = Math.max(0, ...(data || []).map(r => Number(r.orden) || 0));
+  return max + 10;
+}
+
+export async function reindexClasesProgresivas(orderedIds) {
+  const updates = orderedIds.map((id, index) =>
+    sb.from('clases_progresivas').update({ orden: (index + 1) * 10 }).eq('id', id),
+  );
+  const results = await Promise.all(updates);
+  const error = results.find(r => r.error)?.error || null;
+  return { error };
+}
+
 export async function createClaseProgresiva({ nombre, tipo_id }) {
   const club_tipo = await resolveClubTipoName(tipo_id);
-  return sb.from('clases_progresivas').insert([{
+  const orden = await nextClaseOrden(tipo_id);
+  const payload = {
     nombre,
     tipo_id,
     club_tipo,
     estado: 'activo',
-  }]);
+    orden,
+  };
+  const full = await sb.from('clases_progresivas').insert([payload]);
+  if (!full.error) return full;
+  if (isMissingColumnError(full.error, 'orden')) {
+    delete payload.orden;
+    return sb.from('clases_progresivas').insert([payload]);
+  }
+  return full;
 }
 
 export async function updateClaseProgresiva(id, { nombre, tipo_id }) {

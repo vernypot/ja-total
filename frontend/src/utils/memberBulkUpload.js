@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 
-export const MEMBER_TEMPLATE_COLUMNS = [
+/** Personal-data fields importable via bulk upload (matches DatosPersonalesView / member profile tab). */
+export const MEMBER_PERSONAL_COLUMNS = [
   'nombre',
   'apellido1',
   'apellido2',
@@ -11,6 +12,27 @@ export const MEMBER_TEMPLATE_COLUMNS = [
   'celular',
   'direccion',
   'ciudad',
+];
+
+/** Optional emergency contact (one per row; maps to Contacts tab). */
+export const MEMBER_CONTACT_COLUMNS = [
+  'contacto_nombre',
+  'contacto_celular',
+  'contacto_relacion',
+];
+
+export const MEMBER_TEMPLATE_COLUMNS = [
+  ...MEMBER_PERSONAL_COLUMNS,
+  ...MEMBER_CONTACT_COLUMNS,
+];
+
+/** Profile features filled in after import (not in spreadsheet). */
+export const MEMBER_BULK_POST_IMPORT_FEATURES = [
+  'photo',
+  'medicalData',
+  'clubAssignmentsExtra',
+  'classes',
+  'specialties',
 ];
 
 const HEADER_ALIASES = {
@@ -25,6 +47,9 @@ const HEADER_ALIASES = {
   celular: ['celular', 'cellphone', 'mobile', 'móvil', 'movil'],
   direccion: ['direccion', 'dirección', 'address'],
   ciudad: ['ciudad', 'city'],
+  contacto_nombre: ['contacto_nombre', 'contacto nombre', 'contact name', 'emergency contact', 'nombre contacto', 'contacto'],
+  contacto_celular: ['contacto_celular', 'contacto celular', 'contact phone', 'contact cellphone', 'contact mobile', 'telefono contacto', 'tel contacto'],
+  contacto_relacion: ['contacto_relacion', 'contacto relacion', 'contact relationship', 'relationship', 'parentesco', 'relacion contacto'],
 };
 
 function normalizeHeader(value) {
@@ -149,7 +174,20 @@ function rowToRecord(row, mapping) {
 }
 
 function hasMemberData(record) {
-  return MEMBER_TEMPLATE_COLUMNS.some(field => record[field]);
+  return MEMBER_PERSONAL_COLUMNS.some(field => record[field]);
+}
+
+function hasContactData(record) {
+  return MEMBER_CONTACT_COLUMNS.some(field => record[field]);
+}
+
+function buildContactFromRaw(raw) {
+  if (!hasContactData(raw)) return null;
+  return {
+    nombre: raw.contacto_nombre?.trim() || '',
+    telefono: raw.contacto_celular?.trim() || '',
+    relacion: raw.contacto_relacion?.trim() || null,
+  };
 }
 
 function parseDateValue(value) {
@@ -202,6 +240,52 @@ function normalizeGender(value) {
   return { valid: false, value: null };
 }
 
+const COLUMN_LABEL_KEYS = {
+  nombre: 'firstName',
+  apellido1: 'lastName1',
+  apellido2: 'lastName2',
+  fecha_nacimiento: 'birthDate',
+  documento: 'document',
+  genero: 'gender',
+  telefono: 'phone',
+  celular: 'cellphone',
+  direccion: 'address',
+  ciudad: 'city',
+  contacto_nombre: 'contactName',
+  contacto_celular: 'contactCellphone',
+  contacto_relacion: 'relationship',
+};
+
+export function buildMemberTemplateInstructions({ t, activeClubName = '' }) {
+  const columnRows = MEMBER_TEMPLATE_COLUMNS.map(col => {
+    const label = col === 'nombre' ? `${col}*` : col;
+    return [label, t(COLUMN_LABEL_KEYS[col] || col)];
+  });
+
+  return [
+    [t('bulkTemplateOverview')],
+    [t('bulkRequiredFields')],
+    activeClubName ? [`${t('bulkAssignedClub')}: ${activeClubName}`] : [t('bulkSelectClubFirst')],
+    [t('bulkTemplateMultiClub')],
+    [''],
+    [t('bulkTemplateColumnsHeader')],
+    ...columnRows,
+    [''],
+    [t('bulkTemplateDateFormats')],
+    [t('bulkTemplateGenderValues')],
+    [t('bulkTemplateDuplicates')],
+    [t('bulkTemplateContactHint')],
+    [''],
+    [t('bulkTemplateNotIncluded')],
+    [t('bulkTemplatePostImportPhoto')],
+    [t('bulkTemplatePostImportMedical')],
+    [t('bulkTemplatePostImportExtraClubs')],
+    [t('bulkTemplatePostImportClasses')],
+    [''],
+    [t('bulkTemplateFileFormats')],
+  ];
+}
+
 export function downloadMemberTemplate({ t, activeClubName = '' }) {
   const headers = MEMBER_TEMPLATE_COLUMNS.map(col =>
     col === 'nombre' ? `${col}*` : col
@@ -213,24 +297,18 @@ export function downloadMemberTemplate({ t, activeClubName = '' }) {
     if (col === 'apellido2') return 'García';
     if (col === 'fecha_nacimiento') return '2000-01-15';
     if (col === 'genero') return 'M';
+    if (col === 'documento') return '001-0000000-0';
+    if (col === 'telefono') return '809-555-0100';
+    if (col === 'celular') return '809-555-0101';
+    if (col === 'direccion') return 'Calle Principal 123';
+    if (col === 'ciudad') return 'Santo Domingo';
+    if (col === 'contacto_nombre') return 'María Pérez';
+    if (col === 'contacto_celular') return '809-555-0200';
+    if (col === 'contacto_relacion') return 'Madre';
     return '';
   });
 
-  const instructions = [
-    [t('bulkRequiredFields')],
-    activeClubName ? [`${t('clubs')}: ${activeClubName}`] : [],
-    [''],
-    [t('colNombre'), t('firstName')],
-    ['apellido1', t('lastName1')],
-    ['apellido2', t('lastName2')],
-    ['fecha_nacimiento', t('birthDate')],
-    ['documento', t('document')],
-    ['genero', t('gender')],
-    ['telefono', t('phone')],
-    ['celular', t('cellphone')],
-    ['direccion', t('address')],
-    ['ciudad', t('city')],
-  ].filter(row => row.length > 0);
+  const instructions = buildMemberTemplateInstructions({ t, activeClubName });
 
   const dataSheet = XLSX.utils.aoa_to_sheet([headers, example]);
   const instructionsSheet = XLSX.utils.aoa_to_sheet(instructions);
@@ -293,6 +371,12 @@ export function validateMemberRows(parsedRows, { activeClub, t }) {
     const genderResult = normalizeGender(raw.genero);
     if (!genderResult.valid) errors.push(t('bulkErrInvalidGender'));
 
+    const contact = buildContactFromRaw(raw);
+    if (contact) {
+      if (!contact.nombre) errors.push(t('bulkErrContactNombreRequired'));
+      if (!contact.telefono) errors.push(t('bulkErrContactTelefonoRequired'));
+    }
+
     const dedupeKey = `${raw.nombre.toLowerCase()}::${raw.apellido1.toLowerCase()}::${raw.apellido2.toLowerCase()}`;
     if (raw.nombre && seen.has(dedupeKey)) {
       errors.push(t('bulkErrDuplicateRow'));
@@ -314,6 +398,7 @@ export function validateMemberRows(parsedRows, { activeClub, t }) {
       estado: 'activo',
       club_id: activeClub.id,
       club_nombre: activeClub.nombre,
+      contact: contact && contact.nombre && contact.telefono ? contact : null,
     };
 
     results.push({

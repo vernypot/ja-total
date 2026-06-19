@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import * as ContactosModel from './contactos.model';
 
 const MIEMBRO_FOTOS_BUCKET = 'miembro-fotos';
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -244,13 +245,24 @@ export async function bulkCreateMiembros(members) {
   const errors = [];
 
   for (const { member, rowNumber } of members) {
-    const { club_id, club_nombre, ...miembroData } = member;
-    const { error } = await createMiembroWithClub(miembroData, club_id);
+    const { club_id, club_nombre, contact, ...miembroData } = member;
+    const { data, error } = await createMiembroWithClub(miembroData, club_id);
     if (error) {
       errors.push({ rowNumber, message: error.message });
-    } else {
-      created.push(rowNumber);
+      continue;
     }
+
+    if (contact?.nombre && contact?.telefono) {
+      const { error: contactError } = await ContactosModel.createMiembroContacto(data.id, contact);
+      if (contactError) {
+        errors.push({
+          rowNumber,
+          message: `Member created; contact error: ${contactError.message}`,
+        });
+      }
+    }
+
+    created.push(rowNumber);
   }
 
   return { created, errors };

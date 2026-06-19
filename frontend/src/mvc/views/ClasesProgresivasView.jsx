@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
+import * as ClasesModel from '../models/clases.model';
 import ListSearchInput from '../../components/ListSearchInput';
 import ClaseRequisitosList from '../../components/ClaseRequisitosList';
 import ClaseRequisitosEditor from '../../components/ClaseRequisitosEditor';
@@ -76,6 +78,18 @@ function RequisitosSection({
 function ClassRow({
   clase,
   canManage,
+  canReorder,
+  isDragging,
+  isDropTarget,
+  isFirst,
+  isLast,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onMoveUp,
+  onMoveDown,
   t,
   startEdit,
   toggleEstado,
@@ -110,7 +124,56 @@ function ClassRow({
   const secciones = seccionesByClase[clase.id] || [];
 
   return (
-    <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff' }}>
+    <div
+      onDragOver={canReorder ? e => { e.preventDefault(); onDragOver?.(); } : undefined}
+      onDragLeave={canReorder ? onDragLeave : undefined}
+      onDrop={canReorder ? e => { e.preventDefault(); onDrop?.(); } : undefined}
+      style={{
+        padding: '15px',
+        border: isDropTarget ? '2px solid #2563eb' : '1px solid #e5e7eb',
+        borderRadius: '8px',
+        backgroundColor: isDragging ? '#f3f4f6' : '#fff',
+        opacity: isDragging ? 0.6 : 1,
+      }}
+    >
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+        {canReorder && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', paddingTop: '2px' }}>
+            <span
+              draggable
+              onDragStart={e => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', clase.id);
+                onDragStart?.();
+              }}
+              onDragEnd={onDragEnd}
+              title={t('dragToReorder')}
+              style={{ cursor: 'grab', color: '#9ca3af', fontSize: '16px', lineHeight: 1, userSelect: 'none' }}
+              aria-label={t('dragToReorder')}
+            >
+              ⠿
+            </span>
+            <button
+              type="button"
+              disabled={isFirst}
+              onClick={onMoveUp}
+              title={t('moveUp')}
+              style={{ padding: '2px 6px', fontSize: '11px', cursor: isFirst ? 'not-allowed' : 'pointer', opacity: isFirst ? 0.4 : 1 }}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              disabled={isLast}
+              onClick={onMoveDown}
+              title={t('moveDown')}
+              style={{ padding: '2px 6px', fontSize: '11px', cursor: isLast ? 'not-allowed' : 'pointer', opacity: isLast ? 0.4 : 1 }}
+            >
+              ↓
+            </button>
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>{clase.nombre}</strong>
@@ -169,8 +232,40 @@ function ClassRow({
         removeSeccion={removeSeccion}
         t={t}
       />
+        </div>
+      </div>
     </div>
   );
+}
+
+function ClaseList({ clases, canReorder, onMoveClase, onDropClase, rowProps }) {
+  const [draggingId, setDraggingId] = useState(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
+  const sorted = ClasesModel.sortClasesByOrden(clases);
+
+  return sorted.map((clase, index) => (
+    <ClassRow
+      key={clase.id}
+      clase={clase}
+      canReorder={canReorder}
+      isDragging={draggingId === clase.id}
+      isDropTarget={dropTargetId === clase.id && draggingId !== clase.id}
+      isFirst={index === 0}
+      isLast={index === sorted.length - 1}
+      onDragStart={() => setDraggingId(clase.id)}
+      onDragEnd={() => { setDraggingId(null); setDropTargetId(null); }}
+      onDragOver={() => setDropTargetId(clase.id)}
+      onDragLeave={() => setDropTargetId(prev => (prev === clase.id ? null : prev))}
+      onDrop={() => {
+        onDropClase(sorted, draggingId, clase.id);
+        setDraggingId(null);
+        setDropTargetId(null);
+      }}
+      onMoveUp={() => onMoveClase(sorted, clase.id, 'up')}
+      onMoveDown={() => onMoveClase(sorted, clase.id, 'down')}
+      {...rowProps}
+    />
+  ));
 }
 
 export default function ClasesProgresivasView({
@@ -193,6 +288,10 @@ export default function ClasesProgresivasView({
   showForm,
   editingId,
   canManage,
+  reordering,
+  reorderClases,
+  moveClase,
+  dropClaseOn,
   save,
   startEdit,
   toggleEstado,
@@ -230,6 +329,7 @@ export default function ClasesProgresivasView({
   const { t } = useLanguage();
   const activeTipo = tipos.find(tipo => tipo.id === effectiveTipoId);
   const isSearching = searchQuery.trim().length > 0;
+  const canReorder = canManage && !isSearching && !reordering;
 
   const rowProps = {
     canManage,
@@ -393,6 +493,11 @@ export default function ClasesProgresivasView({
         )}
 
         <h4>{t('classList')}</h4>
+        {canReorder && data.length > 1 && (
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#6b7280' }}>
+            {t('dragToReorderClassesHint')}
+          </p>
+        )}
         {data.length === 0 ? (
           <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
             {isSearching ? t('noSearchResults') : t('noClasses')}
@@ -403,18 +508,26 @@ export default function ClasesProgresivasView({
               <div key={tipo.id}>
                 <h5 style={{ margin: '0 0 10px 0', color: '#3730a3' }}>{tipo.nombre}</h5>
                 <div style={{ display: 'grid', gap: '12px' }}>
-                  {clases.map(c => (
-                    <ClassRow key={c.id} clase={c} {...rowProps} />
-                  ))}
+                  <ClaseList
+                    clases={clases}
+                    canReorder={canReorder}
+                    onMoveClase={moveClase}
+                    onDropClase={dropClaseOn}
+                    rowProps={rowProps}
+                  />
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
-            {data.map(c => (
-              <ClassRow key={c.id} clase={c} {...rowProps} />
-            ))}
+            <ClaseList
+              clases={data}
+              canReorder={canReorder}
+              onMoveClase={moveClase}
+              onDropClase={dropClaseOn}
+              rowProps={rowProps}
+            />
           </div>
         )}
       </div>

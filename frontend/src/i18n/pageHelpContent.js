@@ -38,13 +38,13 @@ const PAGE_HELP = {
         'Confirm the church (and optional club filter) shown under the page title.',
         'Use search to find members by name.',
         'Click a row to open the member profile with tabs for personal data, medical info, contacts, classes, and more.',
-        'Use “New member” to create a record, or “Bulk upload” to import from CSV.',
+        'Use “New member” to create a record, or “Bulk upload” to import from the Excel template.',
       ],
       fields: [
         { name: 'Search', description: 'Filters the list by first or last name.' },
         { name: 'Show inactive', description: 'Includes members marked inactive in the list.' },
         { name: 'Club assignment', description: 'Assign or remove the member from a club using the club buttons on each row.' },
-        { name: 'Bulk upload file', description: 'CSV with columns matching the downloadable template. Validate before importing.' },
+        { name: 'Bulk upload file', description: 'Excel (.xlsx) with columns matching the downloadable template. Select the target club, validate, then import.' },
       ],
       tips: [
         'Complete personal data and a photo before printing the member ID card.',
@@ -58,13 +58,13 @@ const PAGE_HELP = {
         'Confirme la iglesia (y el filtro de club opcional) que aparece bajo el título.',
         'Use la búsqueda para encontrar miembros por nombre.',
         'Haga clic en una fila para abrir el perfil con pestañas de datos personales, médicos, contactos, clases, etc.',
-        'Use “Nuevo miembro” para crear un registro o “Carga masiva” para importar desde CSV.',
+        'Use “Nuevo miembro” para crear un registro o “Carga masiva” para importar desde la plantilla Excel.',
       ],
       fields: [
         { name: 'Búsqueda', description: 'Filtra la lista por nombre o apellido.' },
         { name: 'Mostrar inactivos', description: 'Incluye miembros marcados como inactivos en la lista.' },
         { name: 'Asignación a club', description: 'Asigne o retire al miembro de un club con los botones de club en cada fila.' },
-        { name: 'Archivo de carga masiva', description: 'CSV con columnas según la plantilla descargable. Valide antes de importar.' },
+        { name: 'Archivo de carga masiva', description: 'Excel (.xlsx) con columnas según la plantilla descargable. Seleccione el club destino, valide e importe.' },
       ],
       tips: [
         'Complete los datos personales y una foto antes de imprimir el carnet.',

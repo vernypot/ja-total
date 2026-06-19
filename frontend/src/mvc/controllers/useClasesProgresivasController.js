@@ -40,6 +40,7 @@ export function useClasesProgresivasController() {
   const [editingSeccionId, setEditingSeccionId] = useState(null);
   const [seccionDraft, setSeccionDraft] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [reordering, setReordering] = useState(false);
 
   function resetRequisitoForms(secciones = []) {
     setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
@@ -67,7 +68,9 @@ export function useClasesProgresivasController() {
     return tipos
       .map(tipo => ({
         tipo,
-        clases: filteredData.filter(c => c.tipo_id === tipo.id || c.club_tipo === tipo.nombre),
+        clases: ClasesModel.sortClasesByOrden(
+          filteredData.filter(c => c.tipo_id === tipo.id || c.club_tipo === tipo.nombre),
+        ),
       }))
       .filter(group => group.clases.length > 0);
   }, [filteredData, tipos, effectiveTipoId]);
@@ -418,6 +421,56 @@ export function useClasesProgresivasController() {
     await loadRequisitos(claseId);
   }
 
+  function applyOrdenToData(orderedClases) {
+    const idToOrden = {};
+    orderedClases.forEach((c, i) => { idToOrden[c.id] = (i + 1) * 10; });
+    setData(prev => ClasesModel.sortClasesByOrden(
+      prev.map(c => (idToOrden[c.id] != null ? { ...c, orden: idToOrden[c.id] } : c)),
+    ));
+  }
+
+  async function reorderClases(orderedClases) {
+    if (!canManage || reordering || orderedClases.length < 2) return;
+
+    const previous = data;
+    applyOrdenToData(orderedClases);
+
+    setReordering(true);
+    setError('');
+    const { error: reorderError } = await ClasesModel.reindexClasesProgresivas(orderedClases.map(c => c.id));
+    setReordering(false);
+
+    if (reorderError) {
+      setData(previous);
+      setError(`Error reordering classes: ${reorderError.message}`);
+    }
+  }
+
+  function moveClase(clases, claseId, direction) {
+    const sorted = ClasesModel.sortClasesByOrden(clases);
+    const index = sorted.findIndex(c => c.id === claseId);
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (index < 0 || targetIndex < 0 || targetIndex >= sorted.length) return;
+
+    const next = [...sorted];
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    reorderClases(next);
+  }
+
+  function dropClaseOn(clases, draggingId, targetId) {
+    if (!draggingId || draggingId === targetId) return;
+
+    const sorted = ClasesModel.sortClasesByOrden(clases);
+    const from = sorted.findIndex(c => c.id === draggingId);
+    const to = sorted.findIndex(c => c.id === targetId);
+    if (from < 0 || to < 0) return;
+
+    const next = [...sorted];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    reorderClases(next);
+  }
+
   useEffect(() => { load(); }, [showInactive, effectiveTipoId]);
   useEffect(() => { loadClubs(); loadIglesia(); }, [activeIglesia]);
   useEffect(() => {
@@ -454,6 +507,10 @@ export function useClasesProgresivasController() {
     showForm,
     editingId,
     canManage,
+    reordering,
+    reorderClases,
+    moveClase,
+    dropClaseOn,
     save,
     startEdit,
     toggleEstado,

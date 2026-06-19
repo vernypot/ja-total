@@ -199,6 +199,13 @@ export default function MiembrosView({
                         <td style={{ padding: '10px' }}>{row.rowNumber}</td>
                         <td style={{ padding: '10px' }}>
                           {[row.member.nombre, row.member.apellido1, row.member.apellido2].filter(Boolean).join(' ')}
+                          {row.member.contact && (
+                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                              {t('contactName')}: {row.member.contact.nombre}
+                              {row.member.contact.telefono ? ` • ${row.member.contact.telefono}` : ''}
+                              {row.member.contact.relacion ? ` (${row.member.contact.relacion})` : ''}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '10px' }}>{row.member.club_nombre}</td>
                         <td style={{ padding: '10px' }}>

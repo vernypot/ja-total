@@ -131,12 +131,6 @@ export default function Sidebar() {
                     🌐 {t('landingCmsTitle')}
                   </Link>
                   <Link
-                    to="/dashboard/page-help"
-                    className={`nav-link admin-link ${isActive('/dashboard/page-help') ? 'active' : ''}`}
-                  >
-                    ❓ {t('pageHelpAdminTitle')}
-                  </Link>
-                  <Link
                     to="/dashboard/advanced-settings"
                     className={`nav-link admin-link ${isActive('/dashboard/advanced-settings') ? 'active' : ''}`}
                   >
