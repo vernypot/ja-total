@@ -1,5 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../hooks/useLanguage';
+import { validateForm } from '../../utils/validateForm';
 import * as UsuariosModel from '../models/usuarios.model';
 
 function buildFallbackUserData(user) {
@@ -17,10 +19,12 @@ function buildFallbackUserData(user) {
 
 export function useUserProfileController() {
   const { user, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,6 +85,17 @@ export function useUserProfileController() {
   async function handleSaveProfile() {
     setError('');
     setSuccess('');
+
+    const validation = validateForm('userProfile', {
+      ...formData,
+      email: user?.email || userData?.email || '',
+    }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -119,6 +134,7 @@ export function useUserProfileController() {
     showPasswordModal,
     setShowPasswordModal,
     error,
+    fieldErrors,
     success,
     isEditing,
     isSaving,

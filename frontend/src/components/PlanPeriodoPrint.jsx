@@ -20,11 +20,16 @@ function formatPrintedAt(language = 'es') {
   });
 }
 
-function RequisitoLine({ req }) {
+function RequisitoLine({ req, t }) {
   return (
     <li>
       {req.numero != null && <strong>{req.numero}. </strong>}
       {req.descripcion}
+      {req.sesiones != null && (
+        <span className="plan-periodo-req-sessions">
+          {' '}({req.sesiones} {t('planSessionsShort')})
+        </span>
+      )}
       {req.clase && <span className="plan-periodo-req-clase">{req.clase}</span>}
     </li>
   );
@@ -53,7 +58,7 @@ function TimelineEntry({ item, t }) {
         item.requisitos.length > 0 ? (
           <ol className="plan-periodo-reqs">
             {item.requisitos.map((req, index) => (
-              <RequisitoLine key={`${req.descripcion}-${index}`} req={req} />
+              <RequisitoLine key={`${req.descripcion}-${index}`} req={req} t={t} />
             ))}
           </ol>
         ) : (
@@ -68,6 +73,7 @@ export default function PlanPeriodoPrint({
   plan,
   clubName = '',
   groupedTimeline = [],
+  sessionsSummary = null,
   t,
   language = 'es',
 }) {
@@ -98,6 +104,30 @@ export default function PlanPeriodoPrint({
             ))}
           </section>
         ))
+      )}
+
+      {sessionsSummary && (
+        <section className="plan-periodo-sessions-summary">
+          <h2 className="plan-periodo-sessions-summary-title">{t('planSessionsSummary')}</h2>
+          <p className="plan-periodo-sessions-summary-total">
+            <strong>{sessionsSummary.totalSesiones}</strong> {t('planSessionsShort')}
+            {sessionsSummary.totalReqs > 0 && (
+              <> · {t('planSessionsAcrossReqs').replace('{count}', String(sessionsSummary.totalReqs))}</>
+            )}
+          </p>
+          {sessionsSummary.byMeeting.filter(m => m.reqCount > 0).length > 0 && (
+            <ul className="plan-periodo-sessions-summary-list">
+              {sessionsSummary.byMeeting.filter(m => m.reqCount > 0).map(meeting => (
+                <li key={meeting.reunionId}>
+                  {meeting.titulo || `${t('planMeeting')} ${meeting.numero}`}
+                  {meeting.fecha ? ` (${meeting.fecha})` : ''}
+                  {' — '}
+                  {meeting.sesiones} {t('planSessionsShort')}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       <footer className="plan-periodo-footer">

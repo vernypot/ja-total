@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 const headerBtnStyle = {
@@ -56,7 +57,7 @@ export default function MiembrosView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>👥 {t('members')}</h1>
+          <h1>👥 {t('members')} <PageHelpLink pageId="members" /></h1>
           {activeIglesiaData && (
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>

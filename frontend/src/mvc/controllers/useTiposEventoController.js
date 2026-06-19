@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, isAdminOrAbove } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as TiposEventoModel from '../models/tiposEvento.model';
 
 const emptyForm = () => ({
@@ -11,6 +13,7 @@ const emptyForm = () => ({
 });
 
 export function useTiposEventoController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const canManage = isAdminOrAbove(getUserRole(user, userData));
 
@@ -22,6 +25,7 @@ export function useTiposEventoController() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [hasTable, setHasTable] = useState(true);
 
   const filteredItems = useMemo(
@@ -71,8 +75,11 @@ export function useTiposEventoController() {
 
   async function save() {
     if (!canManage) return;
-    if (!form.nombre.trim()) {
-      setError('Name is required');
+
+    const validation = validateForm('tipoEvento', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -123,6 +130,7 @@ export function useTiposEventoController() {
     setSearchQuery,
     loading,
     error,
+    fieldErrors,
     canManage,
     hasTable,
     openCreateForm,

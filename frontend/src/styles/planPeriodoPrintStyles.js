@@ -140,11 +140,49 @@ body {
   color: #6b7280;
 }
 
+.plan-periodo-req-sessions {
+  font-size: 9pt;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
 .plan-periodo-no-reqs {
   margin: 4px 0 0;
   font-size: 9pt;
   color: #9ca3af;
   font-style: italic;
+}
+
+.plan-periodo-sessions-summary {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #f0f9ff;
+  page-break-inside: avoid;
+}
+
+.plan-periodo-sessions-summary-title {
+  margin: 0 0 6px;
+  font-size: 12pt;
+  color: #1e3a8a;
+}
+
+.plan-periodo-sessions-summary-total {
+  margin: 0 0 8px;
+  font-size: 10pt;
+  color: #374151;
+}
+
+.plan-periodo-sessions-summary-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 10pt;
+  color: #4b5563;
+}
+
+.plan-periodo-sessions-summary-list li {
+  margin-bottom: 4px;
 }
 
 .plan-periodo-footer {

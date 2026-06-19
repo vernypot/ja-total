@@ -98,8 +98,19 @@ function enrichRequisitoRows(rows) {
     ...row,
     numero: row.numero ?? null,
     orden: row.orden ?? 0,
+    sesiones_esperadas: clampSesiones(row.sesiones_esperadas, 3),
     clase_requisito_secciones: row.clase_requisito_secciones || null,
   }));
+}
+
+export function clampSesiones(value, fallback = 3) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return clampSesiones(fallback, 3);
+  return Math.max(0, Math.min(10, Math.round(n)));
+}
+
+export function defaultSesionesEsperadas(req) {
+  return clampSesiones(req?.sesiones_esperadas, 3);
 }
 
 export function groupRequisitosBySeccion(requisitos = [], secciones = [], { includeEmptySections = false } = {}) {
@@ -255,7 +266,7 @@ export function getRequisitoDisplayText(req, completion = null) {
   return original;
 }
 
-export async function updateClaseRequisito(id, { descripcion, texto_opcional, seccion_id, numero, orden } = {}) {
+export async function updateClaseRequisito(id, { descripcion, texto_opcional, seccion_id, numero, orden, sesiones_esperadas } = {}) {
   const payload = {};
   if (descripcion !== undefined) payload.descripcion = descripcion.trim();
   if (texto_opcional !== undefined) {
@@ -264,6 +275,7 @@ export async function updateClaseRequisito(id, { descripcion, texto_opcional, se
   if (seccion_id !== undefined) payload.seccion_id = seccion_id || null;
   if (numero !== undefined) payload.numero = numero === '' || numero == null ? null : Number(numero);
   if (orden !== undefined) payload.orden = Number(orden) || 0;
+  if (sesiones_esperadas !== undefined) payload.sesiones_esperadas = clampSesiones(sesiones_esperadas);
   return sb.from('clase_requisitos').update(payload).eq('id', id);
 }
 
@@ -282,8 +294,8 @@ export async function fetchRequisitoSeccionesByClase(claseId) {
 
 export async function fetchRequisitosByClase(claseId) {
   const selects = [
+    'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, sesiones_esperadas, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
-    'id, clase_id, seccion_id, numero, orden, descripcion, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, descripcion',
   ];
 
@@ -303,14 +315,14 @@ export async function fetchRequisitosByClase(claseId) {
     if (!error) {
       return { data: enrichRequisitoRows(data), error: null };
     }
-    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'orden') || isMissingColumnError(error, 'texto_opcional')) continue;
+    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'orden') || isMissingColumnError(error, 'texto_opcional') || isMissingColumnError(error, 'sesiones_esperadas')) continue;
     return { data: [], error };
   }
 
   return { data: [], error: null };
 }
 
-export async function createClaseRequisito(claseId, descripcion, { seccion_id, numero, orden, texto_opcional } = {}) {
+export async function createClaseRequisito(claseId, descripcion, { seccion_id, numero, orden, texto_opcional, sesiones_esperadas } = {}) {
   const payload = {
     clase_id: claseId,
     descripcion: descripcion.trim(),
@@ -318,10 +330,14 @@ export async function createClaseRequisito(claseId, descripcion, { seccion_id, n
     numero: numero ?? null,
     orden: orden ?? 0,
     texto_opcional: texto_opcional?.trim() || null,
+    sesiones_esperadas: clampSesiones(sesiones_esperadas, 3),
   };
 
   const full = await sb.from('clase_requisitos').insert([payload]);
   if (!full.error) return full;
+  if (isMissingColumnError(full.error, 'sesiones_esperadas')) {
+    delete payload.sesiones_esperadas;
+  }
   if (isMissingColumnError(full.error, 'texto_opcional')) {
     delete payload.texto_opcional;
     const retry = await sb.from('clase_requisitos').insert([payload]);
@@ -539,8 +555,8 @@ export async function fetchRequisitosForClases(claseIds) {
   if (!claseIds.length) return { data: [], error: null };
 
   const selects = [
+    'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, sesiones_esperadas, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, seccion_id, numero, orden, descripcion, texto_opcional, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
-    'id, clase_id, seccion_id, numero, orden, descripcion, clase_requisito_secciones(id, parte, numero_romano, nombre, orden)',
     'id, clase_id, descripcion',
   ];
 
@@ -552,7 +568,7 @@ export async function fetchRequisitosForClases(claseIds) {
     if (!error) {
       return { data: enrichRequisitoRows(data), error: null };
     }
-    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'texto_opcional')) continue;
+    if (isMissingColumnError(error, 'seccion_id') || isMissingColumnError(error, 'texto_opcional') || isMissingColumnError(error, 'sesiones_esperadas')) continue;
     return { data: [], error };
   }
 

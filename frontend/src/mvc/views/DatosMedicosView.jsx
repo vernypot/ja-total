@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import FichaMedicaPrint from '../../components/FichaMedicaPrint';
 import { BLOOD_TYPES, RH_FACTORS, isDenominationalInsuranceNearExpiry } from '../models/datosMedicos.model';
 import '../../styles/form.css';
@@ -204,7 +205,7 @@ export default function DatosMedicosView({
         marginBottom: '20px',
         flexWrap: 'wrap',
       }}>
-        <h3 style={{ margin: 0 }}>{t('tabMedicalData')}</h3>
+        <h3 style={{ margin: 0 }}>{t('tabMedicalData')} <PageHelpLink pageId="memberMedical" compact /></h3>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {canPrint && (
             <button type="button" onClick={printFicha} className="ficha-medica-print-btn no-print">

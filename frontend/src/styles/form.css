@@ -226,3 +226,52 @@
 .form-link-btn:hover {
   text-decoration: underline;
 }
+
+.form-field {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-field-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 4px;
+}
+
+.form-field-required {
+  color: #dc2626;
+}
+
+.form-field-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.form-field-control .form-input,
+.form-field-control input,
+.form-field-control select,
+.form-field-control textarea {
+  width: 100%;
+}
+
+.form-field--invalid .form-input,
+.form-field--invalid input,
+.form-field--invalid select,
+.form-field--invalid textarea {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+.form-field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #dc2626;
+}

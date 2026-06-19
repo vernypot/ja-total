@@ -6,10 +6,13 @@ import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as ClubesModel from '../models/clubes.model';
 import * as IglesiasModel from '../models/iglesias.model';
 
 export function useClubesController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeIglesia } = useContext(IglesiaContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
@@ -28,6 +31,7 @@ export function useClubesController() {
   const [activeIglesiaData, setActiveIglesiaData] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [clubForm, setClubForm] = useState({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
@@ -87,8 +91,13 @@ export function useClubesController() {
     if (!canManage) return;
     setError('');
 
-    if (!clubForm.nombre.trim() || !clubForm.iglesia_id) {
-      setError('Nombre e iglesia son requeridos');
+    const validation = validateForm('club', {
+      nombre: clubForm.nombre,
+      iglesia_id: clubForm.iglesia_id || iglesiaId,
+    }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -230,6 +239,7 @@ export function useClubesController() {
     showInactive,
     setShowInactive,
     error,
+    fieldErrors,
     loading,
     showForm,
     setShowForm,

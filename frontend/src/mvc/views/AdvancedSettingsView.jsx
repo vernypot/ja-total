@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 export default function AdvancedSettingsView({
@@ -32,7 +33,7 @@ export default function AdvancedSettingsView({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>⚙️ {t('advancedSettings')}</h1>
+        <h1>⚙️ {t('advancedSettings')} <PageHelpLink pageId="advancedSettings" /></h1>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

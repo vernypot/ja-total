@@ -1,0 +1,203 @@
+.page-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  cursor: pointer;
+  vertical-align: middle;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.page-help-link:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.page-help-link--compact {
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.page-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.page-help-dialog {
+  width: 100%;
+  max-width: 640px;
+  max-height: min(85vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.page-help-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.page-help-dialog-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-help-dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.page-help-dialog-head h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1e3a8a;
+}
+
+.page-help-close {
+  border: none;
+  background: #e5e7eb;
+  color: #374151;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.page-help-close:hover {
+  background: #d1d5db;
+}
+
+.page-help-cancel-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.page-help-cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+.page-help-body {
+  padding: 16px 18px 20px;
+}
+
+.page-help-section {
+  margin-bottom: 18px;
+}
+
+.page-help-section:last-child {
+  margin-bottom: 0;
+}
+
+.page-help-section h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.page-help-section p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4b5563;
+}
+
+.page-help-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4b5563;
+}
+
+.page-help-list li {
+  margin-bottom: 6px;
+}
+
+.page-help-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.page-help-field {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.page-help-field strong {
+  display: block;
+  font-size: 12px;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.page-help-field span {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.page-help-edit-btn {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.page-help-edit-btn:hover {
+  background: #dbeafe;
+}
+
+.page-help-custom-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  border-radius: 999px;
+}

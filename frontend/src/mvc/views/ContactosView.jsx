@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 export default function ContactosView({
@@ -44,7 +45,7 @@ export default function ContactosView({
         marginBottom: '20px',
         flexWrap: 'wrap',
       }}>
-        <h3 style={{ margin: 0 }}>{t('tabContacts')}</h3>
+        <h3 style={{ margin: 0 }}>{t('tabContacts')} <PageHelpLink pageId="memberContacts" compact /></h3>
         {canManage && (
           <button
             type="button"

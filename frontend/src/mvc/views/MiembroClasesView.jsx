@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import MiembroClaseRequisitosList from '../../components/MiembroClaseRequisitosList';
 import MiembroClaseProgressModal from '../../components/MiembroClaseProgressModal';
+import { PageHelpLink } from '../../components/PageHelp';
 
 const classActionBtnStyle = (completed) => ({
   padding: '2px 7px',
@@ -72,7 +73,7 @@ export default function MiembroClasesView({
 
   return (
     <div>
-      <h3>{t('tabClasses')}</h3>
+      <h3>{t('tabClasses')} <PageHelpLink pageId="memberClasses" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
 
       {memberTipos.length === 0 && (

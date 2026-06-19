@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { isMeetingScheduled, normalizeMeetingHora } from '../mvc/models/planificacion.model';
+import { clampSesiones, defaultSesionesEsperadas } from '../mvc/models/clases.model';
 
 const DRAG_TYPE = 'application/x-plan-requisito';
 
@@ -14,15 +15,164 @@ function sectionTitle(seccion) {
   return `${roman}${seccion.nombre}`;
 }
 
-function RequisitoChip({ req, draggable, onDragStart, onRemove, hideClase = false, t }) {
-  const { num, text, cls } = requisitoLabel(req.clase_requisitos || req);
-  const requisitoId = req.clase_requisito_id || req.id;
+function findRequisitoInfo(requisitoId, assignmentsByMeeting, unassignedRequisitos) {
+  for (const list of Object.values(assignmentsByMeeting)) {
+    const row = (list || []).find(a => a.clase_requisito_id === requisitoId);
+    if (row) {
+      const req = row.clase_requisitos || {};
+      const { num, text } = requisitoLabel(req);
+      return {
+        label: `${num}${text}`,
+        defaultSesiones: clampSesiones(row.sesiones, defaultSesionesEsperadas(req)),
+      };
+    }
+  }
+  const poolReq = unassignedRequisitos.find(r => r.id === requisitoId);
+  if (poolReq) {
+    const { num, text } = requisitoLabel(poolReq);
+    return {
+      label: `${num}${text}`,
+      defaultSesiones: defaultSesionesEsperadas(poolReq),
+    };
+  }
+  return { label: '', defaultSesiones: 3 };
+}
+
+function AssignSessionsModal({ pending, onConfirm, onCancel, t }) {
+  const [value, setValue] = useState('3');
+
+  useEffect(() => {
+    if (pending) setValue(String(pending.defaultSesiones));
+  }, [pending]);
+
+  if (!pending) return null;
 
   return (
     <div
-      draggable={draggable}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assign-sessions-title"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        padding: '16px',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '360px',
+          backgroundColor: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 id="assign-sessions-title" style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600 }}>
+          {t('planAssignSessions')}
+        </h3>
+        {pending.label && (
+          <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#374151', lineHeight: 1.4 }}>
+            {pending.label}
+          </p>
+        )}
+        <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#6b7280' }}>
+          {t('planAssignSessionsHint')}
+        </p>
+        <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '12px' }}>
+          {t('planAssignSessions')}
+          <input
+            type="number"
+            min={0}
+            max={10}
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            autoFocus
+            className="form-input"
+            style={{ display: 'block', marginTop: '4px', width: '100%', fontSize: '14px' }}
+          />
+        </label>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              padding: '6px 12px',
+              fontSize: '12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              backgroundColor: '#fff',
+              cursor: 'pointer',
+            }}
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(clampSesiones(value, pending.defaultSesiones))}
+            style={{
+              padding: '6px 12px',
+              fontSize: '12px',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: '#2563eb',
+              color: '#fff',
+              cursor: 'pointer',
+            }}
+          >
+            {t('save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequisitoChip({
+  req,
+  draggable,
+  onDragStart,
+  onRemove,
+  hideClase = false,
+  assigned = false,
+  onUpdateSesiones,
+  t,
+}) {
+  const requisito = req.clase_requisitos || req;
+  const { num, text, cls } = requisitoLabel(requisito);
+  const requisitoId = req.clase_requisito_id || req.id;
+  const expectedSesiones = defaultSesionesEsperadas(requisito);
+  const assignedSesiones = assigned ? clampSesiones(req.sesiones, expectedSesiones) : null;
+  const [editingSesiones, setEditingSesiones] = useState(false);
+  const [sesionesDraft, setSesionesDraft] = useState('');
+
+  function startEditSesiones(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setSesionesDraft(String(assignedSesiones));
+    setEditingSesiones(true);
+  }
+
+  async function commitSesiones() {
+    const val = clampSesiones(sesionesDraft, assignedSesiones);
+    setEditingSesiones(false);
+    if (onUpdateSesiones && val !== assignedSesiones) {
+      await onUpdateSesiones(requisitoId, val);
+    }
+  }
+
+  return (
+    <div
+      draggable={draggable && !editingSesiones}
       onDragStart={e => {
-        if (!draggable) return;
+        if (!draggable || editingSesiones) return;
         e.dataTransfer.setData(DRAG_TYPE, requisitoId);
         e.dataTransfer.effectAllowed = 'move';
         onDragStart?.(requisitoId);
@@ -34,7 +184,7 @@ function RequisitoChip({ req, draggable, onDragStart, onRemove, hideClase = fals
         border: '1px solid #e5e7eb',
         borderRadius: '6px',
         fontSize: '12px',
-        cursor: draggable ? 'grab' : 'default',
+        cursor: draggable && !editingSesiones ? 'grab' : 'default',
         lineHeight: 1.35,
       }}
     >
@@ -44,6 +194,57 @@ function RequisitoChip({ req, draggable, onDragStart, onRemove, hideClase = fals
           {text}
           {!hideClase && cls && (
             <span style={{ display: 'block', fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{cls}</span>
+          )}
+          {!assigned && (
+            <span style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+              {expectedSesiones} {t('planSessionsShort')} ({t('planSessionsExpected')})
+            </span>
+          )}
+          {assigned && !editingSesiones && (
+            <button
+              type="button"
+              onClick={startEditSesiones}
+              title={t('planAssignSessions')}
+              style={{
+                display: 'inline-block',
+                marginTop: '4px',
+                padding: '1px 6px',
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#1d4ed8',
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '999px',
+                cursor: 'pointer',
+              }}
+            >
+              {assignedSesiones} {t('planSessionsShort')}
+            </button>
+          )}
+          {assigned && editingSesiones && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                value={sesionesDraft}
+                onChange={e => setSesionesDraft(e.target.value)}
+                onBlur={commitSesiones}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') commitSesiones();
+                  if (e.key === 'Escape') setEditingSesiones(false);
+                }}
+                autoFocus
+                style={{
+                  width: '48px',
+                  padding: '2px 4px',
+                  fontSize: '11px',
+                  border: '1px solid #93c5fd',
+                  borderRadius: '4px',
+                }}
+              />
+              <span style={{ fontSize: '10px', color: '#6b7280' }}>{t('planSessionsShort')}</span>
+            </span>
           )}
         </span>
         {onRemove && (
@@ -275,6 +476,7 @@ function MeetingColumn({
   onUpdateMeeting,
   onDrop,
   onUnassign,
+  onUpdateSesiones,
   onDragStart,
   t,
 }) {
@@ -314,6 +516,10 @@ function MeetingColumn({
   const typeLabel = reunion.tipos_evento?.nombre;
   const isEmpty = items.length === 0;
   const scheduled = isMeetingScheduled(reunion);
+  const totalSesiones = items.reduce(
+    (sum, item) => sum + clampSesiones(item.sesiones, defaultSesionesEsperadas(item.clase_requisitos)),
+    0
+  );
   const scheduleLine = reunion.fecha
     ? `${reunion.fecha}${reunion.hora ? ` · ${normalizeMeetingHora(reunion.hora)}` : ''}`
     : '';
@@ -437,6 +643,9 @@ function MeetingColumn({
             )}
             <span style={{ display: 'block', fontWeight: 500, color: '#6b7280', fontSize: '10px', marginTop: '4px' }}>
               {items.length} {items.length === 1 ? t('planReqSingular') : t('planReqPlural')}
+              {items.length > 0 && (
+                <> · {totalSesiones} {t('planSessionsShort')}</>
+              )}
             </span>
           </div>
           {canManage && expanded && (
@@ -572,9 +781,13 @@ function MeetingColumn({
                 <RequisitoChip
                   key={item.id}
                   req={item}
+                  assigned
                   draggable={canManage}
                   onDragStart={onDragStart}
                   onRemove={canManage ? id => onUnassign(id) : null}
+                  onUpdateSesiones={canManage && onUpdateSesiones
+                    ? (id, sesiones) => onUpdateSesiones(reunion.id, id, sesiones)
+                    : null}
                   t={t}
                 />
               ))
@@ -596,12 +809,14 @@ export default function PlanAgendaBoard({
   defaultClubPlace = '',
   onAssign,
   onUnassign,
+  onUpdateAssignmentSesiones,
   onUpdateMeeting,
   t,
 }) {
   const [draggingId, setDraggingId] = useState('');
+  const [pendingAssign, setPendingAssign] = useState(null);
 
-  async function handleDropOnMeeting(reunionId, requisitoId) {
+  function handleDropOnMeeting(reunionId, requisitoId) {
     if (!canManage) return;
     const currentMeeting = reuniones.find(r =>
       (assignmentsByMeeting[r.id] || []).some(a => a.clase_requisito_id === requisitoId)
@@ -610,8 +825,15 @@ export default function PlanAgendaBoard({
       setDraggingId('');
       return;
     }
-    await onAssign(reunionId, requisitoId);
+    const info = findRequisitoInfo(requisitoId, assignmentsByMeeting, unassignedRequisitos);
+    setPendingAssign({ reunionId, requisitoId, ...info });
     setDraggingId('');
+  }
+
+  async function confirmAssign(sesiones) {
+    if (!pendingAssign) return;
+    await onAssign(pendingAssign.reunionId, pendingAssign.requisitoId, sesiones);
+    setPendingAssign(null);
   }
 
   async function handleDropOnPool(requisitoId) {
@@ -626,7 +848,14 @@ export default function PlanAgendaBoard({
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '16px', marginTop: '12px' }}>
+    <>
+      <AssignSessionsModal
+        pending={pendingAssign}
+        onConfirm={confirmAssign}
+        onCancel={() => setPendingAssign(null)}
+        t={t}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '16px', marginTop: '12px' }}>
       <div>
         <h4 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
           {t('planUnassignedReqs')} ({unassignedRequisitos.length})
@@ -669,6 +898,7 @@ export default function PlanAgendaBoard({
               onUpdateMeeting={onUpdateMeeting}
               onDrop={id => handleDropOnMeeting(reunion.id, id)}
               onUnassign={id => onUnassign(reunion.id, id)}
+              onUpdateSesiones={onUpdateAssignmentSesiones}
               onDragStart={setDraggingId}
               t={t}
             />
@@ -676,6 +906,7 @@ export default function PlanAgendaBoard({
         })}
       </div>
     </div>
+    </>
   );
 }
 

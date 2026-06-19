@@ -3,8 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
 import * as PlanModel from '../models/planificacion.model';
 import * as ClasesModel from '../models/clases.model';
 import * as ClubesModel from '../models/clubes.model';
@@ -21,6 +23,7 @@ const emptyForm = () => ({
 });
 
 export function usePlanificacionPeriodoController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, canSwitchIglesia, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
@@ -50,6 +53,7 @@ export function usePlanificacionPeriodoController() {
   const [tiposEvento, setTiposEvento] = useState([]);
   const [printPayload, setPrintPayload] = useState(null);
   const [printingPlanId, setPrintingPlanId] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -74,6 +78,11 @@ export function usePlanificacionPeriodoController() {
   const groupedUnassignedPool = useMemo(
     () => ClasesModel.groupRequisitosByClaseAndSeccion(unassignedRequisitos, planDetail?.clases || []),
     [unassignedRequisitos, planDetail?.clases]
+  );
+
+  const totalAssignedSessions = useMemo(
+    () => PlanModel.countAssignedSessions(assignmentsByMeeting),
+    [assignmentsByMeeting]
   );
 
   async function loadClubs() {
@@ -211,16 +220,15 @@ export function usePlanificacionPeriodoController() {
 
   async function savePlan() {
     if (!canManage || !clubId) return;
+    const validation = validateForm('planPeriod', planForm, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
+      return;
+    }
+
     const nombre = planForm.nombre.trim();
     const numReuniones = Number(planForm.num_reuniones);
-    if (!nombre || !planForm.fecha_inicio || !planForm.fecha_fin || !numReuniones || numReuniones < 1) {
-      setError('Fill in name, dates, and number of meetings.');
-      return;
-    }
-    if (planForm.fecha_fin < planForm.fecha_inicio) {
-      setError('End date must be on or after start date.');
-      return;
-    }
 
     setSaving(true);
     setError('');
@@ -289,16 +297,20 @@ export function usePlanificacionPeriodoController() {
     loadPlans();
   }
 
-  const assignRequisito = useCallback(async (reunionId, claseRequisitoId) => {
+  const assignRequisito = useCallback(async (reunionId, claseRequisitoId, sesiones) => {
     if (!canManage || !expandedPlanId) return false;
     setError('');
 
     const requisito = requisitosPool.find(r => r.id === claseRequisitoId);
     if (!requisito) return false;
 
+    const sesionesValue = ClasesModel.clampSesiones(
+      sesiones ?? ClasesModel.defaultSesionesEsperadas(requisito)
+    );
+
     const previous = assignmentsByMeeting;
     const orden = (previous[reunionId]?.length || 0) + 1;
-    const localRow = PlanModel.buildLocalAssignment(reunionId, requisito, orden);
+    const localRow = PlanModel.buildLocalAssignment(reunionId, requisito, orden, null, sesionesValue);
     setAssignmentsByMeeting(
       PlanModel.moveAssignmentLocal(previous, {
         requisitoId: claseRequisitoId,
@@ -310,7 +322,8 @@ export function usePlanificacionPeriodoController() {
     const { data, error: assignError } = await PlanModel.assignRequisitoToMeeting(
       reunionId,
       claseRequisitoId,
-      orden
+      orden,
+      sesionesValue
     );
     if (assignError) {
       setAssignmentsByMeeting(previous);
@@ -323,7 +336,7 @@ export function usePlanificacionPeriodoController() {
         PlanModel.moveAssignmentLocal(current, {
           requisitoId: claseRequisitoId,
           toReunionId: reunionId,
-          assignmentRow: PlanModel.buildLocalAssignment(reunionId, requisito, data.orden ?? orden, data),
+          assignmentRow: PlanModel.buildLocalAssignment(reunionId, requisito, data.orden ?? orden, data, sesionesValue),
         })
       );
     }
@@ -344,6 +357,38 @@ export function usePlanificacionPeriodoController() {
     if (removeError) {
       setAssignmentsByMeeting(previous);
       setError('Error removing requirement: ' + removeError.message);
+      return false;
+    }
+
+    return true;
+  }, [canManage, expandedPlanId, assignmentsByMeeting]);
+
+  const updateAssignmentSesiones = useCallback(async (reunionId, claseRequisitoId, sesiones) => {
+    if (!canManage || !expandedPlanId) return false;
+    setError('');
+
+    const sesionesValue = ClasesModel.clampSesiones(sesiones);
+    const previous = assignmentsByMeeting;
+    const meetingRows = previous[reunionId] || [];
+    const target = meetingRows.find(row => row.clase_requisito_id === claseRequisitoId);
+    if (!target) return false;
+
+    const updatedRow = { ...target, sesiones: sesionesValue };
+    setAssignmentsByMeeting({
+      ...previous,
+      [reunionId]: meetingRows.map(row =>
+        row.clase_requisito_id === claseRequisitoId ? updatedRow : row
+      ),
+    });
+
+    const { error: updateError } = await PlanModel.updatePlanRequisitoSesiones(
+      reunionId,
+      claseRequisitoId,
+      sesionesValue
+    );
+    if (updateError) {
+      setAssignmentsByMeeting(previous);
+      setError('Error updating sessions: ' + updateError.message);
       return false;
     }
 
@@ -513,6 +558,7 @@ export function usePlanificacionPeriodoController() {
     editingPlanId,
     planForm,
     setPlanForm,
+    fieldErrors,
     searchQuery,
     setSearchQuery,
     showInactive,
@@ -531,6 +577,7 @@ export function usePlanificacionPeriodoController() {
     toggleExpandPlan,
     assignRequisito,
     unassignRequisito,
+    updateAssignmentSesiones,
     updateMeeting,
     tiposEvento,
     printPlan,
@@ -538,6 +585,7 @@ export function usePlanificacionPeriodoController() {
     printingPlanId,
     selectClub,
     assignedCount: PlanModel.countAssignedRequisitos(assignmentsByMeeting),
+    totalAssignedSessions,
     poolCount: requisitosPool.length,
   };
 }

@@ -2,6 +2,7 @@ import PasswordReset from '../../components/PasswordReset';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 const fieldKeys = {
@@ -48,7 +49,7 @@ export default function UsuariosView({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>🔑 {t('userManagement')}</h1>
+        <h1>🔑 {t('userManagement')} <PageHelpLink pageId="users" /></h1>
         <button
           style={{ padding: '10px 15px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
           onClick={() => { resetForm(); setShowForm(!showForm); }}

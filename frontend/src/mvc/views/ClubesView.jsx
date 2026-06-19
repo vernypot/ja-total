@@ -1,8 +1,12 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
+import { PageHelpLink } from '../../components/PageHelp';
 import ListSearchInput from '../../components/ListSearchInput';
 import LogoAssetField from '../../components/LogoAssetField';
+import FormField from '../../components/FormField';
+import { ChurchOrgPath } from '../../components/ChurchOrgFields';
+import { iglesiaHierarchyLabel } from '../../mvc/models/iglesias.model';
 import '../../styles/form.css';
 
 export default function ClubesView({
@@ -18,6 +22,7 @@ export default function ClubesView({
   showInactive,
   setShowInactive,
   error,
+  fieldErrors = {},
   loading,
   showForm,
   setShowForm,
@@ -42,11 +47,14 @@ export default function ClubesView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>🎯 {t('clubs')}</h1>
+          <h1>🎯 {t('clubs')} <PageHelpLink pageId="clubs" /></h1>
           {activeIglesiaData && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-              {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>
-            </p>
+            <div style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+              <div>
+                {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>
+              </div>
+              <ChurchOrgPath label={iglesiaHierarchyLabel(activeIglesiaData)} />
+            </div>
           )}
           {activeClub && (
             <p style={{ margin: '4px 0 0 0', color: '#2563eb', fontSize: '14px' }}>
@@ -91,14 +99,12 @@ export default function ClubesView({
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
             <h4 style={{ marginTop: 0 }}>{t('addNewClub')}</h4>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('name')}</label>
-                <input type="text" value={clubForm.nombre} onChange={e => setClubForm({ ...clubForm, nombre: e.target.value })} placeholder={t('clubName')} className="form-input" style={{ margin: 0 }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('church')}</label>
+              <FormField label={t('name')} htmlFor="club-nombre" error={fieldErrors.nombre} required>
+                <input id="club-nombre" type="text" value={clubForm.nombre} onChange={e => setClubForm({ ...clubForm, nombre: e.target.value })} placeholder={t('clubName')} className="form-input" style={{ margin: 0 }} aria-invalid={Boolean(fieldErrors.nombre)} />
+              </FormField>
+              <FormField label={t('church')} htmlFor="club-iglesia" error={fieldErrors.iglesia_id} required>
                 {canSelectIglesia ? (
-                  <select value={clubForm.iglesia_id} onChange={e => setClubForm({ ...clubForm, iglesia_id: e.target.value })} className="form-input" style={{ margin: 0 }}>
+                  <select id="club-iglesia" value={clubForm.iglesia_id} onChange={e => setClubForm({ ...clubForm, iglesia_id: e.target.value })} className="form-input" style={{ margin: 0 }} aria-invalid={Boolean(fieldErrors.iglesia_id)}>
                     <option value="">{t('selectChurch')}</option>
                     {iglesiasData.map(iglesia => (
                       <option key={iglesia.id} value={iglesia.id}>{iglesia.nombre}</option>
@@ -109,7 +115,7 @@ export default function ClubesView({
                     {activeIglesiaData?.nombre || '—'}
                   </div>
                 )}
-              </div>
+              </FormField>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('clubType')}</label>
                 <select value={clubForm.tipo_id} onChange={e => setClubForm({ ...clubForm, tipo_id: e.target.value })} className="form-input" style={{ margin: 0 }}>

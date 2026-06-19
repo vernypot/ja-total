@@ -6,6 +6,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
 import * as EventosModel from '../models/eventos.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as ClubesModel from '../models/clubes.model';
@@ -52,6 +53,7 @@ export function useEventosController() {
   const [showInactive, setShowInactive] = useState(false);
   const [editingEventId, setEditingEventId] = useState('');
   const [savingEvent, setSavingEvent] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [bulkUpdatingEventId, setBulkUpdatingEventId] = useState('');
 
   const activeClubData = useMemo(
@@ -206,8 +208,19 @@ export function useEventosController() {
     if (!canManage || !clubId) return;
     setError('');
 
-    if (!eventForm.fecha || !eventForm.hora || !eventForm.lugar.trim()) {
-      setError('Date, time, and place are required');
+    const miembroIds = eventForm.requiere_confirmacion
+      ? (eventForm.memberAssignmentMode === 'all'
+        ? clubMembers.map(m => m.id)
+        : eventForm.selectedMemberIds)
+      : [];
+
+    const validation = validateForm('event', {
+      ...eventForm,
+      selectedMemberIds: miembroIds.length ? miembroIds : eventForm.selectedMemberIds,
+    }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -239,19 +252,19 @@ export function useEventosController() {
     if (!canManage || !clubId) return;
     setError('');
 
-    if (!eventForm.fecha || !eventForm.hora || !eventForm.lugar.trim()) {
-      setError('Date, time, and place are required');
-      return;
-    }
-
     const miembroIds = eventForm.requiere_confirmacion
       ? (eventForm.memberAssignmentMode === 'all'
         ? clubMembers.map(m => m.id)
         : eventForm.selectedMemberIds)
       : [];
 
-    if (eventForm.requiere_confirmacion && eventForm.memberAssignmentMode === 'specific' && miembroIds.length === 0) {
-      setError('Select at least one member');
+    const validation = validateForm('event', {
+      ...eventForm,
+      selectedMemberIds: miembroIds,
+    }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -555,6 +568,7 @@ export function useEventosController() {
     deactivateEvent,
     reactivateEvent,
     savingEvent,
+    fieldErrors,
     bulkUpdatingEventId,
     confirmAllPending,
     setAllAttendance,

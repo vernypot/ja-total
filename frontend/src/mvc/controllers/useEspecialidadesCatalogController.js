@@ -3,9 +3,12 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as EspecialidadesModel from '../models/especialidades.model';
 
 export function useEspecialidadesCatalogController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeClub } = useContext(ClubContext);
   const userRole = getUserRole(user, userData);
@@ -20,6 +23,7 @@ export function useEspecialidadesCatalogController() {
   const [showAllTypes, setShowAllTypes] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -127,12 +131,11 @@ export function useEspecialidadesCatalogController() {
 
   async function save() {
     if (!canManage) return;
-    if (!form.nombre.trim()) {
-      setError('Name is required');
-      return;
-    }
-    if (!form.tipo_id) {
-      setError('Club type is required');
+
+    const validation = validateForm('especialidad', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -286,6 +289,7 @@ export function useEspecialidadesCatalogController() {
     showInactive,
     setShowInactive,
     error,
+    fieldErrors,
     showForm,
     editingId,
     canManage,

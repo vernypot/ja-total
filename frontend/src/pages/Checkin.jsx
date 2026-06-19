@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
+import { PageHelpLink } from '../components/PageHelp';
 import { parseTokenFromQrPayload } from '../mvc/models/carnet.model';
 import * as EventosModel from '../mvc/models/eventos.model';
 
@@ -34,7 +35,7 @@ export default function Checkin() {
 
   return (
     <div className="container" style={{ padding: '24px' }}>
-      <h1>{t('memberCheckin')}</h1>
+      <h1>{t('memberCheckin')} <PageHelpLink pageId="checkin" /></h1>
       {error && <div className="alert alert-error">{error}</div>}
       {message && !error && <div className="alert" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>{message}</div>}
     </div>

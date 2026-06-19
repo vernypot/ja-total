@@ -4,6 +4,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import { isEspecialidadAssignable } from '../models/especialidades.model';
 import ListSearchInput from '../../components/ListSearchInput';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 function RequisitosSection({
@@ -269,7 +270,7 @@ export default function EspecialidadesCatalogView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>🎖️ {t('specialties')}</h1>
+          <h1>🎖️ {t('specialties')} <PageHelpLink pageId="specialties" /></h1>
           {activeClub && (
             <p style={{ margin: '4px 0 0 0', color: '#2563eb', fontSize: '14px' }}>
               {t('activeClub')}: <strong>{clubDisplayName(activeClub)}</strong>

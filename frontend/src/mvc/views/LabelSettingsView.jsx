@@ -1,4 +1,5 @@
 import '../../styles/form.css';
+import { PageHelpLink } from '../../components/PageHelp';
 
 export default function LabelSettingsView({
   t,
@@ -19,7 +20,7 @@ export default function LabelSettingsView({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>⚙️ {t('labelSettings')}</h1>
+        <h1>⚙️ {t('labelSettings')} <PageHelpLink pageId="labelSettings" /></h1>
       </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>

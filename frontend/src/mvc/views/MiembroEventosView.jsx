@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
+import { PageHelpLink } from '../../components/PageHelp';
 
 function AttendanceBadge({ estado, t }) {
   const colors = {
@@ -66,7 +67,7 @@ export default function MiembroEventosView({
 
   return (
     <div>
-      <h3>{t('tabEvents')}</h3>
+      <h3>{t('tabEvents')} <PageHelpLink pageId="memberEvents" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
 
       {rows.length === 0 ? (

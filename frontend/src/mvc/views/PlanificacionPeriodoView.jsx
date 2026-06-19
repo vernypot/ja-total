@@ -2,6 +2,9 @@ import { useLanguage } from '../../hooks/useLanguage';
 import ListSearchInput from '../../components/ListSearchInput';
 import PlanAgendaBoard from '../../components/PlanAgendaBoard';
 import PlanPeriodoPrint from '../../components/PlanPeriodoPrint';
+import PlanSessionsSummary from '../../components/PlanSessionsSummary';
+import { PageHelpLink } from '../../components/PageHelp';
+import FormField from '../../components/FormField';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 import '../../styles/planPeriodoPrint.css';
@@ -23,6 +26,7 @@ export default function PlanificacionPeriodoView({
   unassignedRequisitos,
   groupedUnassignedPool,
   assignedCount,
+  totalAssignedSessions,
   poolCount,
   error,
   loading,
@@ -31,6 +35,7 @@ export default function PlanificacionPeriodoView({
   editingPlanId,
   planForm,
   setPlanForm,
+  fieldErrors = {},
   searchQuery,
   setSearchQuery,
   showInactive,
@@ -46,6 +51,7 @@ export default function PlanificacionPeriodoView({
   toggleExpandPlan,
   assignRequisito,
   unassignRequisito,
+  updateAssignmentSesiones,
   updateMeeting,
   tiposEvento,
   printPlan,
@@ -63,7 +69,7 @@ export default function PlanificacionPeriodoView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>📋 {t('periodPlanning')}</h1>
+          <h1>📋 {t('periodPlanning')} <PageHelpLink pageId="periodPlanning" /></h1>
           <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>{t('periodPlanningHint')}</p>
         </div>
         {canManage && clubId && (
@@ -124,46 +130,50 @@ export default function PlanificacionPeriodoView({
                 {editingPlanId ? t('editPlan') : t('newPlan')}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-                <label style={{ gridColumn: '1 / -1', fontSize: '13px' }}>
-                  {t('planName')}
+                <FormField label={t('planName')} htmlFor="plan-nombre" error={fieldErrors.nombre} required className="form-field--full">
                   <input
+                    id="plan-nombre"
                     className="form-input"
                     value={planForm.nombre}
                     onChange={e => setPlanForm(f => ({ ...f, nombre: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
+                    aria-invalid={Boolean(fieldErrors.nombre)}
                   />
-                </label>
-                <label style={{ fontSize: '13px' }}>
-                  {t('planStartDate')}
+                </FormField>
+                <FormField label={t('planStartDate')} htmlFor="plan-inicio" error={fieldErrors.fecha_inicio} required>
                   <input
+                    id="plan-inicio"
                     type="date"
                     className="form-input"
                     value={planForm.fecha_inicio}
                     onChange={e => setPlanForm(f => ({ ...f, fecha_inicio: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
+                    aria-invalid={Boolean(fieldErrors.fecha_inicio)}
                   />
-                </label>
-                <label style={{ fontSize: '13px' }}>
-                  {t('planEndDate')}
+                </FormField>
+                <FormField label={t('planEndDate')} htmlFor="plan-fin" error={fieldErrors.fecha_fin} required>
                   <input
+                    id="plan-fin"
                     type="date"
                     className="form-input"
                     value={planForm.fecha_fin}
                     onChange={e => setPlanForm(f => ({ ...f, fecha_fin: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
+                    aria-invalid={Boolean(fieldErrors.fecha_fin)}
                   />
-                </label>
-                <label style={{ fontSize: '13px' }}>
-                  {t('planNumMeetings')}
+                </FormField>
+                <FormField label={t('planNumMeetings')} htmlFor="plan-reuniones" error={fieldErrors.num_reuniones} required>
                   <input
+                    id="plan-reuniones"
                     type="number"
                     min="1"
                     className="form-input"
                     value={planForm.num_reuniones}
                     onChange={e => setPlanForm(f => ({ ...f, num_reuniones: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
+                    aria-invalid={Boolean(fieldErrors.num_reuniones)}
                   />
-                </label>
+                </FormField>
               </div>
 
               <div style={{ marginTop: '12px' }}>
@@ -260,6 +270,9 @@ export default function PlanificacionPeriodoView({
                           {expanded && (
                             <> · {assignedCount}/{poolCount} {t('planReqsAssigned')}</>
                           )}
+                          {expanded && totalAssignedSessions != null && (
+                            <> · {totalAssignedSessions} {t('planSessionsShort')}</>
+                          )}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
@@ -333,19 +346,27 @@ export default function PlanificacionPeriodoView({
                             {t('planNoMeetings')}
                           </p>
                         ) : (
-                          <PlanAgendaBoard
-                            reuniones={reuniones}
-                            assignmentsByMeeting={assignmentsByMeeting}
-                            unassignedRequisitos={unassignedRequisitos}
-                            groupedUnassignedPool={groupedUnassignedPool}
-                            canManage={canManage}
-                            tiposEvento={tiposEvento}
-                            defaultClubPlace={activeClubData?.nombre || ''}
-                            onAssign={assignRequisito}
-                            onUnassign={unassignRequisito}
-                            onUpdateMeeting={updateMeeting}
-                            t={t}
-                          />
+                          <>
+                            <PlanAgendaBoard
+                              reuniones={reuniones}
+                              assignmentsByMeeting={assignmentsByMeeting}
+                              unassignedRequisitos={unassignedRequisitos}
+                              groupedUnassignedPool={groupedUnassignedPool}
+                              canManage={canManage}
+                              tiposEvento={tiposEvento}
+                              defaultClubPlace={activeClubData?.nombre || ''}
+                              onAssign={assignRequisito}
+                              onUnassign={unassignRequisito}
+                              onUpdateAssignmentSesiones={updateAssignmentSesiones}
+                              onUpdateMeeting={updateMeeting}
+                              t={t}
+                            />
+                            <PlanSessionsSummary
+                              reuniones={reuniones}
+                              assignmentsByMeeting={assignmentsByMeeting}
+                              t={t}
+                            />
+                          </>
                         )}
                       </div>
                     )}
@@ -363,6 +384,7 @@ export default function PlanificacionPeriodoView({
             plan={printPayload.plan}
             clubName={clubDisplayName(activeClubData)}
             groupedTimeline={printPayload.groupedTimeline}
+            sessionsSummary={printPayload.sessionsSummary}
             t={t}
             language={language}
           />

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import NoticiaHtml from '../../components/NoticiaHtml';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/home.css';
 
 function HomePanels({
@@ -177,7 +178,7 @@ export default function HomeView(props) {
     <div className="container home-dashboard">
       <div className="home-header">
         <div>
-          <h1>🏠 {t('homeTitle')}</h1>
+          <h1>🏠 {t('homeTitle')} <PageHelpLink pageId="home" /></h1>
           <p className="home-header-sub">
             {iglesiaNombre
               ? `${t('churchLabel')}: ${iglesiaNombre}`

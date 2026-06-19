@@ -2,17 +2,21 @@ import { useEffect, useState, useContext, useMemo } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as ContactosModel from '../models/contactos.model';
 
 const EMPTY_FORM = { nombre: '', telefono: '', relacion: '' };
 
 export function useContactosController(miembroId) {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const userRole = getUserRole(user, userData);
   const canManage = canManageChurchData(userRole);
 
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -56,8 +60,11 @@ export function useContactosController(miembroId) {
 
   async function save() {
     if (!canManage) return;
-    if (!form.nombre.trim() || !form.telefono.trim()) {
-      setError('Name and phone are required');
+
+    const validation = validateForm('contacto', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -150,6 +157,7 @@ export function useContactosController(miembroId) {
     showInactive,
     setShowInactive,
     error,
+    fieldErrors,
     loading,
     showForm,
     editingId,

@@ -5,6 +5,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import { stripHtmlTags } from '../../utils/sanitizeHtml';
+import { validateForm } from '../../utils/validateForm';
 import * as NoticiasModel from '../models/noticias.model';
 import * as IglesiasModel from '../models/iglesias.model';
 
@@ -33,6 +34,7 @@ export function useNoticiasController() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const filteredItems = useMemo(
     () => filterBySearch(items, searchQuery, n => [
@@ -96,8 +98,11 @@ export function useNoticiasController() {
 
   async function save() {
     if (!effectiveIglesiaId) return;
-    if (!stripHtmlTags(form.titulo) || !stripHtmlTags(form.contenido)) {
-      setError(t('noticiasRequiredFields'));
+
+    const validation = validateForm('noticia', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -168,6 +173,7 @@ export function useNoticiasController() {
     loading,
     saving,
     error,
+    fieldErrors,
     canManage,
     openCreateForm,
     closeForm,

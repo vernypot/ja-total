@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { formatEventTime } from '../../utils/calendar';
+import { PageHelpLink } from '../../components/PageHelp';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -62,7 +63,7 @@ export default function CalendarioClubView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>🗓️ {t('clubCalendar')}</h1>
+          <h1>🗓️ {t('clubCalendar')} <PageHelpLink pageId="calendar" /></h1>
           <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>{t('clubCalendarHint')}</p>
         </div>
       </div>

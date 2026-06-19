@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 export default function TiposEventoView({
@@ -29,7 +30,7 @@ export default function TiposEventoView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>🏷️ {t('eventTypes')}</h1>
+          <h1>🏷️ {t('eventTypes')} <PageHelpLink pageId="eventTypes" /></h1>
           <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '13px' }}>
             {t('eventTypesHint')}
           </p>

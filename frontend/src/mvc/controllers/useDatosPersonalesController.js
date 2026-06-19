@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { validateForm } from '../../utils/validateForm';
 import * as MiembrosModel from '../models/miembros.model';
 
 export function calcularEdad(fecha) {
@@ -61,6 +62,7 @@ export function useDatosPersonalesController(miembroId) {
   const [editing, setEditing] = useState(isNew);
   const [error, setError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [photoError, setPhotoError] = useState('');
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -170,8 +172,10 @@ export function useDatosPersonalesController(miembroId) {
   }
 
   async function save() {
-    if (!form.nombre.trim()) {
-      setSaveError('First name is required');
+    const validation = validateForm('memberPersonal', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setSaveError(validation.firstError || validation.formError);
       return;
     }
 
@@ -248,6 +252,7 @@ export function useDatosPersonalesController(miembroId) {
     editing,
     error,
     saveError,
+    fieldErrors,
     photoError,
     loading,
     saving,

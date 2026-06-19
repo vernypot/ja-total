@@ -1,6 +1,7 @@
 import PasswordReset from '../../components/PasswordReset';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 const roleColors = { superadmin: '#dc2626', admin: '#2563eb', user: '#16a34a' };
@@ -46,7 +47,7 @@ export default function UserProfileView({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>👤 {t('profile')}</h1>
+        <h1>👤 {t('profile')} <PageHelpLink pageId="profile" /></h1>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

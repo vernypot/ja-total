@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 
 function RequirementsList({ requisitos, t }) {
   const active = (requisitos || []).filter(r => (r.estado || 'activo') === 'activo');
@@ -38,7 +39,7 @@ export default function MiembroEspecialidadesView({
 
   return (
     <div>
-      <h3>{t('tabSpecialties')}</h3>
+      <h3>{t('tabSpecialties')} <PageHelpLink pageId="memberSpecialties" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
 
       {memberTipos.length === 0 && (

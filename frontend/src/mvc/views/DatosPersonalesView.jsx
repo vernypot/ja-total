@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 const FIELDS = [
@@ -170,7 +171,7 @@ export default function DatosPersonalesView({
         marginBottom: '20px',
         flexWrap: 'wrap',
       }}>
-        <h3 style={{ margin: 0 }}>{t('personalData')}</h3>
+        <h3 style={{ margin: 0 }}>{t('personalData')} <PageHelpLink pageId="memberPersonal" compact /></h3>
         {canManage && !editing && (
           <button
             type="button"

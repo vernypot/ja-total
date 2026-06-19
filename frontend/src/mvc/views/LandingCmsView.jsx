@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 function Field({ label, children }) {
@@ -273,7 +274,7 @@ export default function LandingCmsView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>🌐 {t('landingCmsTitle')}</h1>
+          <h1>🌐 {t('landingCmsTitle')} <PageHelpLink pageId="landingCms" /></h1>
           <p style={{ margin: '8px 0 0', color: '#666' }}>{t('landingCmsHint')}</p>
         </div>
         <a href="/" target="_blank" rel="noreferrer" className="landing-btn landing-btn-primary" style={{ textDecoration: 'none' }}>

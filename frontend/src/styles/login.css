@@ -139,6 +139,17 @@
   border-color: var(--lp-teal);
 }
 
+.login-page-field--invalid input {
+  border-color: #dc2626;
+}
+
+.login-page-field-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: #dc2626;
+}
+
 .login-page-submit {
   width: 100%;
   margin-top: 0.5rem;

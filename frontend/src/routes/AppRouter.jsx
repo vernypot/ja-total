@@ -20,6 +20,8 @@ import AdvancedSettings from "../pages/AdvancedSettings";
 import PlanificacionPeriodo from "../pages/PlanificacionPeriodo";
 import CalendarioClub from "../pages/CalendarioClub";
 import LandingCms from "../pages/LandingCms";
+import EstructuraOrganizacional from "../pages/EstructuraOrganizacional";
+import PageHelpAdmin from "../pages/PageHelpAdmin";
 import UserProfile from "../pages/UserProfile";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
@@ -46,6 +48,7 @@ export default function AppRouter() {
           <Route path="noticias" element={<AdminRoute element={<Noticias />} />} />
           <Route path="miembros" element={<Miembros />} />
           <Route path="iglesias" element={<AdminRoute element={<Iglesias />} />} />
+          <Route path="estructura" element={<SuperAdminRoute element={<EstructuraOrganizacional />} />} />
           <Route path="contactos" element={<Contactos />} />
           <Route path="clubes" element={<Clubes />} />
           <Route path="eventos" element={<Eventos />} />
@@ -59,6 +62,7 @@ export default function AppRouter() {
           <Route path="label-settings" element={<SuperAdminRoute element={<LabelSettings />} />} />
           <Route path="advanced-settings" element={<SuperAdminRoute element={<AdvancedSettings />} />} />
           <Route path="landing-cms" element={<SuperAdminRoute element={<LandingCms />} />} />
+          <Route path="page-help" element={<SuperAdminRoute element={<PageHelpAdmin />} />} />
           <Route path="profile" element={<UserProfile />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />
 

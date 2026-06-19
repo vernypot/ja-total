@@ -84,6 +84,18 @@ function RequisitoRow({
             style={{ margin: '6px 0 0', width: '100%', fontSize: '12px' }}
           />
         </details>
+        <label style={{ display: 'block', fontSize: '11px', marginBottom: '8px' }}>
+          {t('classReqExpectedSessions')}
+          <input
+            type="number"
+            min={0}
+            max={10}
+            value={requisitoDraft.sesiones_esperadas}
+            onChange={e => setRequisitoDraft(d => ({ ...d, sesiones_esperadas: e.target.value }))}
+            className="form-input"
+            style={{ margin: '4px 0 0', width: '72px', fontSize: '12px' }}
+          />
+        </label>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button type="button" onClick={saveRequisito} style={{ ...btnSmall, backgroundColor: '#16a34a', color: 'white' }}>
             ✓ {t('save')}
@@ -106,6 +118,9 @@ function RequisitoRow({
             {req.texto_opcional}
           </span>
         )}
+        <span style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+          {req.sesiones_esperadas ?? 3} {t('planSessionsShort')} ({t('planSessionsExpected')})
+        </span>
       </span>
       <span style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
         <button
@@ -353,6 +368,18 @@ export default function ClaseRequisitosEditor({
             style={{ margin: '6px 0 0', width: '100%', fontSize: '12px' }}
           />
         </details>
+        <label style={{ display: 'block', fontSize: '11px', marginTop: '8px' }}>
+          {t('classReqExpectedSessions')}
+          <input
+            type="number"
+            min={0}
+            max={10}
+            value={newRequisitoForm.sesiones_esperadas}
+            onChange={e => setNewRequisitoForm(f => ({ ...f, sesiones_esperadas: e.target.value }))}
+            className="form-input"
+            style={{ margin: '4px 0 0', width: '72px', fontSize: '12px' }}
+          />
+        </label>
         <button
           type="button"
           onClick={addRequisito}

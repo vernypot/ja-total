@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { PathfinderShield } from '../../components/landing/YouthClubIcons';
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/login.css';
 
 export default function LoginView({
@@ -10,6 +11,7 @@ export default function LoginView({
   password,
   setPassword,
   error,
+  fieldErrors = {},
   isLoading,
   handleLogin,
 }) {
@@ -31,10 +33,10 @@ export default function LoginView({
           <div className="login-page-form-top">
             <LanguageSwitcher />
           </div>
-          <h2>{t('loginTitle')}</h2>
+          <h2>{t('loginTitle')} <PageHelpLink pageId="login" compact /></h2>
           <p className="login-page-form-sub">{t('loginSubtitle')}</p>
           {error && <div className="login-page-error">{error}</div>}
-          <div className="login-page-field">
+          <div className={`login-page-field ${fieldErrors.email ? 'login-page-field--invalid' : ''}`}>
             <label htmlFor="login-email">{t('loginEmail')}</label>
             <input
               id="login-email"
@@ -43,9 +45,11 @@ export default function LoginView({
               value={email}
               onChange={e => setEmail(e.target.value)}
               disabled={isLoading}
+              aria-invalid={Boolean(fieldErrors.email)}
             />
+            {fieldErrors.email && <span className="login-page-field-error" role="alert">{fieldErrors.email}</span>}
           </div>
-          <div className="login-page-field">
+          <div className={`login-page-field ${fieldErrors.password ? 'login-page-field--invalid' : ''}`}>
             <label htmlFor="login-password">{t('loginPassword')}</label>
             <input
               id="login-password"
@@ -54,8 +58,10 @@ export default function LoginView({
               value={password}
               onChange={e => setPassword(e.target.value)}
               disabled={isLoading}
+              aria-invalid={Boolean(fieldErrors.password)}
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
+            {fieldErrors.password && <span className="login-page-field-error" role="alert">{fieldErrors.password}</span>}
           </div>
           <button type="button" className="login-page-submit" onClick={handleLogin} disabled={isLoading}>
             {isLoading ? t('signingIn') : t('signIn')}

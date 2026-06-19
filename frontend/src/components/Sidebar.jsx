@@ -14,6 +14,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
+  const isEstructuraActive = location.pathname.startsWith('/dashboard/estructura');
 
   return (
     <div className="sidebar">
@@ -108,6 +109,14 @@ export default function Sidebar() {
                 🏷️ {t('eventTypes')}
               </Link>
               {superadmin && (
+                <Link
+                  to="/dashboard/estructura"
+                  className={`nav-link admin-link ${isEstructuraActive ? 'active' : ''}`}
+                >
+                  🌎 {t('orgStructureAdminLink')}
+                </Link>
+              )}
+              {superadmin && (
                 <>
                   <Link
                     to="/dashboard/usuarios"
@@ -120,6 +129,12 @@ export default function Sidebar() {
                     className={`nav-link admin-link ${isActive('/dashboard/landing-cms') ? 'active' : ''}`}
                   >
                     🌐 {t('landingCmsTitle')}
+                  </Link>
+                  <Link
+                    to="/dashboard/page-help"
+                    className={`nav-link admin-link ${isActive('/dashboard/page-help') ? 'active' : ''}`}
+                  >
+                    ❓ {t('pageHelpAdminTitle')}
                   </Link>
                   <Link
                     to="/dashboard/advanced-settings"

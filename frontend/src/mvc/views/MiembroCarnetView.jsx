@@ -1,5 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/carnet.css';
 
 function LogoImg({ src, alt, className }) {
@@ -41,6 +42,10 @@ export default function MiembroCarnetView({
   return (
     <div className="carnet-screen">
       <div className="carnet-toolbar no-print">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <strong style={{ fontSize: '14px' }}>{t('tabCarnet')}</strong>
+          <PageHelpLink pageId="memberCarnet" compact />
+        </div>
         {clubs.length > 1 && (
           <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{t('carnetSelectClub')}</span>

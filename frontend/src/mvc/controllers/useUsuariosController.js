@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
-import { validatePassword } from '../../utils/passwordValidation';
+import { validateForm } from '../../utils/validateForm';
 import * as UsuariosModel from '../models/usuarios.model';
 import * as IglesiasModel from '../models/iglesias.model';
 import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
@@ -34,6 +34,7 @@ export function useUsuariosController() {
   const [iglesias, setIglesias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -94,13 +95,10 @@ export function useUsuariosController() {
     setError('');
     setSuccess('');
 
-    if (!form.nombre || !form.email) {
-      setError('Name and email are required');
-      return;
-    }
-
-    if (!form.iglesia_id) {
-      setError(t('iglesiaRequired'));
+    const validation = validateForm('usuario', { ...form, editingId }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -122,24 +120,6 @@ export function useUsuariosController() {
           telefono: form.telefono,
         });
       } else {
-        if (form.sendSetupEmail) {
-          // Password is generated server-side when sending setup email.
-        } else {
-          if (!form.password) {
-            setError(t('initialPasswordRequired'));
-            return;
-          }
-          const pwdError = validatePassword(form.password, t);
-          if (pwdError) {
-            setError(pwdError);
-            return;
-          }
-          if (form.password !== form.confirmPassword) {
-            setError(t('passwordsDoNotMatch'));
-            return;
-          }
-        }
-
         result = await UsuariosModel.createUsuarioWithAuth(
           {
             nombre: form.nombre,
@@ -295,6 +275,7 @@ export function useUsuariosController() {
     iglesias,
     loading,
     error,
+    fieldErrors,
     success,
     showForm,
     setShowForm,

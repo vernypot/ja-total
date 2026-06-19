@@ -1,53 +1,93 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import FormField from '../../components/FormField';
+import ChurchOrgFields, { ChurchOrgFilters, ChurchOrgPath } from '../../components/ChurchOrgFields';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
+
+function NoZoneBadge({ t }) {
+  return (
+    <span
+      className="badge"
+      style={{ marginLeft: '8px', backgroundColor: '#fef3c7', color: '#92400e', fontSize: '11px' }}
+    >
+      ⚠ {t('churchNoZone')}
+    </span>
+  );
+}
 
 export default function IglesiasView({
   data,
+  totalCount,
   searchQuery,
   setSearchQuery,
   iglesiaData,
   activeIglesia,
-  nombre,
-  setNombre,
+  churchForm,
+  setChurchFormField,
+  orgFilters,
+  setOrgFilter,
+  clearOrgFilters,
+  divisiones,
+  uniones,
+  campos,
+  zonas,
+  filterUniones,
+  filterCampos,
+  filterZonas,
+  hasOrgStructure,
   showForm,
   setShowForm,
   showInactive,
   setShowInactive,
   error,
+  fieldErrors = {},
   loading,
   editingId,
-  setEditingId,
-  editingNombre,
-  setEditingNombre,
   canCreate,
   canManage,
+  canEditOrg,
   canToggleEstado,
   canSelectChurch,
   save,
   startEdit,
   saveEdit,
+  cancelEdit,
   toggleEstado,
   selectIglesia,
   navigateToClubes,
+  resetChurchForm,
+  iglesiaHierarchyLabel,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
+  const isEditing = Boolean(editingId);
+  const showOrgForm = hasOrgStructure && canEditOrg;
+  const activeHierarchy = iglesiaData ? iglesiaHierarchyLabel(iglesiaData) : '';
 
   return (
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>⛪ {canSelectChurch ? t('churches') : t('myChurch')}</h1>
+          <h1>⛪ {canSelectChurch ? t('churches') : t('myChurch')} <PageHelpLink pageId="churches" /></h1>
           {iglesiaData && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
-              {t('activeChurch')}: <strong>{iglesiaData.nombre}</strong>
-            </p>
+            <div style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+              <div>
+                {t('activeChurch')}: <strong>{iglesiaData.nombre}</strong>
+              </div>
+              {activeHierarchy && <ChurchOrgPath label={activeHierarchy} />}
+              {hasOrgStructure && !activeHierarchy && (
+                <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
+                  ⚠ {t('churchNoZoneHint')}
+                </div>
+              )}
+            </div>
           )}
         </div>
-        {canCreate && (
+        {canCreate && !isEditing && (
           <button
+            type="button"
             onClick={() => setShowForm(!showForm)}
             style={{
               padding: '10px 15px',
@@ -67,20 +107,58 @@ export default function IglesiasView({
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        {canSelectChurch && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" onChange={e => setShowInactive(e.target.checked)} />
-            {t('showInactive')}
-          </label>
-        )}
-        {canSelectChurch && (
-          <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
-        )}
+      {!canSelectChurch && iglesiaData && hasOrgStructure && !isEditing && (
+        <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: '15px' }}>{t('churchOrgPlacement')}</h3>
+          {activeHierarchy ? (
+            <ChurchOrgPath label={activeHierarchy} />
+          ) : (
+            <p style={{ margin: 0, color: '#b45309', fontSize: '13px' }}>{t('churchNoZoneHint')}</p>
+          )}
+          {canManage && !activeHierarchy && (
+            <button
+              type="button"
+              className="btn btn-sm btn-edit"
+              style={{ marginTop: '10px' }}
+              onClick={() => startEdit(iglesiaData)}
+            >
+              ✏️ {t('assignZone')}
+            </button>
+          )}
         </div>
+      )}
 
-        {showForm && canCreate && (
+      <div className="card">
+        {canSelectChurch && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
+              {t('showInactive')}
+            </label>
+            <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
+          </div>
+        )}
+
+        {canSelectChurch && hasOrgStructure && (
+          <ChurchOrgFilters
+            t={t}
+            filters={orgFilters}
+            setFilter={setOrgFilter}
+            divisiones={divisiones}
+            uniones={filterUniones}
+            campos={filterCampos}
+            zonas={filterZonas}
+            onClear={clearOrgFilters}
+          />
+        )}
+
+        {canSelectChurch && hasOrgStructure && (
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#6b7280' }}>
+            {t('showing')} {data.length} {t('of')} {totalCount} {t('churches').toLowerCase()}
+          </p>
+        )}
+
+        {showForm && canCreate && !isEditing && (
           <div style={{
             padding: '15px',
             backgroundColor: '#f0f9ff',
@@ -89,25 +167,39 @@ export default function IglesiasView({
             marginBottom: '20px',
           }}>
             <h4 style={{ marginTop: 0 }}>{t('addNewChurch')}</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '15px', marginBottom: '15px', alignItems: 'end' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('name')}</label>
-                <input
-                  type="text"
-                  value={nombre}
-                  onChange={e => setNombre(e.target.value)}
-                  placeholder={t('churchName')}
-                  className="form-input"
-                  onKeyPress={e => e.key === 'Enter' && save()}
-                  style={{ margin: 0 }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+            {showOrgForm && (
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#6b7280' }}>{t('churchOrgFormHint')}</p>
+            )}
+            <FormField label={t('name')} htmlFor="iglesia-nombre" error={fieldErrors.nombre} required>
+              <input
+                id="iglesia-nombre"
+                type="text"
+                value={churchForm.nombre}
+                onChange={e => setChurchFormField('nombre', e.target.value)}
+                placeholder={t('churchName')}
+                className="form-input"
+                onKeyDown={e => e.key === 'Enter' && save()}
+                style={{ margin: 0 }}
+                aria-invalid={Boolean(fieldErrors.nombre)}
+              />
+            </FormField>
+            {showOrgForm && (
+              <ChurchOrgFields
+                t={t}
+                churchForm={churchForm}
+                setChurchFormField={setChurchFormField}
+                divisiones={divisiones}
+                uniones={uniones}
+                campos={campos}
+                zonas={zonas}
+                fieldErrors={fieldErrors}
+              />
+            )}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+              <button type="button" onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✓ {t('save')}
               </button>
-              <button onClick={() => { setShowForm(false); setNombre(''); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+              <button type="button" onClick={() => { setShowForm(false); resetChurchForm(); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✕ {t('cancel')}
               </button>
             </div>
@@ -118,64 +210,94 @@ export default function IglesiasView({
           <div className="loading">{t('loadingChurches')}</div>
         ) : data.length === 0 ? (
           <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
-            {isSearching ? t('noSearchResults') : t('noChurches')}
+            {isSearching || orgFilters.division_id ? t('noSearchResults') : t('noChurches')}
           </p>
         ) : (
           <div style={{ display: 'grid', gap: '15px' }}>
-            {data.map(i => (
-              <div key={i.id} style={{
-                padding: '15px',
-                border: activeIglesia === i.id ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                borderRadius: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: activeIglesia === i.id ? '#dbeafe' : '#fff',
-                transition: 'all 0.2s',
-              }} className="hover-shadow">
-                <div style={{ flex: 1 }}>
-                  {editingId === i.id ? (
-                    <input
-                      type="text"
-                      value={editingNombre}
-                      onChange={e => setEditingNombre(e.target.value)}
-                      className="form-input"
-                      style={{ marginBottom: '8px' }}
-                    />
-                  ) : (
-                    <strong>{i.nombre}</strong>
-                  )}
-                  <span className={`badge badge-${i.estado}`} style={{ marginLeft: '10px' }}>
-                    {estadoLabel(i.estado, t)}
-                  </span>
+            {data.map(i => {
+              const hierarchy = iglesiaHierarchyLabel(i);
+              const missingZone = hasOrgStructure && !hierarchy;
+
+              return (
+                <div key={i.id} style={{
+                  padding: '15px',
+                  border: activeIglesia === i.id ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  backgroundColor: activeIglesia === i.id ? '#dbeafe' : '#fff',
+                  transition: 'all 0.2s',
+                }} className="hover-shadow">
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    {editingId === i.id ? (
+                      <div>
+                        <FormField label={t('name')} htmlFor={`edit-iglesia-${i.id}`} error={fieldErrors.nombre} required>
+                          <input
+                            id={`edit-iglesia-${i.id}`}
+                            type="text"
+                            value={churchForm.nombre}
+                            onChange={e => setChurchFormField('nombre', e.target.value)}
+                            className="form-input"
+                          />
+                        </FormField>
+                        {showOrgForm && (
+                          <ChurchOrgFields
+                            t={t}
+                            churchForm={churchForm}
+                            setChurchFormField={setChurchFormField}
+                            divisiones={divisiones}
+                            uniones={uniones}
+                            campos={campos}
+                            zonas={zonas}
+                            fieldErrors={fieldErrors}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <strong>{i.nombre}</strong>
+                        {hierarchy && <ChurchOrgPath label={hierarchy} />}
+                        {missingZone && <NoZoneBadge t={t} />}
+                      </>
+                    )}
+                    <span
+                      className={`badge badge-${i.estado}`}
+                      style={{ marginTop: '8px', display: 'inline-block' }}
+                    >
+                      {estadoLabel(i.estado, t)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {editingId === i.id ? (
+                      <>
+                        <button type="button" onClick={saveEdit} className="btn btn-sm btn-success">✓ {t('save')}</button>
+                        <button type="button" onClick={cancelEdit} className="btn btn-sm btn-secondary">✕ {t('cancel')}</button>
+                      </>
+                    ) : (
+                      <>
+                        {canSelectChurch && (
+                          <button type="button" onClick={() => selectIglesia(i)} style={{ padding: '6px 12px', backgroundColor: activeIglesia === i.id ? '#1e40af' : '#0891b2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                            ★ {t('select')}
+                          </button>
+                        )}
+                        {canManage && (
+                          <button type="button" onClick={() => startEdit(i)} className="btn btn-sm btn-edit">✏️ {t('edit')}</button>
+                        )}
+                        <button type="button" onClick={() => navigateToClubes(i.id)} className="btn btn-sm btn-edit">🎯 {t('clubs')}</button>
+                        {canToggleEstado && (
+                          <button type="button" onClick={() => toggleEstado(i)} className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
+                            {i.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {editingId === i.id ? (
-                    <>
-                      <button onClick={saveEdit} className="btn btn-sm btn-success">✓ {t('save')}</button>
-                      <button onClick={() => setEditingId(null)} className="btn btn-sm btn-secondary">✕ {t('cancel')}</button>
-                    </>
-                  ) : (
-                    <>
-                      {canSelectChurch && (
-                        <button onClick={() => selectIglesia(i)} style={{ padding: '6px 12px', backgroundColor: activeIglesia === i.id ? '#1e40af' : '#0891b2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
-                          ★ {t('select')}
-                        </button>
-                      )}
-                      {canManage && (
-                        <button onClick={() => startEdit(i)} className="btn btn-sm btn-edit">✏️ {t('edit')}</button>
-                      )}
-                      <button onClick={() => navigateToClubes(i.id)} className="btn btn-sm btn-edit">🎯 {t('clubs')}</button>
-                      {canToggleEstado && (
-                        <button onClick={() => toggleEstado(i)} className={`btn btn-sm ${i.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
-                          {i.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

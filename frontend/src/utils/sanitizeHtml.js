@@ -47,5 +47,8 @@ export function sanitizeNoticiaFields({ titulo, resumen, contenido }) {
 /** Plain text for search, validation, and list previews */
 export function stripHtmlTags(html) {
   if (!html) return '';
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+  if (typeof DOMPurify?.sanitize === 'function') {
+    return DOMPurify.sanitize(html, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+  }
+  return String(html).replace(/<[^>]*>/g, '').trim();
 }

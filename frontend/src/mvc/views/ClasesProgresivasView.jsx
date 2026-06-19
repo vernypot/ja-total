@@ -4,6 +4,7 @@ import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
 import ClaseRequisitosList from '../../components/ClaseRequisitosList';
 import ClaseRequisitosEditor from '../../components/ClaseRequisitosEditor';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 function RequisitosSection({
@@ -265,7 +266,7 @@ export default function ClasesProgresivasView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>📚 {t('progressiveClasses')}</h1>
+          <h1>📚 {t('progressiveClasses')} <PageHelpLink pageId="progressiveClasses" /></h1>
           {activeIglesiaData && (
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>

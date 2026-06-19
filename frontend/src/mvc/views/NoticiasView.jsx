@@ -3,6 +3,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
 export default function NoticiasView({
@@ -53,7 +54,7 @@ export default function NoticiasView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>📰 {t('noticiasTitle')}</h1>
+          <h1>📰 {t('noticiasTitle')} <PageHelpLink pageId="news" /></h1>
           {iglesiaNombre && (
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{iglesiaNombre}</strong>

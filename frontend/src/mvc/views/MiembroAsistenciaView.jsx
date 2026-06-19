@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
+import { PageHelpLink } from '../../components/PageHelp';
 
 function StatCard({ label, value, tone = 'neutral' }) {
   const tones = {
@@ -109,7 +110,7 @@ export default function MiembroAsistenciaView({
 
   return (
     <div>
-      <h3>{t('tabAttendance')}</h3>
+      <h3>{t('tabAttendance')} <PageHelpLink pageId="memberAttendance" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
 
       <div style={{

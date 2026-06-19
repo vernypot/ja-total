@@ -4,11 +4,14 @@ import { IglesiaContext } from '../../context/IglesiaContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { validateForm } from '../../utils/validateForm';
+import { useLanguage } from '../../hooks/useLanguage';
 import * as ClasesModel from '../models/clases.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as IglesiasModel from '../models/iglesias.model';
 
 export function useClasesProgresivasController() {
+  const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeIglesia } = useContext(IglesiaContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
@@ -24,21 +27,22 @@ export function useClasesProgresivasController() {
   const [form, setForm] = useState({ nombre: '', tipo_id: '' });
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [expandedClassId, setExpandedClassId] = useState(null);
   const [requisitosByClase, setRequisitosByClase] = useState({});
   const [seccionesByClase, setSeccionesByClase] = useState({});
-  const [newRequisitoForm, setNewRequisitoForm] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
+  const [newRequisitoForm, setNewRequisitoForm] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
   const [newSeccionForm, setNewSeccionForm] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [editingRequisitoId, setEditingRequisitoId] = useState(null);
-  const [requisitoDraft, setRequisitoDraft] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
+  const [requisitoDraft, setRequisitoDraft] = useState({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
   const [editingSeccionId, setEditingSeccionId] = useState(null);
   const [seccionDraft, setSeccionDraft] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [searchQuery, setSearchQuery] = useState('');
 
   function resetRequisitoForms(secciones = []) {
-    setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '' });
+    setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
     setNewSeccionForm({
       parte: 'basico',
       numero_romano: '',
@@ -131,8 +135,10 @@ export function useClasesProgresivasController() {
     }
 
     setError('');
-    if (!form.nombre || !form.tipo_id) {
-      setError('Complete all required fields');
+    const validation = validateForm('claseProgresiva', form, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
       return;
     }
 
@@ -272,12 +278,13 @@ export function useClasesProgresivasController() {
       numero,
       orden,
       texto_opcional: newRequisitoForm.texto_opcional,
+      sesiones_esperadas: newRequisitoForm.sesiones_esperadas,
     });
     if (insertError) {
       setError('Error adding requirement: ' + insertError.message);
       return;
     }
-    setNewRequisitoForm({ seccion_id: seccionId || '', numero: '', descripcion: '', texto_opcional: '' });
+    setNewRequisitoForm({ seccion_id: seccionId || '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
     await loadRequisitos(claseId);
   }
 
@@ -288,6 +295,7 @@ export function useClasesProgresivasController() {
       numero: req.numero ?? '',
       descripcion: req.descripcion || '',
       texto_opcional: req.texto_opcional || '',
+      sesiones_esperadas: String(req.sesiones_esperadas ?? 3),
     });
   }
 
@@ -314,6 +322,7 @@ export function useClasesProgresivasController() {
       texto_opcional: requisitoDraft.texto_opcional,
       seccion_id: seccionId,
       numero,
+      sesiones_esperadas: requisitoDraft.sesiones_esperadas,
       ...(orden !== undefined ? { orden } : {}),
     });
     if (updateError) {
@@ -441,6 +450,7 @@ export function useClasesProgresivasController() {
     showInactive,
     setShowInactive,
     error,
+    fieldErrors,
     showForm,
     editingId,
     canManage,

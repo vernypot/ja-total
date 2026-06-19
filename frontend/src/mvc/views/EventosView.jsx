@@ -1,7 +1,9 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import FormField from '../../components/FormField';
 import EventCheckinScanner from '../../components/EventCheckinScanner';
+import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 
@@ -213,7 +215,7 @@ function EventActionButton({ children, onClick, tone = 'primary', disabled = fal
   );
 }
 
-function EventDetailsFields({ eventForm, setEventForm, tiposEvento, t }) {
+function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors = {}, t }) {
   return (
     <div className="event-form-fields">
       <div>
@@ -241,36 +243,41 @@ function EventDetailsFields({ eventForm, setEventForm, tiposEvento, t }) {
           ))}
         </select>
       </div>
-      <div>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('eventDate')}</label>
+      <FormField label={t('eventDate')} htmlFor="event-fecha" error={fieldErrors.fecha} required>
         <input
+          id="event-fecha"
           type="date"
           value={eventForm.fecha}
           onChange={e => setEventForm({ ...eventForm, fecha: e.target.value })}
           className="form-input"
           style={{ margin: 0 }}
+          aria-invalid={Boolean(fieldErrors.fecha)}
         />
-      </div>
-      <div>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('eventTime')}</label>
+      </FormField>
+      <FormField label={t('eventTime')} htmlFor="event-hora" error={fieldErrors.hora} required>
         <input
+          id="event-hora"
           type="time"
           value={eventForm.hora}
           onChange={e => setEventForm({ ...eventForm, hora: e.target.value })}
           className="form-input"
           style={{ margin: 0 }}
+          aria-invalid={Boolean(fieldErrors.hora)}
         />
-      </div>
+      </FormField>
       <div style={{ gridColumn: '1 / -1' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('eventPlace')}</label>
-        <input
-          type="text"
-          value={eventForm.lugar}
-          onChange={e => setEventForm({ ...eventForm, lugar: e.target.value })}
-          placeholder={t('eventPlace')}
-          className="form-input"
-          style={{ margin: 0 }}
-        />
+        <FormField label={t('eventPlace')} htmlFor="event-lugar" error={fieldErrors.lugar} required>
+          <input
+            id="event-lugar"
+            type="text"
+            value={eventForm.lugar}
+            onChange={e => setEventForm({ ...eventForm, lugar: e.target.value })}
+            placeholder={t('eventPlace')}
+            className="form-input"
+            style={{ margin: 0 }}
+            aria-invalid={Boolean(fieldErrors.lugar)}
+          />
+        </FormField>
       </div>
     </div>
   );
@@ -313,6 +320,7 @@ export default function EventosView({
   deactivateEvent,
   reactivateEvent,
   savingEvent,
+  fieldErrors = {},
   bulkUpdatingEventId,
   confirmAllPending,
   setAllAttendance,
@@ -341,7 +349,7 @@ export default function EventosView({
     <div className="container">
       <div className="page-header">
         <div>
-          <h1>📅 {t('events')}</h1>
+          <h1>📅 {t('events')} <PageHelpLink pageId="events" /></h1>
           {activeClubData && (
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
               {t('clubLabel')}: <strong>{clubDisplayName(activeClubData)}</strong>
@@ -413,6 +421,7 @@ export default function EventosView({
                     eventForm={eventForm}
                     setEventForm={setEventForm}
                     tiposEvento={tiposEvento}
+                    fieldErrors={fieldErrors}
                     t={t}
                   />
                 </FormSection>
@@ -609,6 +618,7 @@ export default function EventosView({
                           eventForm={eventForm}
                           setEventForm={setEventForm}
                           tiposEvento={tiposEvento}
+                          fieldErrors={fieldErrors}
                           t={t}
                         />
                         <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>

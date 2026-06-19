@@ -1,5 +1,6 @@
 import { sb } from '../../services/supabase';
 import * as EventosModel from './eventos.model';
+import { clampSesiones, defaultSesionesEsperadas } from './clases.model';
 
 function isMissingColumnError(error, column) {
   const msg = error?.message || '';
@@ -103,17 +104,36 @@ export async function fetchPlanMeetings(planId) {
 export async function fetchPlanMeetingRequisitos(reunionIds) {
   if (!reunionIds.length) return { data: [], error: null };
 
-  const { data, error } = await sb
-    .from('plan_reunion_requisito')
-    .select(`
-      id, reunion_id, clase_requisito_id, orden,
+  const selects = [
+    `id, reunion_id, clase_requisito_id, orden, sesiones,
+      clase_requisitos(id, clase_id, descripcion, numero, orden, texto_opcional, sesiones_esperadas,
+        clases_progresivas(id, nombre))`,
+    `id, reunion_id, clase_requisito_id, orden,
       clase_requisitos(id, clase_id, descripcion, numero, orden, texto_opcional,
-        clases_progresivas(id, nombre))
-    `)
-    .in('reunion_id', reunionIds)
-    .order('orden', { ascending: true });
+        clases_progresivas(id, nombre))`,
+  ];
 
-  return { data: data || [], error };
+  for (const select of selects) {
+    const { data, error } = await sb
+      .from('plan_reunion_requisito')
+      .select(select)
+      .in('reunion_id', reunionIds)
+      .order('orden', { ascending: true });
+
+    if (!error) {
+      return {
+        data: (data || []).map(row => ({
+          ...row,
+          sesiones: clampSesiones(row.sesiones, defaultSesionesEsperadas(row.clase_requisitos)),
+        })),
+        error: null,
+      };
+    }
+    if (isMissingColumnError(error, 'sesiones') || isMissingColumnError(error, 'sesiones_esperadas')) continue;
+    return { data: [], error };
+  }
+
+  return { data: [], error: null };
 }
 
 export async function fetchPlanDetail(planId) {
@@ -341,7 +361,7 @@ export async function syncMeetingToClubAgenda({ reunion, clubId, clubName = '' }
   return { data: { evento_id: data?.id, reunion: link.data }, error: null };
 }
 
-export async function assignRequisitoToMeeting(reunionId, claseRequisitoId, orden = 0) {
+export async function assignRequisitoToMeeting(reunionId, claseRequisitoId, orden = 0, sesiones = 3) {
   const { data: existing } = await sb
     .from('plan_reunion_requisito')
     .select('id, reunion_id')
@@ -354,15 +374,46 @@ export async function assignRequisitoToMeeting(reunionId, claseRequisitoId, orde
     }
   }
 
-  return sb
+  const payload = {
+    reunion_id: reunionId,
+    clase_requisito_id: claseRequisitoId,
+    orden,
+    sesiones: clampSesiones(sesiones),
+  };
+
+  const result = await sb
     .from('plan_reunion_requisito')
-    .upsert([{
-      reunion_id: reunionId,
-      clase_requisito_id: claseRequisitoId,
-      orden,
-    }], { onConflict: 'reunion_id,clase_requisito_id' })
+    .upsert([payload], { onConflict: 'reunion_id,clase_requisito_id' })
     .select()
     .single();
+
+  if (result.error && isMissingColumnError(result.error, 'sesiones')) {
+    delete payload.sesiones;
+    return sb
+      .from('plan_reunion_requisito')
+      .upsert([payload], { onConflict: 'reunion_id,clase_requisito_id' })
+      .select()
+      .single();
+  }
+
+  return result;
+}
+
+export async function updatePlanRequisitoSesiones(reunionId, claseRequisitoId, sesiones) {
+  const payload = { sesiones: clampSesiones(sesiones) };
+  const result = await sb
+    .from('plan_reunion_requisito')
+    .update(payload)
+    .eq('reunion_id', reunionId)
+    .eq('clase_requisito_id', claseRequisitoId)
+    .select()
+    .single();
+
+  if (result.error && isMissingColumnError(result.error, 'sesiones')) {
+    return { data: null, error: null };
+  }
+
+  return result;
 }
 
 export async function removeRequisitoFromMeeting(reunionId, claseRequisitoId) {
@@ -393,6 +444,38 @@ export function countAssignedRequisitos(assignmentsByMeeting = {}) {
   return Object.values(assignmentsByMeeting).reduce((sum, list) => sum + list.length, 0);
 }
 
+export function assignmentSesiones(row) {
+  return clampSesiones(row.sesiones, defaultSesionesEsperadas(row.clase_requisitos));
+}
+
+export function countAssignedSessions(assignmentsByMeeting = {}) {
+  return Object.values(assignmentsByMeeting).reduce(
+    (sum, list) => sum + (list || []).reduce((meetingSum, row) => meetingSum + assignmentSesiones(row), 0),
+    0
+  );
+}
+
+export function summarizePlanSessions(assignmentsByMeeting = {}, reuniones = []) {
+  const byMeeting = reuniones.map(reunion => {
+    const items = assignmentsByMeeting[reunion.id] || [];
+    const sesiones = items.reduce((sum, row) => sum + assignmentSesiones(row), 0);
+    return {
+      reunionId: reunion.id,
+      numero: reunion.numero,
+      titulo: reunion.titulo?.trim() || '',
+      fecha: reunion.fecha,
+      reqCount: items.length,
+      sesiones,
+    };
+  });
+
+  return {
+    totalSesiones: byMeeting.reduce((sum, meeting) => sum + meeting.sesiones, 0),
+    totalReqs: countAssignedRequisitos(assignmentsByMeeting),
+    byMeeting,
+  };
+}
+
 export function getAssignedRequisitoIdsFromMap(assignmentsByMeeting = {}) {
   const ids = new Set();
   for (const list of Object.values(assignmentsByMeeting)) {
@@ -403,10 +486,16 @@ export function getAssignedRequisitoIdsFromMap(assignmentsByMeeting = {}) {
   return ids;
 }
 
-export function buildLocalAssignment(reunionId, requisito, orden, serverRow = null) {
+export function buildLocalAssignment(reunionId, requisito, orden, serverRow = null, sesiones = null) {
+  const sesionesValue = clampSesiones(
+    sesiones ?? serverRow?.sesiones ?? defaultSesionesEsperadas(requisito),
+    3
+  );
+
   if (serverRow) {
     return {
       ...serverRow,
+      sesiones: sesionesValue,
       clase_requisitos: serverRow.clase_requisitos || requisito,
     };
   }
@@ -416,6 +505,7 @@ export function buildLocalAssignment(reunionId, requisito, orden, serverRow = nu
     reunion_id: reunionId,
     clase_requisito_id: requisito.id,
     orden,
+    sesiones: sesionesValue,
     clase_requisitos: {
       id: requisito.id,
       clase_id: requisito.clase_id,
@@ -423,6 +513,7 @@ export function buildLocalAssignment(reunionId, requisito, orden, serverRow = nu
       numero: requisito.numero,
       orden: requisito.orden,
       texto_opcional: requisito.texto_opcional,
+      sesiones_esperadas: requisito.sesiones_esperadas ?? 3,
       clases_progresivas: requisito.clases_progresivas,
       clase_requisito_secciones: requisito.clase_requisito_secciones,
     },
@@ -465,6 +556,7 @@ export function buildPlanPrintTimeline(detail, otherEventos = []) {
             numero: req.numero,
             descripcion: req.descripcion,
             clase: req.clases_progresivas?.nombre || '',
+            sesiones: row.sesiones ?? defaultSesionesEsperadas(req),
           };
         }),
       };
@@ -524,11 +616,13 @@ export async function fetchPlanPrintPayload(planId, clubId) {
   }
 
   const timeline = buildPlanPrintTimeline(detail, otherEventos);
+  const assignmentsByMeeting = mapAssignmentsByMeeting(detail.assignments || []);
 
   return {
     plan: detail.plan,
     timeline,
     groupedTimeline: groupTimelineByDate(timeline),
+    sessionsSummary: summarizePlanSessions(assignmentsByMeeting, detail.reuniones || []),
     error: null,
   };
 }
