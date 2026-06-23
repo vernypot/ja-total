@@ -1,11 +1,11 @@
 {
-  "name": "ja-total",
+  "name": "meissa",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/verify-env.mjs && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:forms": "vitest run src/utils/validation.test.js src/utils/formSchemas.test.js"
