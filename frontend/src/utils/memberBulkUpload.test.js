@@ -6,6 +6,7 @@ import {
   MEMBER_TEMPLATE_COLUMNS,
   buildMemberTemplateInstructions,
   parseMemberSpreadsheet,
+  parseDateValue,
   validateMemberRows,
 } from './memberBulkUpload';
 
@@ -72,11 +73,62 @@ describe('memberBulkUpload template columns', () => {
   it('documents contact import in instructions', () => {
     const instructions = buildMemberTemplateInstructions({ t, activeClubName: 'Club A' }).flat().join(' ');
     expect(instructions).toContain('bulkTemplateContactHint');
+    expect(instructions).toContain('bulkTemplateEstadoHint');
     expect(instructions).not.toContain('bulkTemplatePostImportContacts');
   });
 });
 
+describe('validateMemberRows estado handling', () => {
+  const activeClub = { id: 'club-1', nombre: 'Conquistadores' };
+
+  it('always sets imported members to activo regardless of spreadsheet estado', () => {
+    const result = validateMemberRows(
+      [{ rowNumber: 2, raw: emptyRaw({ nombre: 'Carlos', genero: 'M' }) }],
+      { activeClub, t },
+    );
+    expect(result.results[0].member.estado).toBe('activo');
+  });
+});
+
+describe('parseDateValue', () => {
+  it('accepts common Excel date formats', () => {
+    expect(parseDateValue('2000-01-15')).toEqual({ valid: true, value: '2000-01-15' });
+    expect(parseDateValue('15/01/2000')).toEqual({ valid: true, value: '2000-01-15' });
+    expect(parseDateValue('15/01/00')).toEqual({ valid: true, value: '2000-01-15' });
+    expect(parseDateValue('15-01-2000')).toEqual({ valid: true, value: '2000-01-15' });
+    expect(parseDateValue('01/01/2000 0:00')).toEqual({ valid: true, value: '2000-01-01' });
+    expect(parseDateValue(36526)).toEqual({ valid: true, value: '2000-01-01' });
+    expect(parseDateValue('36526')).toEqual({ valid: true, value: '2000-01-01' });
+    expect(parseDateValue(new Date(2000, 0, 15))).toEqual({ valid: true, value: '2000-01-15' });
+  });
+
+  it('treats empty birth dates as optional', () => {
+    expect(parseDateValue('')).toEqual({ valid: true, value: null });
+    expect(parseDateValue(null)).toEqual({ valid: true, value: null });
+  });
+
+  it('rejects invalid birth dates', () => {
+    expect(parseDateValue('not-a-date').valid).toBe(false);
+    expect(parseDateValue('31/02/2000').valid).toBe(false);
+  });
+});
+
 describe('parseMemberSpreadsheet', () => {
+  it('parses Excel serial date cells', async () => {
+    const ws = XLSX.utils.aoa_to_sheet([MEMBER_TEMPLATE_COLUMNS, ['Juan', '', '', '', '', '', '', '', '', '', '', '', '']]);
+    ws['D2'] = { t: 'n', v: 36526 };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Members');
+    const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const { rows, error } = await parseMemberSpreadsheet(fileFromBuffer(buffer));
+
+    expect(error).toBeNull();
+    expect(rows[0].raw.fecha_nacimiento).toBe(36526);
+    const validation = validateMemberRows(rows, { activeClub: { id: 'c1', nombre: 'Club' }, t });
+    expect(validation.results[0].valid).toBe(true);
+    expect(validation.results[0].member.fecha_nacimiento).toBe('2000-01-01');
+  });
+
   it('parses standard template headers and example row with contact', async () => {
     const headers = MEMBER_TEMPLATE_COLUMNS.map(col => (col === 'nombre' ? 'nombre*' : col));
     const row = [

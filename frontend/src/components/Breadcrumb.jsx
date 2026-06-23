@@ -23,6 +23,7 @@ export default function Breadcrumb() {
   const iglesiaId = params.get("iglesia") || activeIglesia;
   const clubId = params.get("club") || activeClub?.id;
   const onMembersPage = location.pathname.includes('/miembros');
+  const onMemberDetailPage = /\/dashboard\/miembro\//.test(location.pathname);
 
   useEffect(() => {
     if (!iglesiaId) {
@@ -72,6 +73,17 @@ export default function Breadcrumb() {
         <>
           {" > "}
           <span style={{ color: '#666' }}>{t('members')}</span>
+        </>
+      )}
+
+      {onMemberDetailPage && (
+        <>
+          {" > "}
+          <Link to={clubId ? `/dashboard/miembros?club=${clubId}` : '/dashboard/miembros'}>
+            {t('members')}
+          </Link>
+          {" > "}
+          <span style={{ color: '#666' }}>{t('memberDetail')}</span>
         </>
       )}
     </div>

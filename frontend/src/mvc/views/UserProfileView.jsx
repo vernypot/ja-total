@@ -1,4 +1,5 @@
 import PasswordReset from '../../components/PasswordReset';
+import BackLink from '../../components/BackLink';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -46,6 +47,7 @@ export default function UserProfileView({
 
   return (
     <div className="container">
+      <BackLink fallbackTo="/dashboard/home" />
       <div className="page-header">
         <h1>👤 {t('profile')} <PageHelpLink pageId="profile" /></h1>
       </div>

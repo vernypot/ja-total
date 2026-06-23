@@ -25,6 +25,8 @@ import PageHelpAdmin from "../pages/PageHelpAdmin";
 import UserProfile from "../pages/UserProfile";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
+import Cargos from "../pages/Cargos";
+import ClubDirectiva from "../pages/ClubDirectiva";
 import ProtectedRoute from "../components/ProtectedRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
@@ -51,12 +53,14 @@ export default function AppRouter() {
           <Route path="estructura" element={<SuperAdminRoute element={<EstructuraOrganizacional />} />} />
           <Route path="contactos" element={<Contactos />} />
           <Route path="clubes" element={<Clubes />} />
+          <Route path="club-directiva" element={<ClubDirectiva />} />
           <Route path="eventos" element={<Eventos />} />
           <Route path="calendario" element={<CalendarioClub />} />
           <Route path="planificacion" element={<AdminRoute element={<PlanificacionPeriodo />} />} />
           <Route path="tipos-evento" element={<AdminRoute element={<TiposEvento />} />} />
           <Route path="checkin" element={<AdminRoute element={<Checkin />} />} />
           <Route path="especialidades" element={<SuperAdminRoute element={<Especialidades />} />} />
+          <Route path="cargos" element={<SuperAdminRoute element={<Cargos />} />} />
           <Route path="clases-progresivas" element={<SuperAdminRoute element={<ClasesProgresivas />} />} />
           <Route path="usuarios" element={<SuperAdminRoute element={<Usuarios />} />} />
           <Route path="label-settings" element={<SuperAdminRoute element={<LabelSettings />} />} />

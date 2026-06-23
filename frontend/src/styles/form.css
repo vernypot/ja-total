@@ -31,6 +31,45 @@
   transform: translateY(-1px);
 }
 
+.page-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.page-back-link:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+}
+
+.club-row-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--gray-200);
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+}
+
+.detail-page-header {
+  margin-bottom: 16px;
+}
+
+.detail-page-header h2 {
+  margin: 0;
+}
+
 /* ============================================
    LIST ITEM STYLING
    ============================================ */

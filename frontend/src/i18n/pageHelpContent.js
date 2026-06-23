@@ -165,6 +165,7 @@ const PAGE_HELP = {
         'Select the church if you manage multiple locations.',
         'Click “New club” and fill in name, type, and optional logo.',
         'Open a club to see assigned members and details.',
+        'Use “Board” (Directiva) to see current leadership positions sorted by role order.',
         'Use the active club selector in the top bar to scope other pages (members, calendar, planning).',
       ],
       fields: [
@@ -185,6 +186,7 @@ const PAGE_HELP = {
         'Seleccione la iglesia si administra varias ubicaciones.',
         'Haga clic en “Nuevo club” y complete nombre, tipo y logo opcional.',
         'Abra un club para ver miembros asignados y detalles.',
+        'Use “Directiva” para ver los cargos en curso ordenados según la jerarquía definida.',
         'Use el selector de club activo en la barra superior para acotar otras páginas (miembros, calendario, planificación).',
       ],
       fields: [
@@ -196,6 +198,45 @@ const PAGE_HELP = {
       tips: [
         'Los miembros deben estar asignados a un club para aparecer en eventos y planificación del club.',
         'La ruta organizacional de la iglesia se muestra en el encabezado del club cuando está configurada.',
+      ],
+    },
+  },
+
+  clubDirectiva: {
+    en: {
+      title: 'Club leadership',
+      overview: 'Lists members who currently hold a leadership position (cargo) for this club, ordered by the position hierarchy defined in the catalog.',
+      steps: [
+        'Open from the Clubs page using the “Board” button on a club card.',
+        'Each row shows position, member name, and start date (or unknown).',
+        'Click Details to open the member’s Positions tab.',
+      ],
+      fields: [
+        { name: 'Position', description: 'Cargo from the hierarchical catalog, sorted by order field.' },
+        { name: 'Member', description: 'Member currently holding the position.' },
+        { name: 'Start date', description: 'When the assignment began; may be unknown.' },
+      ],
+      tips: [
+        'Only ongoing assignments are shown. Assign positions from each member’s Positions tab.',
+        'Assignments linked to this club or unscoped assignments for club members are included.',
+      ],
+    },
+    es: {
+      title: 'Directiva del club',
+      overview: 'Lista los miembros que ocupan actualmente un cargo de liderazgo en este club, ordenados según la jerarquía definida en el catálogo.',
+      steps: [
+        'Ábrala desde Clubes con el botón “Directiva” en la tarjeta del club.',
+        'Cada fila muestra cargo, nombre del miembro y fecha de inicio (o desconocida).',
+        'Haga clic en Detalles para abrir la pestaña Cargos del miembro.',
+      ],
+      fields: [
+        { name: 'Cargo', description: 'Cargo del catálogo jerárquico, ordenado por el campo orden.' },
+        { name: 'Miembro', description: 'Miembro que ocupa actualmente el cargo.' },
+        { name: 'Fecha de inicio', description: 'Cuándo comenzó la asignación; puede ser desconocida.' },
+      ],
+      tips: [
+        'Solo se muestran asignaciones en curso. Asigne cargos desde la pestaña Cargos de cada miembro.',
+        'Se incluyen asignaciones vinculadas a este club o sin club específico para miembros del club.',
       ],
     },
   },
@@ -418,6 +459,45 @@ const PAGE_HELP = {
       ],
       tips: [
         'Redacte requisitos claros — los líderes los validan por miembro.',
+      ],
+    },
+  },
+
+  cargos: {
+    en: {
+      title: 'Leadership positions',
+      overview: 'Superadmins maintain a hierarchical catalog of club leadership positions (cargos). Positions can be nested (e.g. Director → Secretary) and optionally scoped to a club type.',
+      steps: [
+        'Create top-level positions or add sub-positions under an existing one.',
+        'Set an optional club type when a position applies only to certain clubs.',
+        'Deactivate positions instead of deleting them to preserve member history.',
+        'Assign positions to members from their profile → Positions tab.',
+      ],
+      fields: [
+        { name: 'Position name', description: 'Title shown in catalogs and member records.' },
+        { name: 'Parent position', description: 'Builds the hierarchy tree.' },
+        { name: 'Club type', description: 'Optional filter — leave empty for all club types.' },
+      ],
+      tips: [
+        'Use order numbers to control display sequence among siblings.',
+      ],
+    },
+    es: {
+      title: 'Cargos de liderazgo',
+      overview: 'Los superadministradores mantienen un catálogo jerárquico de cargos de liderazgo del club. Los cargos pueden anidarse (p. ej. Director → Secretario) y opcionalmente limitarse a un tipo de club.',
+      steps: [
+        'Cree cargos de nivel raíz o agregue sub-cargos bajo uno existente.',
+        'Indique un tipo de club opcional cuando el cargo aplique solo a ciertos clubes.',
+        'Desactive cargos en lugar de eliminarlos para conservar el historial de miembros.',
+        'Asigne cargos a miembros desde su perfil → pestaña Cargos.',
+      ],
+      fields: [
+        { name: 'Nombre del cargo', description: 'Título mostrado en catálogos y registros del miembro.' },
+        { name: 'Cargo superior', description: 'Construye el árbol jerárquico.' },
+        { name: 'Tipo de club', description: 'Filtro opcional — déjelo vacío para todos los tipos.' },
+      ],
+      tips: [
+        'Use el campo orden para controlar la secuencia entre cargos del mismo nivel.',
       ],
     },
   },
@@ -832,6 +912,45 @@ const PAGE_HELP = {
       ],
       tips: [
         'El miembro debe pertenecer a un club antes de asignar especialidades.',
+      ],
+    },
+  },
+
+  memberCargos: {
+    en: {
+      title: 'Member positions',
+      overview: 'Track leadership positions held by this member, including current roles and full history with start and end dates.',
+      steps: [
+        'Assign a position from the catalog available for the member’s club types.',
+        'Mark the start date or check “unknown start date” when it is not recorded.',
+        'Leave “ongoing” checked for current positions; set an end date for past roles.',
+        'Use “End position” to close a current role — it moves to history with today’s end date.',
+      ],
+      fields: [
+        { name: 'Position', description: 'Selected from the hierarchical catalog.' },
+        { name: 'Start / end dates', description: 'Historical record; start may be unknown.' },
+        { name: 'Ongoing', description: 'Checked while the member currently holds the position.' },
+      ],
+      tips: [
+        'The same position can appear multiple times in history if held in different periods.',
+      ],
+    },
+    es: {
+      title: 'Cargos del miembro',
+      overview: 'Registre los cargos de liderazgo de este miembro, incluyendo roles actuales e historial completo con fechas de inicio y fin.',
+      steps: [
+        'Asigne un cargo del catálogo disponible según los tipos de club del miembro.',
+        'Indique la fecha de inicio o marque “fecha desconocida” cuando no esté registrada.',
+        'Deje “en curso” marcado para cargos actuales; indique fecha de fin para roles pasados.',
+        'Use “Finalizar cargo” para cerrar un cargo actual — pasa al historial con la fecha de hoy.',
+      ],
+      fields: [
+        { name: 'Cargo', description: 'Seleccionado del catálogo jerárquico.' },
+        { name: 'Fechas inicio / fin', description: 'Registro histórico; el inicio puede ser desconocido.' },
+        { name: 'En curso', description: 'Marcado mientras el miembro ocupa actualmente el cargo.' },
+      ],
+      tips: [
+        'El mismo cargo puede aparecer varias veces en el historial si se ocupó en periodos distintos.',
       ],
     },
   },

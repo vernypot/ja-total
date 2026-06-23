@@ -88,6 +88,12 @@ export default function Sidebar() {
             >
               ⭐ {t('specialties')}
             </Link>
+            <Link
+              to="/dashboard/cargos"
+              className={`nav-link ${isActive('/dashboard/cargos') ? 'active' : ''}`}
+            >
+              🎖️ {t('cargos')}
+            </Link>
           </>
         )}
 

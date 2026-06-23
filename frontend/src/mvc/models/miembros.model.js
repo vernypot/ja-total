@@ -245,8 +245,11 @@ export async function bulkCreateMiembros(members) {
   const errors = [];
 
   for (const { member, rowNumber } of members) {
-    const { club_id, club_nombre, contact, ...miembroData } = member;
-    const { data, error } = await createMiembroWithClub(miembroData, club_id);
+    const { club_id, club_nombre, contact, estado: _ignoredEstado, ...miembroData } = member;
+    const { data, error } = await createMiembroWithClub(
+      { ...miembroData, estado: 'activo' },
+      club_id,
+    );
     if (error) {
       errors.push({ rowNumber, message: error.message });
       continue;

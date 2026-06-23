@@ -1,5 +1,8 @@
 import * as XLSX from 'xlsx';
 
+/** Columns recognized in uploads but never validated or imported (estado is always activo). */
+export const MEMBER_IMPORT_IGNORED_COLUMNS = ['estado', 'club_nombre'];
+
 /** Personal-data fields importable via bulk upload (matches DatosPersonalesView / member profile tab). */
 export const MEMBER_PERSONAL_COLUMNS = [
   'nombre',
@@ -50,6 +53,7 @@ const HEADER_ALIASES = {
   contacto_nombre: ['contacto_nombre', 'contacto nombre', 'contact name', 'emergency contact', 'nombre contacto', 'contacto'],
   contacto_celular: ['contacto_celular', 'contacto celular', 'contact phone', 'contact cellphone', 'contact mobile', 'telefono contacto', 'tel contacto'],
   contacto_relacion: ['contacto_relacion', 'contacto relacion', 'contact relationship', 'relationship', 'parentesco', 'relacion contacto'],
+  estado: ['estado', 'status', 'estado miembro', 'member status'],
 };
 
 function normalizeHeader(value) {
@@ -104,7 +108,7 @@ function isInstructionSheet(name) {
 
 function getSheetRows(workbook, sheetName) {
   const sheet = workbook.Sheets[sheetName];
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
 }
 
 function findBestDataSheet(workbook) {
@@ -158,19 +162,109 @@ function findBestDataSheet(workbook) {
   return candidates[0];
 }
 
-function cellValue(row, index) {
+function cellRawValue(row, index) {
   if (index === undefined || !row) return '';
   const value = row[index];
   if (value === null || value === undefined) return '';
+  return value;
+}
+
+function cellValue(row, index) {
+  const value = cellRawValue(row, index);
+  if (value instanceof Date) return value.toISOString();
   return String(value).trim();
 }
 
 function rowToRecord(row, mapping) {
   const record = {};
   for (const field of MEMBER_TEMPLATE_COLUMNS) {
-    record[field] = cellValue(row, mapping[field]);
+    const rawValue = cellRawValue(row, mapping[field]);
+    record[field] = field === 'fecha_nacimiento'
+      ? rawValue
+      : (rawValue instanceof Date ? rawValue.toISOString().slice(0, 10) : String(rawValue ?? '').trim());
   }
   return record;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function normalizeYear(year) {
+  const y = Number(year);
+  if (Number.isNaN(y)) return null;
+  if (y >= 100) return y;
+  return y > 30 ? 1900 + y : 2000 + y;
+}
+
+function toISODateParts(year, month, day) {
+  const y = normalizeYear(year);
+  const m = Number(month);
+  const d = Number(day);
+  if (!y || Number.isNaN(m) || Number.isNaN(d)) return null;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+
+  const date = new Date(y, m - 1, d);
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+  return `${y}-${pad2(m)}-${pad2(d)}`;
+}
+
+function excelSerialToISO(serial) {
+  const n = Math.floor(Number(serial));
+  if (Number.isNaN(n) || n < 1 || n > 60000) return null;
+  const date = new Date(Date.UTC(1899, 11, 30 + n));
+  return toISODateParts(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+}
+
+function parseSlashOrDashDate(text) {
+  const match = String(text).trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:\s|T|$)/);
+  if (!match) return null;
+
+  let day = Number(match[1]);
+  let month = Number(match[2]);
+  const year = Number(match[3]);
+
+  if (month > 12 && day <= 12) {
+    [day, month] = [month, day];
+  }
+
+  return toISODateParts(year, month, day);
+}
+
+export function parseDateValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return { valid: true, value: null };
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const iso = toISODateParts(value.getFullYear(), value.getMonth() + 1, value.getDate());
+    return iso ? { valid: true, value: iso } : { valid: false, value: null };
+  }
+
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    const iso = excelSerialToISO(value);
+    return iso ? { valid: true, value: iso } : { valid: false, value: null };
+  }
+
+  const text = String(value).trim();
+  if (!text) return { valid: true, value: null };
+
+  const isoPrefix = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoPrefix) {
+    const iso = toISODateParts(Number(isoPrefix[1]), Number(isoPrefix[2]), Number(isoPrefix[3]));
+    if (iso) return { valid: true, value: iso };
+  }
+
+  const slashOrDash = parseSlashOrDashDate(text);
+  if (slashOrDash) return { valid: true, value: slashOrDash };
+
+  const serial = Number(text);
+  if (!Number.isNaN(serial) && serial >= 1 && serial < 60000) {
+    const iso = excelSerialToISO(serial);
+    if (iso) return { valid: true, value: iso };
+  }
+
+  return { valid: false, value: null };
 }
 
 function hasMemberData(record) {
@@ -188,39 +282,6 @@ function buildContactFromRaw(raw) {
     telefono: raw.contacto_celular?.trim() || '',
     relacion: raw.contacto_relacion?.trim() || null,
   };
-}
-
-function parseDateValue(value) {
-  if (!value) return { valid: true, value: null };
-
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return { valid: true, value: value.toISOString().slice(0, 10) };
-  }
-
-  const text = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    const date = new Date(`${text}T00:00:00`);
-    if (!Number.isNaN(date.getTime())) return { valid: true, value: text };
-  }
-
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(text)) {
-    const [day, month, year] = text.split('/').map(Number);
-    const date = new Date(year, month - 1, day);
-    if (!Number.isNaN(date.getTime())) {
-      return { valid: true, value: date.toISOString().slice(0, 10) };
-    }
-  }
-
-  const serial = Number(text);
-  if (!Number.isNaN(serial) && serial > 20000) {
-    const date = XLSX.SSF.parse_date_code(serial);
-    if (date) {
-      const iso = `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-      return { valid: true, value: iso };
-    }
-  }
-
-  return { valid: false, value: null };
 }
 
 function normalizeGender(value) {
@@ -265,6 +326,7 @@ export function buildMemberTemplateInstructions({ t, activeClubName = '' }) {
   return [
     [t('bulkTemplateOverview')],
     [t('bulkRequiredFields')],
+    [t('bulkTemplateEstadoHint')],
     activeClubName ? [`${t('bulkAssignedClub')}: ${activeClubName}`] : [t('bulkSelectClubFirst')],
     [t('bulkTemplateMultiClub')],
     [''],

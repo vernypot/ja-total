@@ -1,5 +1,5 @@
 import { getPasswordValidationError } from './passwordValidation';
-import { isBlank, validators } from './validation';
+import { isBlank, isValidDate, validators } from './validation';
 
 const v = validators;
 
@@ -188,6 +188,43 @@ export const FORM_SCHEMAS = {
       nombre: [v.required()],
       tipo_id: [v.required()],
     },
+  },
+
+  cargo: {
+    id: 'cargo',
+    label: 'Cargo',
+    submitAction: 'saveCargo',
+    fields: {
+      nombre: [v.required()],
+    },
+  },
+
+  miembroCargo: {
+    id: 'miembroCargo',
+    label: 'Member cargo assignment',
+    submitAction: 'saveCargoAssignment',
+    fields: {
+      cargo_id: [v.required()],
+    },
+    formRules: [
+      values => {
+        if (!values.inicioDesconocido && isBlank(values.fecha_inicio)) {
+          return { field: 'fecha_inicio', message: 'validationRequired' };
+        }
+        if (!values.en_curso && isBlank(values.fecha_fin)) {
+          return { field: 'fecha_fin', message: 'validationRequired' };
+        }
+        if (
+          !values.inicioDesconocido
+          && isValidDate(values.fecha_inicio)
+          && isValidDate(values.fecha_fin)
+          && values.fecha_fin < values.fecha_inicio
+        ) {
+          return { field: 'fecha_fin', message: 'validationDateRange' };
+        }
+        return null;
+      },
+    ],
   },
 
   userProfile: {

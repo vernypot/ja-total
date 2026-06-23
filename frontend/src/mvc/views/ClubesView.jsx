@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
@@ -33,7 +34,9 @@ export default function ClubesView({
   toggleEstado,
   navigateToMiembros,
   navigateToEventos,
+  navigateToDirectiva,
   selectClub,
+  clubStats = {},
   logoUploading,
   handleClubLogoUpload,
   handleClubLogoRemove,
@@ -42,6 +45,16 @@ export default function ClubesView({
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
+  const [logosVisibleIds, setLogosVisibleIds] = useState(() => new Set());
+
+  function toggleRowLogos(clubId) {
+    setLogosVisibleIds(prev => {
+      const next = new Set(prev);
+      if (next.has(clubId)) next.delete(clubId);
+      else next.add(clubId);
+      return next;
+    });
+  }
 
   return (
     <div className="container">
@@ -148,6 +161,10 @@ export default function ClubesView({
             {data.map(c => {
               const isActive = activeClub?.id === c.id;
               const tipoNombre = c.tipos_club?.nombre;
+              const stats = clubStats[c.id] || { memberCount: 0, boardCount: 0 };
+              const memberCountLabel = t('clubMemberCount').replace('{{count}}', String(stats.memberCount));
+              const boardCountLabel = t('clubBoardCount').replace('{{count}}', String(stats.boardCount));
+              const showRowLogos = logosVisibleIds.has(c.id);
 
               return (
                 <div
@@ -157,46 +174,55 @@ export default function ClubesView({
                     border: isActive ? '2px solid #2563eb' : '1px solid #e5e7eb',
                     borderRadius: '8px',
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: '16px',
+                    flexDirection: 'column',
+                    gap: '12px',
                     backgroundColor: isActive ? '#dbeafe' : '#fff',
                     transition: 'all 0.2s',
-                    flexWrap: 'wrap',
                   }}
                   className="hover-shadow"
                 >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: 1, minWidth: '240px' }}>
-                    <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-                      <LogoAssetField
-                        label={tipoNombre
-                          ? t('clubTypeLogoNamed').replace('{type}', tipoNombre)
-                          : t('clubTypeLogo')}
-                        logoUrl={c.tipos_club?.logo_url}
-                        canManage={canManage && Boolean(c.tipo_id)}
-                        uploading={logoUploading.clubId === c.id && logoUploading.kind === 'tipo'}
-                        onUpload={file => handleTipoLogoUpload(c, file)}
-                        onRemove={() => handleTipoLogoRemove(c)}
-                        uploadLabel={t('uploadLogo')}
-                        changeLabel={t('changeLogo')}
-                        removeLabel={t('removeLogo')}
-                        emptyLabel={t('noLogo')}
-                        hint={c.tipo_id ? t('clubTypeLogoHint') : t('clubTypeLogoMissing')}
-                      />
-                      <LogoAssetField
-                        label={t('clubLocalLogo')}
-                        logoUrl={c.logo_url}
-                        canManage={canManage}
-                        uploading={logoUploading.clubId === c.id && logoUploading.kind === 'club'}
-                        onUpload={file => handleClubLogoUpload(c.id, file)}
-                        onRemove={() => handleClubLogoRemove(c)}
-                        uploadLabel={t('uploadLogo')}
-                        changeLabel={t('changeLogo')}
-                        removeLabel={t('removeLogo')}
-                        emptyLabel={t('noLogo')}
-                        hint={t('clubLocalLogoHint')}
-                      />
-                    </div>
+                    {showRowLogos && (
+                      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                        <LogoAssetField
+                          label={tipoNombre
+                            ? t('clubTypeLogoNamed').replace('{type}', tipoNombre)
+                            : t('clubTypeLogo')}
+                          logoUrl={c.tipos_club?.logo_url}
+                          canManage={canManage && Boolean(c.tipo_id)}
+                          uploading={logoUploading.clubId === c.id && logoUploading.kind === 'tipo'}
+                          onUpload={file => handleTipoLogoUpload(c, file)}
+                          onRemove={() => handleTipoLogoRemove(c)}
+                          uploadLabel={t('uploadLogo')}
+                          changeLabel={t('changeLogo')}
+                          removeLabel={t('removeLogo')}
+                          emptyLabel={t('noLogo')}
+                          hint={c.tipo_id ? t('clubTypeLogoHint') : t('clubTypeLogoMissing')}
+                        />
+                        <LogoAssetField
+                          label={t('clubLocalLogo')}
+                          logoUrl={c.logo_url}
+                          canManage={canManage}
+                          uploading={logoUploading.clubId === c.id && logoUploading.kind === 'club'}
+                          onUpload={file => handleClubLogoUpload(c.id, file)}
+                          onRemove={() => handleClubLogoRemove(c)}
+                          uploadLabel={t('uploadLogo')}
+                          changeLabel={t('changeLogo')}
+                          removeLabel={t('removeLogo')}
+                          emptyLabel={t('noLogo')}
+                          hint={t('clubLocalLogoHint')}
+                        />
+                      </div>
+                    )}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <strong>{c.nombre}</strong>
@@ -220,6 +246,15 @@ export default function ClubesView({
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
                     <button
+                      type="button"
+                      onClick={() => toggleRowLogos(c.id)}
+                      className="btn btn-sm btn-secondary"
+                      aria-pressed={showRowLogos}
+                      aria-expanded={showRowLogos}
+                    >
+                      {showRowLogos ? `🖼️ ${t('hideClubLogos')}` : `🖼️ ${t('showClubLogos')}`}
+                    </button>
+                    <button
                       onClick={() => selectClub(c)}
                       style={{
                         padding: '6px 12px',
@@ -234,12 +269,19 @@ export default function ClubesView({
                       ★ {t('select')}
                     </button>
                     <button onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
+                    <button onClick={() => navigateToDirectiva(c.id)} className="btn btn-sm btn-edit">🎖️ {t('directivaBtn')}</button>
                     <button onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
                     {canManage && (
                       <button onClick={() => toggleEstado(c)} className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
                         {c.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
                       </button>
                     )}
+                  </div>
+                  </div>
+                  <div className="club-row-footer">
+                    <span>{memberCountLabel}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{boardCountLabel}</span>
                   </div>
                 </div>
               );

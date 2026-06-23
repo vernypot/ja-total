@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
@@ -13,6 +14,107 @@ const headerBtnStyle = {
   fontSize: '14px',
   fontWeight: 'bold',
 };
+
+function MemberListItem({
+  member,
+  clubsData,
+  canManage,
+  assigningKey,
+  toggleClubAssignment,
+  toggleEstado,
+  navigateToMiembro,
+  t,
+}) {
+  const [clubsExpanded, setClubsExpanded] = useState(false);
+  const nombreCompleto = [member.nombre, member.apellido1, member.apellido2].filter(Boolean).join(' ');
+  const assignedCount = clubsData.filter(club => member.clubIds.includes(club.id)).length;
+  const showClubToggle = clubsData.length > 0;
+
+  return (
+    <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', transition: 'all 0.2s' }} className="hover-shadow">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+        <div>
+          <strong>{nombreCompleto}</strong>
+          <span className={`badge badge-${member.estado}`} style={{ marginLeft: '10px' }}>{estadoLabel(member.estado, t)}</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => navigateToMiembro(member.id)} className="btn btn-sm btn-edit">
+            📋 {t('details')}
+          </button>
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => toggleEstado(member)}
+              className={`btn btn-sm ${member.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
+            >
+              {member.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
+            </button>
+          )}
+          {showClubToggle && (
+            <button
+              type="button"
+              onClick={() => setClubsExpanded(prev => !prev)}
+              aria-expanded={clubsExpanded}
+              className="btn btn-sm"
+              style={{
+                backgroundColor: clubsExpanded ? '#e5e7eb' : '#f9fafb',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+              }}
+            >
+              {clubsExpanded ? '▲' : '▼'} {t('memberClubs')} ({assignedCount}/{clubsData.length})
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showClubToggle && clubsExpanded && (
+        <div
+          style={{
+            marginTop: '12px',
+            padding: '10px',
+            border: '1px solid #f3f4f6',
+            borderRadius: '6px',
+            backgroundColor: '#fafafa',
+          }}
+        >
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
+            {clubsData.map(club => {
+              const isAssigned = member.clubIds.includes(club.id);
+              const isAssigning = assigningKey === `${member.id}-${club.id}`;
+
+              return (
+                <label
+                  key={club.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.875rem',
+                    cursor: canManage && !isAssigning ? 'pointer' : 'default',
+                    opacity: isAssigning ? 0.6 : 1,
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: isAssigned ? '#eff6ff' : '#fff',
+                    border: isAssigned ? '1px solid #93c5fd' : '1px solid #e5e7eb',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAssigned}
+                    disabled={!canManage || isAssigning}
+                    onChange={e => toggleClubAssignment(member, club.id, e.target.checked)}
+                  />
+                  <span>{clubDisplayName(club)}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MiembrosView({
   data,
@@ -188,7 +290,7 @@ export default function MiembrosView({
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
-                      {[t('bulkRow'), t('name'), t('clubs'), t('status'), t('bulkErrors')].map(h => (
+                      {[t('bulkRow'), t('name'), t('clubs'), t('bulkValidationStatus'), t('bulkErrors')].map(h => (
                         <th key={h} style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>{h}</th>
                       ))}
                     </tr>
@@ -272,68 +374,19 @@ export default function MiembrosView({
           </p>
         ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
-            {data.map(m => {
-              const nombreCompleto = [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
-
-              return (
-                <div key={m.id} style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', transition: 'all 0.2s' }} className="hover-shadow">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                    <div>
-                      <strong>{nombreCompleto}</strong>
-                      <span className={`badge badge-${m.estado}`} style={{ marginLeft: '10px' }}>{estadoLabel(m.estado, t)}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => navigateToMiembro(m.id)} className="btn btn-sm btn-edit">📋 {t('details')}</button>
-                      {canManage && (
-                        <button onClick={() => toggleEstado(m)} className={`btn btn-sm ${m.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
-                          {m.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {clubsData.length > 0 && (
-                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#666', marginBottom: '8px' }}>
-                        {t('memberClubs')}
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
-                        {clubsData.map(club => {
-                          const isAssigned = m.clubIds.includes(club.id);
-                          const isAssigning = assigningKey === `${m.id}-${club.id}`;
-
-                          return (
-                            <label
-                              key={club.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '0.875rem',
-                                cursor: canManage && !isAssigning ? 'pointer' : 'default',
-                                opacity: isAssigning ? 0.6 : 1,
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                backgroundColor: isAssigned ? '#eff6ff' : '#f9fafb',
-                                border: isAssigned ? '1px solid #93c5fd' : '1px solid #e5e7eb',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isAssigned}
-                                disabled={!canManage || isAssigning}
-                                onChange={e => toggleClubAssignment(m, club.id, e.target.checked)}
-                              />
-                              <span>{clubDisplayName(club)}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {data.map(m => (
+              <MemberListItem
+                key={m.id}
+                member={m}
+                clubsData={clubsData}
+                canManage={canManage}
+                assigningKey={assigningKey}
+                toggleClubAssignment={toggleClubAssignment}
+                toggleEstado={toggleEstado}
+                navigateToMiembro={navigateToMiembro}
+                t={t}
+              />
+            ))}
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as ClubesModel from '../models/clubes.model';
 import * as IglesiasModel from '../models/iglesias.model';
+import * as CargosModel from '../models/cargos.model';
 
 export function useClubesController() {
   const { t } = useLanguage();
@@ -38,6 +39,7 @@ export function useClubesController() {
   const [tipos, setTipos] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [logoUploading, setLogoUploading] = useState({ clubId: '', kind: '' });
+  const [clubStats, setClubStats] = useState({});
 
   const filteredData = useMemo(
     () => filterBySearch(data, searchQuery, c => [c.nombre, c.tipos_club?.nombre, c.estado]),
@@ -71,10 +73,18 @@ export function useClubesController() {
       if (queryError) {
         setError('Error cargando clubes: ' + queryError.message);
         setData([]);
+        setClubStats({});
         return;
       }
 
-      setData(rows || []);
+      const clubRows = rows || [];
+      setData(clubRows);
+
+      const { stats, error: statsError } = await CargosModel.fetchClubListingStats(clubRows);
+      setClubStats(stats || {});
+      if (statsError) {
+        console.error('Error loading club stats:', statsError);
+      }
     } catch (err) {
       setError('Error inesperado: ' + err.message);
     } finally {
@@ -153,6 +163,12 @@ export function useClubesController() {
     const club = data.find(c => c.id === clubId);
     if (club) updateActiveClub(club);
     navigate(`/dashboard/eventos?club=${clubId}`);
+  }
+
+  function navigateToDirectiva(clubId) {
+    const club = data.find(c => c.id === clubId);
+    if (club) updateActiveClub(club);
+    navigate(`/dashboard/club-directiva?club=${clubId}`);
   }
 
   function selectClub(club) {
@@ -250,8 +266,10 @@ export function useClubesController() {
     toggleEstado,
     navigateToMiembros,
     navigateToEventos,
+    navigateToDirectiva,
     selectClub,
     activeClub,
+    clubStats,
     logoUploading,
     handleClubLogoUpload,
     handleClubLogoRemove,
