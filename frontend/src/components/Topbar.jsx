@@ -1,31 +1,35 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { sb } from "../services/supabase";
+import { useLanguage } from "../hooks/useLanguage";
+import { getUserRole } from "../utils/permissions";
+import { useNavigate, Link } from "react-router-dom";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 
 export default function Topbar() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, userData, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-
-  const userRole = user?.user_metadata?.role || 'user';
+  const userRole = getUserRole(user, userData);
   const userInitials = (user?.email || 'U').substring(0, 2).toUpperCase();
 
   async function handleLogout() {
-    await sb.auth.signOut();
-    setUser(null);
-    navigate('/');
+    await logout();
   }
 
   return (
     <div className="topbar">
       <div className="topbar-left">
-        <h2 className="topbar-title">Dashboard</h2>
+        <Link to={DASHBOARD_HOME_PATH} className="topbar-title" style={{ textDecoration: 'none', color: 'inherit' }}>
+          {t('home')}
+        </Link>
       </div>
 
       <div className="topbar-right">
+        <LanguageSwitcher />
         <div className="user-menu">
-          <button 
+          <button
             className="user-button"
             onClick={() => setShowMenu(!showMenu)}
             title={user?.email}
@@ -47,8 +51,19 @@ export default function Topbar() {
                 </div>
               </div>
               <hr />
+              <button
+                className="dropdown-item"
+                onClick={() => {
+                  navigate('/dashboard/profile');
+                  setShowMenu(false);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                👤 {t('profile')}
+              </button>
+              <hr />
               <button className="dropdown-item logout-btn" onClick={handleLogout}>
-                🚪 Logout
+                🚪 {t('logout')}
               </button>
             </div>
           )}

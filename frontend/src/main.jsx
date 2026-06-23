@@ -11,6 +11,7 @@ import "./styles/layout.css";
 import "./styles/components.css";
 import "./styles/miembro.css";
 import "./styles/usuarios.css";
+import "./styles/noticia-html.css";
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
