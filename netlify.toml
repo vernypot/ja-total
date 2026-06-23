@@ -1,0 +1,17 @@
+# Meissa — Netlify deployment
+# Docs: NETLIFY_DEPLOY.md
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# SPA fallback (React Router) — also see public/_redirects
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

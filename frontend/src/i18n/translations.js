@@ -1,6 +1,6 @@
 export const defaultTranslations = {
   en: {
-    appName: 'JA Total',
+    appName: 'Meissa',
     dashboard: 'Dashboard',
     home: 'Home',
     publicHome: 'Public home',
@@ -475,7 +475,7 @@ export const defaultTranslations = {
     loginPassword: 'Password',
     loginSubtitle: 'Sign in to manage members, clubs, and events.',
     loginBrandTitle: 'Youth ministry, organized with purpose',
-    loginBrandText: 'JA Total supports Adventurer, Pathfinder, and Master Guide clubs with member records, events, and ID cards.',
+    loginBrandText: 'Meissa supports Adventurer, Pathfinder, and Master Guide clubs with member records, events, and ID cards.',
 
     landingBackHome: 'Back to home',
     landingTopbarTag: 'Seventh-day Adventist youth clubs',
@@ -502,14 +502,14 @@ export const defaultTranslations = {
     landingHeroCardText: 'Members, medical data, progressive classes, events, and printable ID cards.',
     landingProgramsEyebrow: 'Our clubs',
     landingProgramsTitle: 'Adventist youth ministries in one place',
-    landingProgramsText: 'Each club type has its own identity, honors, and milestones — all supported by JA Total.',
+    landingProgramsText: 'Each club type has its own identity, honors, and milestones — all supported by Meissa.',
     landingProgramAdventurers: 'Adventurers',
     landingProgramAdventurersText: 'For children ages 4–9: family involvement, stars, and foundational Bible learning.',
     landingProgramPathfinders: 'Pathfinders',
     landingProgramPathfindersText: 'For ages 10–15: honors, camporees, class levels, and outdoor discipleship.',
     landingProgramMasterGuide: 'Master Guide',
     landingProgramMasterGuideText: 'Leadership development for youth who mentor peers and serve as club role models.',
-    landingAboutEyebrow: 'About JA Total',
+    landingAboutEyebrow: 'About Meissa',
     landingAboutTitle: 'Shared information for churches and clubs',
     landingAboutText: 'This public page highlights news and upcoming activities. Authorized leaders sign in to manage records and attendance.',
     landingAboutCta: 'Sign in to manage',
@@ -631,7 +631,7 @@ export const defaultTranslations = {
     info: 'Info',
 
     configRequiredTitle: 'Configuration required',
-    configRequiredBody: 'Supabase environment variables are missing. Create frontend/.env from frontend/.env.example and set VITE_SUPABASE_URL and VITE_SUPABASE_KEY, then restart the dev server.',
+    configRequiredBody: 'Supabase environment variables are missing. For local dev, create frontend/.env from frontend/.env.example. On Netlify, set VITE_SUPABASE_URL and VITE_SUPABASE_KEY under Site configuration → Environment variables, then redeploy. See NETLIFY_DEPLOY.md.',
 
     error: 'Error',
     success: 'Success',
@@ -834,7 +834,7 @@ export const defaultTranslations = {
     colNombre: 'nombre',
   },
   es: {
-    appName: 'JA Total',
+    appName: 'Meissa',
     dashboard: 'Panel',
     home: 'Inicio',
     publicHome: 'Inicio público',
@@ -1310,7 +1310,7 @@ export const defaultTranslations = {
     loginPassword: 'Contraseña',
     loginSubtitle: 'Ingrese para administrar miembros, clubes y eventos.',
     loginBrandTitle: 'Ministerio juvenil, organizado con propósito',
-    loginBrandText: 'JA Total apoya clubes de Aventureros, Conquistadores y Master Guide con registros, eventos y carnets.',
+    loginBrandText: 'Meissa apoya clubes de Aventureros, Conquistadores y Master Guide con registros, eventos y carnets.',
 
     landingBackHome: 'Volver al inicio',
     landingTopbarTag: 'Clubes juveniles adventistas',
@@ -1337,14 +1337,14 @@ export const defaultTranslations = {
     landingHeroCardText: 'Miembros, datos médicos, clases progresivas, eventos y carnets imprimibles.',
     landingProgramsEyebrow: 'Nuestros clubes',
     landingProgramsTitle: 'Ministerios juveniles adventistas en un solo lugar',
-    landingProgramsText: 'Cada tipo de club tiene su identidad, especialidades y metas — apoyados por JA Total.',
+    landingProgramsText: 'Cada tipo de club tiene su identidad, especialidades y metas — apoyados por Meissa.',
     landingProgramAdventurers: 'Aventureros',
     landingProgramAdventurersText: 'Para niños de 4 a 9 años: participación familiar, estrellas y fundamentos bíblicos.',
     landingProgramPathfinders: 'Conquistadores',
     landingProgramPathfindersText: 'Para 10 a 15 años: especialidades, camporees, clases y aventura al aire libre.',
     landingProgramMasterGuide: 'Master Guide',
     landingProgramMasterGuideText: 'Desarrollo de liderazgo para jóvenes que mentoran y sirven como modelos en el club.',
-    landingAboutEyebrow: 'Acerca de JA Total',
+    landingAboutEyebrow: 'Acerca de Meissa',
     landingAboutTitle: 'Información compartida para iglesias y clubes',
     landingAboutText: 'Esta página pública destaca noticias y actividades próximas. Los líderes autorizados ingresan para administrar registros y asistencia.',
     landingAboutCta: 'Ingresar para administrar',
@@ -1466,7 +1466,7 @@ export const defaultTranslations = {
     info: 'Info',
 
     configRequiredTitle: 'Configuración requerida',
-    configRequiredBody: 'Faltan variables de entorno de Supabase. Crea frontend/.env desde frontend/.env.example, configura VITE_SUPABASE_URL y VITE_SUPABASE_KEY, y reinicia el servidor.',
+    configRequiredBody: 'Faltan variables de entorno de Supabase. En desarrollo local, crea frontend/.env desde frontend/.env.example. En Netlify, configura VITE_SUPABASE_URL y VITE_SUPABASE_KEY en Configuración del sitio → Variables de entorno y vuelve a desplegar. Ver NETLIFY_DEPLOY.md.',
 
     error: 'Error',
     success: 'Éxito',

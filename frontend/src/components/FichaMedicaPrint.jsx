@@ -60,7 +60,7 @@ export default function FichaMedicaPrint({
     <div className="ficha-medica-document">
       <header className="ficha-medica-header">
         <div className="ficha-medica-header-main">
-          <p className="ficha-medica-eyebrow">JA Total</p>
+          <p className="ficha-medica-eyebrow">{t('appName')}</p>
           <h1 className="ficha-medica-title">{t('medicalRecordSheet')}</h1>
         </div>
         <div className="ficha-medica-printed-at">

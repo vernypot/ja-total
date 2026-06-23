@@ -1,7 +1,7 @@
 # Password Management System - User Guide
 
 ## Overview
-A comprehensive password management system has been implemented for the JA Total application, allowing users to change their own passwords and superadmins to reset passwords for other users.
+A comprehensive password management system has been implemented for the Meissa application, allowing users to change their own passwords and superadmins to reset passwords for other users.
 
 ## Features
 
