@@ -1,4 +1,4 @@
-# Meissa
+# Acutus
 
 Sistema de gestión para clubes de conquistadores.
 

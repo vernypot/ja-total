@@ -759,7 +759,7 @@ const PAGE_HELP = {
         'After login, select your church if the system asks you to.',
       ],
       tips: [
-        'The landing page describes Meissa features for visitors who are not yet logged in.',
+        'The landing page describes Acutus features for visitors who are not yet logged in.',
       ],
     },
     es: {
@@ -771,7 +771,7 @@ const PAGE_HELP = {
         'Después de iniciar sesión, seleccione su iglesia si el sistema se lo solicita.',
       ],
       tips: [
-        'La página de bienvenida describe las funciones de Meissa para visitantes sin sesión.',
+        'La página de bienvenida describe las funciones de Acutus para visitantes sin sesión.',
       ],
     },
   },
