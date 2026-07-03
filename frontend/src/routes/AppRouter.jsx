@@ -20,6 +20,7 @@ import AdvancedSettings from "../pages/AdvancedSettings";
 import PlanificacionPeriodo from "../pages/PlanificacionPeriodo";
 import CalendarioClub from "../pages/CalendarioClub";
 import LandingCms from "../pages/LandingCms";
+import SystemModules from "../pages/SystemModules";
 import EstructuraOrganizacional from "../pages/EstructuraOrganizacional";
 import PageHelpAdmin from "../pages/PageHelpAdmin";
 import UserProfile from "../pages/UserProfile";
@@ -41,6 +42,7 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/modulos" element={<SystemModules />} />
         <Route path="/login" element={<Login />} />
 
         <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />}>

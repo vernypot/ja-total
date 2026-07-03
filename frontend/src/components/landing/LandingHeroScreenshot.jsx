@@ -65,7 +65,7 @@ function pick(language) {
   return COPY[language] || COPY.es;
 }
 
-function AppChrome({ language, children }) {
+export function MockAppChrome({ language, activeIndex = 1, children }) {
   const c = pick(language);
   return (
     <div className="landing-mock-app">
@@ -80,13 +80,21 @@ function AppChrome({ language, children }) {
           <div className="landing-mock-brand">Teófila</div>
           <ul>
             {c.sidebar.map((item, i) => (
-              <li key={item} className={i === 1 ? 'is-active' : ''}>{item}</li>
+              <li key={item} className={i === activeIndex ? 'is-active' : ''}>{item}</li>
             ))}
           </ul>
         </aside>
         <div className="landing-mock-main">{children}</div>
       </div>
     </div>
+  );
+}
+
+function AppChrome({ language, children }) {
+  return (
+    <MockAppChrome language={language} activeIndex={1}>
+      {children}
+    </MockAppChrome>
   );
 }
 
