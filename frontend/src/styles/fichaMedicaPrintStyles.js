@@ -24,7 +24,7 @@ html, body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  border-bottom: 2px solid #1a2744;
+  border-bottom: 2px solid #0d1b2a;
   padding-bottom: 8px;
   margin-bottom: 10px;
 }
@@ -34,7 +34,7 @@ html, body {
   font-size: 8pt;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4338ca;
+  color: #0f766e;
   font-weight: 700;
 }
 
@@ -43,7 +43,7 @@ html, body {
   font-size: 16pt;
   line-height: 1.15;
   font-weight: 700;
-  color: #1a2744;
+  color: #0d1b2a;
 }
 
 .ficha-medica-printed-at {
@@ -82,7 +82,7 @@ html, body {
   margin: 0 0 2px;
   font-size: 13pt;
   font-weight: 700;
-  color: #1a2744;
+  color: #0d1b2a;
 }
 
 .ficha-medica-clubs {
@@ -100,7 +100,7 @@ html, body {
   margin: 0 0 6px;
   font-size: 10.5pt;
   font-weight: 700;
-  color: #1a2744;
+  color: #0d1b2a;
   border-bottom: 1px solid #d1d5db;
   padding-bottom: 2px;
 }
@@ -127,7 +127,7 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #4338ca;
+  color: #0f766e;
 }
 
 .ficha-medica-value {
@@ -148,7 +148,7 @@ html, body {
   text-align: left;
   font-size: 8pt;
   font-weight: 700;
-  color: #1a2744;
+  color: #0d1b2a;
   padding: 4px 0;
   border-bottom: 1px solid #9ca3af;
 }

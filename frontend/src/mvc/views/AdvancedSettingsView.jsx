@@ -64,7 +64,7 @@ export default function AdvancedSettingsView({
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
               <button onClick={addLabel} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>✓ {t('save')}</button>
-              <button onClick={() => { setFormMode('view'); setNewLabel({ label_key: '', label_es: '', label_en: '' }); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>✕ {t('cancel')}</button>
+              <button onClick={() => { setFormMode('view'); setNewLabel({ label_key: '', label_es: '', label_en: '' }); }} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>✕ {t('cancel')}</button>
             </div>
           </div>
         )}

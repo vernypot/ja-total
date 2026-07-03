@@ -177,7 +177,7 @@ function ClassRow({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>{clase.nombre}</strong>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
             {t('clubType')}: {clase.tipos_club?.nombre || clase.club_tipo || '—'}
           </div>
           <span className={`badge badge-${clase.estado}`} style={{ marginTop: '8px', display: 'inline-block' }}>
@@ -188,7 +188,7 @@ function ClassRow({
           <button
             type="button"
             onClick={() => toggleExpandClass(clase.id)}
-            style={{ padding: '6px 12px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ padding: '6px 12px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
           >
             {expanded ? `▲ ${t('hideRequirements')}` : `▼ ${t('requirements')}`}
           </button>
@@ -368,7 +368,7 @@ export default function ClasesProgresivasView({
         <div>
           <h1>📚 {t('progressiveClasses')} <PageHelpLink pageId="progressiveClasses" /></h1>
           {activeIglesiaData && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>
             </p>
           )}
@@ -437,7 +437,7 @@ export default function ClasesProgresivasView({
             {effectiveTipoId && (
               <button
                 onClick={clearTipoFilter}
-                style={{ padding: '6px 12px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                style={{ padding: '6px 12px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
               >
                 ✕ {t('showAllTypes')}
               </button>
@@ -485,7 +485,7 @@ export default function ClasesProgresivasView({
               <button onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✓ {t('save')}
               </button>
-              <button onClick={cancelForm} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+              <button onClick={cancelForm} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✕ {t('cancel')}
               </button>
             </div>
@@ -494,7 +494,7 @@ export default function ClasesProgresivasView({
 
         <h4>{t('classList')}</h4>
         {canReorder && data.length > 1 && (
-          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#6b7280' }}>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>
             {t('dragToReorderClassesHint')}
           </p>
         )}

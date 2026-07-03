@@ -167,7 +167,7 @@ export default function MiembroAsistenciaView({
                   <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '12px', verticalAlign: 'top' }}>
                       <div style={{ fontWeight: 600 }}>{evento?.nombre || t('eventUntitled')}</div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         {evento?.lugar}
                         {tipoNombre && <> · {tipoNombre}</>}
                         {clubName && <> · {clubName}</>}
@@ -189,11 +189,11 @@ export default function MiembroAsistenciaView({
                     </td>
                     <td style={{ padding: '12px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                       <div>{evento?.fecha}</div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                         {String(evento?.hora || '').slice(0, 5)}
                       </div>
                       {checkedInAt && (
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                           {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
                         </div>
                       )}

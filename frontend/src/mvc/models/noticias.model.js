@@ -1,14 +1,36 @@
 import { sb } from '../../services/supabase';
 import { sanitizeNoticiaFields, stripHtmlTags } from '../../utils/sanitizeHtml';
+import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements } from '../../constants/noticiaPlacements';
+import {
+  DEFAULT_NOTICIA_AUDIENCE,
+  normalizeAudience,
+  audienceRequiresClub,
+  filterNoticiasByAudience,
+} from '../../constants/noticiaAudience';
 
 function isRlsError(error) {
   const msg = error?.message || '';
   return msg.includes('row-level security') || msg.includes('permission denied');
 }
 
-const NOTICIA_SELECT = 'id,iglesia_id,titulo,resumen,contenido,publicado_en,estado,created_at,updated_at';
+const NOTICIA_SELECT = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
 
-export async function fetchNoticiasByIglesia(iglesiaId, { showInactive = false, limit } = {}) {
+function normalizeNoticiaRow(row) {
+  if (!row) return row;
+  return {
+    ...row,
+    placements: normalizePlacements(row.placements),
+    audience: normalizeAudience(row.audience),
+    club_nombre: row.clubes?.nombre || row.club_nombre || '',
+  };
+}
+
+function applyPlacementsFilter(query, placements) {
+  if (!placements?.length) return query;
+  return query.overlaps('placements', placements);
+}
+
+export async function fetchNoticiasByIglesia(iglesiaId, { showInactive = false, limit, placements } = {}) {
   if (!iglesiaId) return { data: [], error: null };
 
   let query = sb
@@ -19,13 +41,121 @@ export async function fetchNoticiasByIglesia(iglesiaId, { showInactive = false, 
     .order('created_at', { ascending: false });
 
   if (!showInactive) query = query.eq('estado', 'activo');
+  query = applyPlacementsFilter(query, placements);
   if (limit) query = query.limit(limit);
 
-  return query;
+  const result = await query;
+  if (result.data) {
+    result.data = result.data.map(normalizeNoticiaRow);
+  }
+  return result;
+}
+
+export async function fetchDashboardNoticias({
+  iglesiaId,
+  clubId,
+  placements = ['dashboard'],
+  limit = 10,
+} = {}) {
+  if (!iglesiaId) return { data: [], error: null };
+
+  const rpc = await sb.rpc('fetch_dashboard_noticias', {
+    p_iglesia_id: iglesiaId,
+    p_club_id: clubId || null,
+    p_placements: placements,
+    p_limit: limit,
+  });
+
+  if (!rpc.error) {
+    return {
+      data: (rpc.data || []).map(normalizeNoticiaRow),
+      error: null,
+    };
+  }
+
+  const fallback = await fetchNoticiasByIglesia(iglesiaId, { placements, limit: limit * 3 });
+  if (fallback.error) return fallback;
+
+  return {
+    data: filterNoticiasByAudience(fallback.data, { iglesiaId, clubId }).slice(0, limit),
+    error: null,
+  };
+}
+
+export async function fetchPublicNoticias({ placements, limit = 10 } = {}) {
+  if (!placements?.length) return { data: [], error: null };
+
+  const rpc = await sb.rpc('fetch_public_noticias', {
+    p_placements: placements,
+    p_limit: limit,
+  });
+
+  if (!rpc.error) {
+    return {
+      data: (rpc.data || []).map(normalizeNoticiaRow),
+      error: null,
+    };
+  }
+
+  if (!isRlsError(rpc.error) && !rpc.error.message?.includes('fetch_public_noticias')) {
+    return rpc;
+  }
+
+  let query = sb
+    .from('noticias')
+    .select(NOTICIA_SELECT)
+    .eq('estado', 'activo')
+    .eq('audience', 'general')
+    .lte('publicado_en', new Date().toISOString().slice(0, 10))
+    .order('publicado_en', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  query = applyPlacementsFilter(query, placements);
+  if (limit) query = query.limit(limit);
+
+  const fallback = await query;
+  if (fallback.data) {
+    fallback.data = fallback.data.map(normalizeNoticiaRow);
+  }
+  return fallback;
 }
 
 export async function fetchNoticiaById(id) {
-  return sb.from('noticias').select(NOTICIA_SELECT).eq('id', id).maybeSingle();
+  const result = await sb.from('noticias').select(NOTICIA_SELECT).eq('id', id).maybeSingle();
+  if (result.data) {
+    result.data = normalizeNoticiaRow(result.data);
+  }
+  return result;
+}
+
+export function noticiaPlainText(html, maxLength = 220) {
+  const text = stripHtmlTags(html || '').replace(/\s+/g, ' ').trim();
+  if (!maxLength || text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}…`;
+}
+
+export function mapNoticiaToLandingCard(noticia, language = 'es') {
+  return {
+    id: noticia.id,
+    date: noticia.publicado_en,
+    category: noticia.categoria || '',
+    title: noticiaPlainText(noticia.titulo, 120),
+    excerpt: noticiaPlainText(noticia.resumen || noticia.contenido, 220),
+    fromNoticia: true,
+    language,
+  };
+}
+
+export function mapNoticiaToHeroSlide(noticia) {
+  return {
+    id: `noticia-${noticia.id}`,
+    eyebrow: noticia.categoria || '',
+    title: noticiaPlainText(noticia.titulo, 100),
+    text: noticiaPlainText(noticia.resumen || noticia.contenido, 260),
+    accent: 'teal',
+    screenshot: 'members',
+    fromNoticia: true,
+  };
 }
 
 export async function saveNoticia({
@@ -36,10 +166,21 @@ export async function saveNoticia({
   contenido,
   publicadoEn,
   estado = 'activo',
+  categoria = '',
+  placements = DEFAULT_NOTICIA_PLACEMENTS,
+  audience = DEFAULT_NOTICIA_AUDIENCE,
+  clubId = null,
 }) {
   const clean = sanitizeNoticiaFields({ titulo, resumen, contenido });
   if (!stripHtmlTags(clean.titulo) || !stripHtmlTags(clean.contenido)) {
     return { data: null, error: new Error('Title and content are required.') };
+  }
+
+  const normalizedPlacements = normalizePlacements(placements);
+  const normalizedAudience = normalizeAudience(audience);
+
+  if (audienceRequiresClub(normalizedAudience) && !clubId) {
+    return { data: null, error: new Error('Club is required for club-only news.') };
   }
 
   const payload = {
@@ -49,6 +190,10 @@ export async function saveNoticia({
     contenido: clean.contenido,
     publicado_en: publicadoEn || new Date().toISOString().slice(0, 10),
     estado,
+    categoria: categoria?.trim() || null,
+    placements: normalizedPlacements,
+    audience: normalizedAudience,
+    club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
   };
 
   if (id) {
@@ -69,6 +214,10 @@ export async function saveNoticia({
     p_contenido: clean.contenido,
     p_publicado_en: publicadoEn || null,
     p_estado: estado,
+    p_categoria: categoria?.trim() || null,
+    p_placements: normalizedPlacements,
+    p_audience: normalizedAudience,
+    p_club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
   });
 }
 
@@ -95,6 +244,10 @@ export async function setNoticiaEstado(id, estado) {
     p_contenido: row.contenido,
     p_publicado_en: row.publicado_en,
     p_estado: estado,
+    p_categoria: row.categoria || null,
+    p_placements: normalizePlacements(row.placements),
+    p_audience: normalizeAudience(row.audience),
+    p_club_id: row.club_id || null,
   });
 }
 

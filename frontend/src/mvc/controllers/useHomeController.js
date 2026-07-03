@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import { IglesiaContext } from '../../context/IglesiaContext';
 import { AuthContext } from '../../context/AuthContext';
+import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import * as IglesiasModel from '../models/iglesias.model';
@@ -14,6 +15,7 @@ export function useHomeController() {
   const { user, userData, loading: authLoading } = useContext(AuthContext);
   const { language } = useLanguage();
   const { updateActiveIglesia } = useContext(IglesiaContext);
+  const { activeClub } = useContext(ClubContext);
   const navigate = useNavigate();
   const {
     effectiveIglesiaId,
@@ -57,7 +59,12 @@ export function useHomeController() {
       setIglesiaNombre(iglesiaResult.data?.nombre || assignedIglesiaNombre || '');
 
       const [newsResult, birthdayResult, eventsResult] = await Promise.all([
-        NoticiasModel.fetchNoticiasByIglesia(effectiveIglesiaId, { limit: 6 }),
+        NoticiasModel.fetchDashboardNoticias({
+          iglesiaId: effectiveIglesiaId,
+          clubId: activeClub?.id,
+          placements: ['dashboard'],
+          limit: 6,
+        }),
         HomeModel.fetchUpcomingBirthdaysByIglesia(effectiveIglesiaId, { days: 30 }),
         EventosModel.fetchUpcomingEventosByIglesia(effectiveIglesiaId, 4),
       ]);
@@ -127,7 +134,7 @@ export function useHomeController() {
   useEffect(() => {
     if (authLoading) return;
     loadHomeData();
-  }, [authLoading, effectiveIglesiaId, assignedIglesiaNombre]);
+  }, [authLoading, effectiveIglesiaId, assignedIglesiaNombre, activeClub?.id]);
 
   useEffect(() => {
     if (authLoading || effectiveIglesiaId || !canSwitchIglesia || !iglesias.length) return;

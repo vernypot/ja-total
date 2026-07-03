@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
-import { PathfinderShield, ProgramIcon } from '../../components/landing/YouthClubIcons';
+import { ProgramLogo } from '../../components/landing/YouthClubIcons';
+import LandingHeroScreenshot, { resolveHeroScreenshot } from '../../components/landing/LandingHeroScreenshot';
+import NoticiaBanner from '../../components/NoticiaBanner';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getSectionCopy, resolveSlideText, resolveProgramText, resolveStatText } from '../models/landingContent.model';
 import '../../styles/landing.css';
+import '../../styles/landingHeroScreenshot.css';
 
-const HERO_ICONS = ['pathfinders', 'adventurers', 'masterguide'];
+const BRAND_MARK = '/teofila-mark.svg';
 
 function sectionStyle(section) {
   if (!section?.style_json) return {};
@@ -39,16 +42,14 @@ export default function LandingView({
     themeStyle,
     sections,
     visibleSections,
-    heroCard,
-    heroCardIcon,
     programs,
     stats,
     news,
     events,
     footerContact,
+    bannerNoticias = [],
   } = content;
 
-  const heroIcon = heroSlides[heroIndex]?.icon || HERO_ICONS[heroIndex] || 'pathfinders';
   const show = key => !content.fromCms || visibleSections.has(key);
 
   return (
@@ -68,7 +69,7 @@ export default function LandingView({
       <header className="landing-header">
         <div className="landing-header-inner">
           <a href="#inicio" className="landing-brand">
-            <PathfinderShield className="landing-brand-mark" />
+            <img src={BRAND_MARK} alt="" className="landing-brand-mark" />
             <div className="landing-brand-text">
               <strong>{t('appName')}</strong>
               <span>{t('landingBrandSubtitle')}</span>
@@ -99,6 +100,10 @@ export default function LandingView({
         </div>
       </header>
 
+      {bannerNoticias.length > 0 && (
+        <NoticiaBanner items={bannerNoticias} formatDate={formatDate} />
+      )}
+
       {show('hero') && heroSlides.length > 0 && (
         <section className="landing-hero" id="inicio" style={sectionStyle(sections.hero)}>
           {heroSlides.map((slide, index) => (
@@ -122,17 +127,17 @@ export default function LandingView({
                     <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
                       {user ? t('landingEnterDashboard') : t('landingHeroCta')}
                     </button>
-                    <a href="#noticias" className="landing-btn landing-btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }}>
+                    <a href="#clubes" className="landing-btn landing-btn-outline-on-dark">
                       {t('landingHeroSecondary')}
                     </a>
                   </div>
                 </div>
                 <div className="landing-hero-visual">
-                  <div className="landing-hero-card">
-                    <ProgramIcon type={heroIcon} className="landing-hero-card-icon" />
-                    <h3>{heroCard?.title || t('landingHeroCardTitle')}</h3>
-                    <p>{heroCard?.text || t('landingHeroCardText')}</p>
-                  </div>
+                  <LandingHeroScreenshot
+                    variant={resolveHeroScreenshot(slide)}
+                    language={language}
+                    label={resolveSlideText(slide, 'title', t)}
+                  />
                 </div>
               </div>
             </div>
@@ -155,6 +160,7 @@ export default function LandingView({
         <section className="landing-section" id="clubes" style={sectionStyle(sections.programs)}>
           <div className="landing-section-inner">
             <div className="landing-section-head">
+              <ProgramLogo type="ministerios" className="landing-programs-banner-logo" language={language} />
               <span className="landing-section-eyebrow">{getSectionCopy(sections, 'programs', 'eyebrow', language, t)}</span>
               <h2 className="landing-section-title">{getSectionCopy(sections, 'programs', 'title', language, t)}</h2>
               <p className="landing-section-text">{getSectionCopy(sections, 'programs', 'body', language, t)}</p>
@@ -162,7 +168,7 @@ export default function LandingView({
             <div className="landing-programs-grid">
               {programs.map(program => (
                 <article key={program.id} className="landing-program-card">
-                  <ProgramIcon type={program.icon} className="landing-program-icon" />
+                  <ProgramLogo type={program.icon} className="landing-program-icon" language={language} />
                   <h3>{resolveProgramText(program, 'title', t)}</h3>
                   <p>{resolveProgramText(program, 'text', t)}</p>
                 </article>
@@ -239,7 +245,7 @@ export default function LandingView({
               {news.map(item => (
                 <article key={item.id} className="landing-news-card">
                   <div className="landing-news-thumb">
-                    <PathfinderShield />
+                    <ProgramLogo type="ministerios" className="landing-news-thumb-logo" language={language} />
                   </div>
                   <div className="landing-news-body">
                     <div className="landing-news-meta">
@@ -276,6 +282,7 @@ export default function LandingView({
             <div>
               <h4>{t('appName')}</h4>
               <p>{getSectionCopy(sections, 'footer', 'body', language, t)}</p>
+              <p className="landing-footer-disclaimer">{t('landingFooterDisclaimer')}</p>
             </div>
             <div>
               <h4>{t('landingFooterLinks')}</h4>

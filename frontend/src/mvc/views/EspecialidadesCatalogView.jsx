@@ -24,7 +24,7 @@ function RequisitosSection({
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
       <strong style={{ fontSize: '13px' }}>{t('requirements')}</strong>
       {requisitos.length === 0 ? (
-        <p style={{ margin: '8px 0', fontSize: '13px', color: '#6b7280' }}>{t('noRequirements')}</p>
+        <p style={{ margin: '8px 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('noRequirements')}</p>
       ) : (
         <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '13px' }}>
           {requisitos.map(r => (
@@ -108,7 +108,7 @@ function SpecialtyRow({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>{item.nombre}</strong>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
             {!hideSection && item.especialidad_secciones?.nombre && (
               <span>{t('specialtySection')}: {item.especialidad_secciones.nombre} · </span>
             )}
@@ -127,7 +127,7 @@ function SpecialtyRow({
           <button
             type="button"
             onClick={() => toggleExpand(item.id)}
-            style={{ padding: '6px 12px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ padding: '6px 12px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
           >
             {expanded ? `▲ ${t('hideRequirements')}` : `▼ ${t('requirements')}`}
           </button>
@@ -337,7 +337,7 @@ export default function EspecialidadesCatalogView({
           {effectiveTipoId && (
             <button
               onClick={clearTipoFilter}
-              style={{ padding: '6px 12px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+              style={{ padding: '6px 12px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
             >
               ✕ {t('showAllTypes')}
             </button>
@@ -351,7 +351,7 @@ export default function EspecialidadesCatalogView({
           </p>
         )}
 
-        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6b7280' }}>
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>
           {t('specialtyListCount').replace('{{count}}', String(data.length))}
           {effectiveTipoId && !showAllTypes && (
             <span> · {t('specialtyListFilteredByClub')}</span>
@@ -404,7 +404,7 @@ export default function EspecialidadesCatalogView({
               <button onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✓ {t('save')}
               </button>
-              <button onClick={cancelForm} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+              <button onClick={cancelForm} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✕ {t('cancel')}
               </button>
             </div>

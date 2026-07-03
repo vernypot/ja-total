@@ -28,7 +28,7 @@ export default function ClubDirectivaView({
         <div>
           <h1>🎖️ {t('clubDirectiva')} <PageHelpLink pageId="clubDirectiva" /></h1>
           {club && (
-            <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+            <p style={{ margin: '8px 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               {t('clubLabel')}: <strong>{clubDisplayName(club)}</strong>
               {club.tipos_club?.nombre && (
                 <span style={{ marginLeft: '8px', color: '#3730a3' }}>({club.tipos_club.nombre})</span>
@@ -74,7 +74,7 @@ export default function ClubDirectivaView({
                   <div>
                     <strong>{cargo?.nombre || t('notAvailable')}</strong>
                     {path && path !== cargo?.nombre && (
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         {path}
                       </div>
                     )}

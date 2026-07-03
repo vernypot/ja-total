@@ -31,7 +31,7 @@ export default function TiposEventoView({
       <div className="page-header">
         <div>
           <h1>🏷️ {t('eventTypes')} <PageHelpLink pageId="eventTypes" /></h1>
-          <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '13px' }}>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
             {t('eventTypesHint')}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function TiposEventoView({
               <button onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 ✓ {t('save')}
               </button>
-              <button onClick={closeForm} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button onClick={closeForm} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 ✕ {t('cancel')}
               </button>
             </div>
@@ -123,7 +123,7 @@ export default function TiposEventoView({
                 <div>
                   <strong>{item.nombre}</strong>
                   {item.descripcion && (
-                    <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>{item.descripcion}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>{item.descripcion}</div>
                   )}
                   <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>
                     {t('order')}: {item.orden ?? 0}

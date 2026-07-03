@@ -18,13 +18,15 @@ Production target: **https://teofila.netlify.app**
    - **Build command:** `npm ci && npm run build`
    - **Publish directory:** `dist`
 3. **Site configuration → General → Site details** → set **Site name** to `teofila` (URL becomes `https://teofila.netlify.app`).
-4. **Site configuration → Environment variables** (required for **Production** builds):
+4. **Site configuration → Environment variables** — required for **every** build context (Production **and** Deploy previews):
 
-   | Variable | Value |
-   |----------|--------|
-   | `VITE_SUPABASE_URL` | `https://YOUR-PROJECT-REF.supabase.co` |
-   | `VITE_SUPABASE_KEY` | Anon or publishable key from Supabase → Settings → API |
-   | `VITE_SITE_URL` | `https://teofila.netlify.app` *(optional but recommended)* |
+   | Variable | Value | Scopes |
+   |----------|--------|--------|
+   | `VITE_SUPABASE_URL` | `https://YOUR-PROJECT-REF.supabase.co` | **All scopes** |
+   | `VITE_SUPABASE_KEY` | Anon or publishable key from Supabase → Settings → API | **All scopes** |
+   | `VITE_SITE_URL` | `https://teofila.netlify.app` | Production *(optional)* |
+
+   If you only set variables for **Production**, PR / deploy-preview builds will fail with missing `VITE_SUPABASE_*`.
 
 5. **Deploy**. The build script `scripts/verify-env.mjs` fails fast if variables are missing or if a service-role key is detected.
 
@@ -107,6 +109,7 @@ Netlify → **Domain management** → add domain → update Supabase **Site URL*
 
 | Issue | Fix |
 |-------|-----|
+| Build fails: `Missing VITE_SUPABASE_URL / VITE_SUPABASE_KEY` on **deploy-preview** | Add both vars in Netlify with scope **All scopes** (not Production only), then **Retry deploy** |
 | Build fails: missing env | Set `VITE_*` vars in Netlify before build |
 | Blank app / config screen | Env not available at build time; redeploy after setting vars |
 | Login redirect loop | Fix Supabase Auth URLs for `https://teofila.netlify.app` |

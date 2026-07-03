@@ -1,5 +1,6 @@
 import PasswordReset from '../../components/PasswordReset';
 import BackLink from '../../components/BackLink';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -68,7 +69,7 @@ export default function UserProfileView({
             <div style={{ display: 'grid', gap: '15px' }}>
               {fields.map(field => (
                 <div key={field.key}>
-                  <label style={{ fontSize: '0.875rem', color: '#666', marginBottom: '4px', display: 'block' }}>{t(field.labelKey)}</label>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '4px', display: 'block' }}>{t(field.labelKey)}</label>
                   {isEditing && !field.readOnly ? (
                     <input
                       type={field.type || 'text'}
@@ -88,13 +89,13 @@ export default function UserProfileView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '0.875rem', color: '#666', marginBottom: '4px', display: 'block' }}>{t('role')}</label>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '4px', display: 'block' }}>{t('role')}</label>
                   <span className="badge" style={{ backgroundColor: roleColors[userRole] || '#6b7280', color: 'white', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block' }}>
                     {roleLabel(userRole, t).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.875rem', color: '#666', marginBottom: '4px', display: 'block' }}>{t('status')}</label>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '4px', display: 'block' }}>{t('status')}</label>
                   <span className="badge" style={{ backgroundColor: estadoColors[userEstado] || '#6b7280', color: 'white', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block' }}>
                     {estadoLabel(userEstado, t)}
                   </span>
@@ -106,7 +107,7 @@ export default function UserProfileView({
                   <button onClick={handleSaveProfile} disabled={isSaving} style={{ flex: 1, padding: '10px 15px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 'bold', opacity: isSaving ? 0.6 : 1 }}>
                     {isSaving ? `⏳ ${t('saving')}` : `✓ ${t('saveChanges')}`}
                   </button>
-                  <button onClick={handleEditToggle} disabled={isSaving} style={{ flex: 1, padding: '10px 15px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 'bold', opacity: isSaving ? 0.6 : 1 }}>
+                  <button onClick={handleEditToggle} disabled={isSaving} style={{ flex: 1, padding: '10px 15px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 'bold', opacity: isSaving ? 0.6 : 1 }}>
                     ✕ {t('cancel')}
                   </button>
                 </div>
@@ -118,18 +119,22 @@ export default function UserProfileView({
             <h3 style={{ marginTop: 0 }}>🔐 {t('security')}</h3>
             <div style={{ display: 'grid', gap: '15px' }}>
               <div>
-                <label style={{ fontSize: '0.875rem', color: '#666', marginBottom: '4px', display: 'block' }}>{t('password')}</label>
+                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '4px', display: 'block' }}>{t('password')}</label>
                 <button onClick={() => setShowPasswordModal(true)} style={{ width: '100%', padding: '10px 15px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
                   🔑 {t('changePassword')}
                 </button>
               </div>
               <div>
-                <label style={{ fontSize: '0.875rem', color: '#666', marginBottom: '4px', display: 'block' }}>{t('session')}</label>
+                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '4px', display: 'block' }}>{t('session')}</label>
                 <button onClick={handleLogout} style={{ width: '100%', padding: '10px 15px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
                   🚪 {t('signOut')}
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <ThemeSwitcher />
           </div>
         </div>
       )}

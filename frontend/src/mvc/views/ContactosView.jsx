@@ -119,7 +119,7 @@ export default function ContactosView({
             <button
               type="button"
               onClick={cancelForm}
-              style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+              style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
             >
               ✕ {t('cancel')}
             </button>

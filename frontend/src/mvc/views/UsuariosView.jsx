@@ -133,7 +133,7 @@ export default function UsuariosView({
                         className="form-input"
                         style={{ margin: 0 }}
                       />
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '5px' }}>
                         {t('passwordHintShort')}
                       </div>
                     </div>
@@ -180,7 +180,7 @@ export default function UsuariosView({
             <button onClick={handleSave} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
               ✓ {editingId ? t('update') : t('create')}
             </button>
-            <button onClick={() => { setShowForm(false); resetForm(); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+            <button onClick={() => { setShowForm(false); resetForm(); }} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
               ✕ {t('cancel')}
             </button>
           </div>

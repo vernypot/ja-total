@@ -62,7 +62,7 @@ export default function ClubesView({
         <div>
           <h1>🎯 {t('clubs')} <PageHelpLink pageId="clubs" /></h1>
           {activeIglesiaData && (
-            <div style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <div style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               <div>
                 {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>
               </div>
@@ -143,7 +143,7 @@ export default function ClubesView({
               <button onClick={addClub} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✓ {t('save')}
               </button>
-              <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+              <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✕ {t('cancel')}
               </button>
             </div>

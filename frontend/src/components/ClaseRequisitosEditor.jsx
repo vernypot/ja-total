@@ -72,7 +72,7 @@ function RequisitoRow({
           />
         </label>
         <details style={{ marginBottom: '8px' }}>
-          <summary style={{ fontSize: '11px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+          <summary style={{ fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
             {t('requirementOptionalText')}
           </summary>
           <textarea
@@ -100,7 +100,7 @@ function RequisitoRow({
           <button type="button" onClick={saveRequisito} style={{ ...btnSmall, backgroundColor: '#16a34a', color: 'white' }}>
             ✓ {t('save')}
           </button>
-          <button type="button" onClick={cancelEditRequisito} style={{ ...btnSmall, backgroundColor: '#6b7280', color: 'white' }}>
+          <button type="button" onClick={cancelEditRequisito} style={{ ...btnSmall, backgroundColor: 'var(--color-btn-neutral)', color: 'white' }}>
             ✕ {t('cancel')}
           </button>
         </div>
@@ -114,11 +114,11 @@ function RequisitoRow({
         {req.numero != null && <strong>{req.numero}. </strong>}
         {req.descripcion}
         {req.texto_opcional?.trim() && (
-          <span style={{ display: 'block', fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '2px' }}>
+          <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
             {req.texto_opcional}
           </span>
         )}
-        <span style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+        <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
           {req.sesiones_esperadas ?? 3} {t('planSessionsShort')} ({t('planSessionsExpected')})
         </span>
       </span>
@@ -178,7 +178,7 @@ export default function ClaseRequisitosEditor({
   return (
     <div style={{ display: 'grid', gap: '14px', marginTop: '8px' }}>
       {grouped.length === 0 && ungrouped.length === 0 && (
-        <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{t('noRequirements')}</p>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('noRequirements')}</p>
       )}
 
       {grouped.map(({ seccion, requisitos: sectionReqs }) => {
@@ -235,7 +235,7 @@ export default function ClaseRequisitosEditor({
                   <button type="button" onClick={saveSeccion} style={{ ...btnSmall, padding: '4px 10px', backgroundColor: '#16a34a', color: 'white' }}>
                     ✓ {t('save')}
                   </button>
-                  <button type="button" onClick={cancelEditSeccion} style={{ ...btnSmall, padding: '4px 10px', backgroundColor: '#6b7280', color: 'white' }}>
+                  <button type="button" onClick={cancelEditSeccion} style={{ ...btnSmall, padding: '4px 10px', backgroundColor: 'var(--color-btn-neutral)', color: 'white' }}>
                     ✕ {t('cancel')}
                   </button>
                 </div>
@@ -357,7 +357,7 @@ export default function ClaseRequisitosEditor({
           style={{ margin: '8px 0 0', width: '100%', fontSize: '12px' }}
         />
         <details style={{ marginTop: '8px' }}>
-          <summary style={{ fontSize: '11px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+          <summary style={{ fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
             {t('requirementOptionalText')}
           </summary>
           <input

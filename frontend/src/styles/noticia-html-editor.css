@@ -17,7 +17,7 @@
 
 .noticia-html-editor-hint {
   font-size: 12px;
-  color: var(--gray-500, #6b7280);
+  color: var(--color-text-muted);
 }
 
 .noticia-html-editor-quill .ql-toolbar.ql-snow {
@@ -61,20 +61,32 @@
 .noticia-html-editor-quill .ql-snow.ql-toolbar button:hover,
 .noticia-html-editor-quill .ql-snow .ql-toolbar button:hover,
 .noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active,
-.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active {
-  color: var(--primary, #2563eb);
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:focus-visible,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:focus-visible {
+  color: var(--brand-primary-dark);
 }
 
 .noticia-html-editor-quill .ql-snow.ql-toolbar button:hover .ql-stroke,
 .noticia-html-editor-quill .ql-snow .ql-toolbar button:hover .ql-stroke,
 .noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active .ql-stroke,
-.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-stroke {
-  stroke: var(--primary, #2563eb);
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-stroke,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:focus-visible .ql-stroke,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:focus-visible .ql-stroke {
+  stroke: var(--brand-primary-dark);
 }
 
 .noticia-html-editor-quill .ql-snow.ql-toolbar button:hover .ql-fill,
 .noticia-html-editor-quill .ql-snow .ql-toolbar button:hover .ql-fill,
 .noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-active .ql-fill,
-.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-fill {
-  fill: var(--primary, #2563eb);
+.noticia-html-editor-quill .ql-snow .ql-toolbar button.ql-active .ql-fill,
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:focus-visible .ql-fill,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:focus-visible .ql-fill {
+  fill: var(--brand-primary-dark);
+}
+
+.noticia-html-editor-quill .ql-snow.ql-toolbar button:focus-visible,
+.noticia-html-editor-quill .ql-snow .ql-toolbar button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
 }

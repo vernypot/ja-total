@@ -51,7 +51,7 @@ function renderFieldInput({ field, form, setForm, editing, data, t }) {
         <div>
           <div>{data?.seguro_denominacional ? t('yes') : t('no')}</div>
           {data?.seguro_denominacional && data?.seguro_denominacional_fecha && (
-            <div style={{ marginTop: '4px', color: '#6b7280' }}>
+            <div style={{ marginTop: '4px', color: 'var(--color-text-muted)' }}>
               {t('denominationalInsuranceDate')}: {data.seguro_denominacional_fecha}
             </div>
           )}
@@ -87,7 +87,7 @@ function renderFieldInput({ field, form, setForm, editing, data, t }) {
           <span>{t('denominationalInsurance')}</span>
         </label>
         <label style={{ display: 'grid', gap: '4px' }}>
-          <span style={{ color: '#6b7280', fontSize: '13px' }}>{t('denominationalInsuranceDate')}</span>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{t('denominationalInsuranceDate')}</span>
           <input
             type="date"
             value={form.seguro_denominacional_fecha}
@@ -278,7 +278,7 @@ export default function DatosMedicosView({
             disabled={saving}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#6b7280',
+              backgroundColor: 'var(--color-btn-neutral)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',

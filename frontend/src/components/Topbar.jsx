@@ -4,6 +4,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { getUserRole } from "../utils/permissions";
 import { useNavigate, Link } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 
 export default function Topbar() {
@@ -27,6 +28,7 @@ export default function Topbar() {
       </div>
 
       <div className="topbar-right">
+        <ThemeSwitcher variant="compact" showHint={false} />
         <LanguageSwitcher />
         <div className="user-menu">
           <button

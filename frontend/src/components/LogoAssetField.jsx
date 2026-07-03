@@ -105,7 +105,7 @@ export default function LogoAssetField({
             </button>
           )}
           {hint && (
-            <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: '#6b7280', maxWidth: '140px' }}>{hint}</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: 'var(--color-text-muted)', maxWidth: '140px' }}>{hint}</p>
           )}
         </div>
       )}

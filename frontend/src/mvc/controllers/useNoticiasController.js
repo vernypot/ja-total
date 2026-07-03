@@ -9,12 +9,20 @@ import { validateForm } from '../../utils/validateForm';
 import * as NoticiasModel from '../models/noticias.model';
 import * as IglesiasModel from '../models/iglesias.model';
 
+import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements } from '../../constants/noticiaPlacements';
+import { DEFAULT_NOTICIA_AUDIENCE, normalizeAudience } from '../../constants/noticiaAudience';
+import * as ClubesModel from '../models/clubes.model';
+
 const emptyForm = () => ({
   titulo: '',
   resumen: '',
   contenido: '',
   publicado_en: new Date().toISOString().slice(0, 10),
   estado: 'activo',
+  categoria: '',
+  placements: [...DEFAULT_NOTICIA_PLACEMENTS],
+  audience: DEFAULT_NOTICIA_AUDIENCE,
+  club_id: '',
 });
 
 export function useNoticiasController() {
@@ -25,6 +33,7 @@ export function useNoticiasController() {
   const canManage = canManageChurchData(userRole);
 
   const [items, setItems] = useState([]);
+  const [clubs, setClubs] = useState([]);
   const [iglesiaNombre, setIglesiaNombre] = useState(assignedIglesiaNombre || '');
   const [showForm, setShowForm] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
@@ -55,12 +64,14 @@ export function useNoticiasController() {
     setLoading(true);
     setError('');
 
-    const [{ data: iglesia }, { data, error: queryError }] = await Promise.all([
+    const [{ data: iglesia }, { data: clubData }, { data, error: queryError }] = await Promise.all([
       IglesiasModel.fetchIglesiaById(effectiveIglesiaId),
+      ClubesModel.fetchClubesByIglesia(effectiveIglesiaId),
       NoticiasModel.fetchNoticiasByIglesia(effectiveIglesiaId, { showInactive }),
     ]);
 
     setIglesiaNombre(iglesia?.nombre || assignedIglesiaNombre || '');
+    setClubs(clubData || []);
 
     if (queryError) {
       setError(queryError.message);
@@ -92,6 +103,10 @@ export function useNoticiasController() {
       contenido: item.contenido || '',
       publicado_en: item.publicado_en || new Date().toISOString().slice(0, 10),
       estado: item.estado || 'activo',
+      categoria: item.categoria || '',
+      placements: normalizePlacements(item.placements),
+      audience: normalizeAudience(item.audience),
+      club_id: item.club_id || '',
     });
     setShowForm(true);
   }
@@ -106,6 +121,11 @@ export function useNoticiasController() {
       return;
     }
 
+    if (form.audience === 'club' && !form.club_id) {
+      setError(t('noticiasClubRequired'));
+      return;
+    }
+
     setSaving(true);
     setError('');
 
@@ -117,6 +137,10 @@ export function useNoticiasController() {
       contenido: form.contenido,
       publicadoEn: form.publicado_en,
       estado: form.estado,
+      categoria: form.categoria,
+      placements: form.placements,
+      audience: form.audience,
+      clubId: form.club_id || null,
     });
 
     if (saveError) {
@@ -161,6 +185,7 @@ export function useNoticiasController() {
   return {
     effectiveIglesiaId,
     iglesiaNombre,
+    clubs,
     items: filteredItems,
     showForm,
     showInactive,

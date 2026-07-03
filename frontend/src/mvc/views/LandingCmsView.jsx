@@ -124,7 +124,7 @@ function ItemFormFields({ itemForm, updateItemContent, updateItemStyle, updateIt
         </div>
       ))}
 
-      {(type === 'slide' || type === 'program' || type === 'hero_card') && (
+      {(type === 'program' || type === 'hero_card') && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <Field label={t('landingItemIcon')}>
             <select
@@ -133,9 +133,28 @@ function ItemFormFields({ itemForm, updateItemContent, updateItemStyle, updateIt
               className="form-input"
               style={{ margin: 0, width: '100%' }}
             >
+              <option value="ministerios">All ministries</option>
               <option value="pathfinders">Pathfinders</option>
               <option value="adventurers">Adventurers</option>
-              <option value="masterguide">Master Guide</option>
+              <option value="masterguide">Guías Mayores</option>
+            </select>
+          </Field>
+          {type === 'hero_card' && <div />}
+        </div>
+      )}
+
+      {type === 'slide' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <Field label={t('landingItemScreenshot')}>
+            <select
+              value={itemForm.style_json?.screenshot || 'members'}
+              onChange={e => updateItemStyle('screenshot', e.target.value)}
+              className="form-input"
+              style={{ margin: 0, width: '100%' }}
+            >
+              <option value="members">Members</option>
+              <option value="progress">Classes & progress</option>
+              <option value="carnets">Events & ID cards</option>
             </select>
           </Field>
           {type === 'slide' && (
@@ -275,7 +294,7 @@ export default function LandingCmsView({
       <div className="page-header">
         <div>
           <h1>🌐 {t('landingCmsTitle')} <PageHelpLink pageId="landingCms" /></h1>
-          <p style={{ margin: '8px 0 0', color: '#666' }}>{t('landingCmsHint')}</p>
+          <p style={{ margin: '8px 0 0', color: 'var(--color-text-secondary)' }}>{t('landingCmsHint')}</p>
         </div>
         <a href="/" target="_blank" rel="noreferrer" className="landing-btn landing-btn-primary" style={{ textDecoration: 'none' }}>
           {t('landingPreview')}
@@ -401,7 +420,7 @@ export default function LandingCmsView({
                       }}
                     >
                       <div style={{ fontWeight: 'bold' }}>{sectionLabels[section.section_key] || section.section_key}</div>
-                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         #{section.orden} · {section.visible ? t('visible') : t('hidden')} · {section.estado}
                       </div>
                     </button>
@@ -490,7 +509,7 @@ export default function LandingCmsView({
 
                   <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
                     <button type="button" onClick={saveSection} disabled={saving} style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px' }}>✓ {t('save')}</button>
-                    <button type="button" onClick={() => setShowSectionForm(false)} style={{ padding: '8px 16px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px' }}>✕ {t('cancel')}</button>
+                    <button type="button" onClick={() => setShowSectionForm(false)} style={{ padding: '8px 16px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px' }}>✕ {t('cancel')}</button>
                     {sectionForm.id && (
                       <button type="button" onClick={() => removeSection(sectionForm.id)} style={{ padding: '8px 16px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px' }}>🗑️ {t('delete')}</button>
                     )}
@@ -529,7 +548,7 @@ export default function LandingCmsView({
                     />
                     <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
                       <button type="button" onClick={saveItem} disabled={saving} style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px' }}>✓ {t('save')}</button>
-                      <button type="button" onClick={() => { setShowItemForm(false); setItemForm(null); }} style={{ padding: '8px 16px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px' }}>✕ {t('cancel')}</button>
+                      <button type="button" onClick={() => { setShowItemForm(false); setItemForm(null); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px' }}>✕ {t('cancel')}</button>
                       {itemForm.id && (
                         <button type="button" onClick={() => removeItem(itemForm.id)} style={{ padding: '8px 16px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px' }}>🗑 {t('delete')}</button>
                       )}
@@ -549,7 +568,7 @@ export default function LandingCmsView({
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                               <strong>{item.item_type}</strong>
-                              <span style={{ fontSize: '11px', color: '#6b7280' }}>#{item.orden}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>#{item.orden}</span>
                               <span style={{
                                 fontSize: '11px',
                                 fontWeight: 'bold',

@@ -70,7 +70,7 @@ export default function PlanificacionPeriodoView({
       <div className="page-header">
         <div>
           <h1>📋 {t('periodPlanning')} <PageHelpLink pageId="periodPlanning" /></h1>
-          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>{t('periodPlanningHint')}</p>
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '14px' }}>{t('periodPlanningHint')}</p>
         </div>
         {canManage && clubId && (
           <button
@@ -108,7 +108,7 @@ export default function PlanificacionPeriodoView({
           </select>
         </label>
         {activeClubData && (
-          <span style={{ fontSize: '13px', color: '#6b7280' }}>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
             {activeClubData.tipos_club?.nombre || activeClubData.club_tipo || ''}
           </span>
         )}
@@ -178,7 +178,7 @@ export default function PlanificacionPeriodoView({
 
               <div style={{ marginTop: '12px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600 }}>{t('planIncludedClasses')}</span>
-                <p style={{ margin: '4px 0 8px', fontSize: '12px', color: '#6b7280' }}>{t('planIncludedClassesHint')}</p>
+                <p style={{ margin: '4px 0 8px', fontSize: '12px', color: 'var(--color-text-muted)' }}>{t('planIncludedClassesHint')}</p>
                 {availableClases.length === 0 ? (
                   <p style={{ fontSize: '12px', color: '#9ca3af' }}>{t('noClassesForClub')}</p>
                 ) : (
@@ -260,7 +260,7 @@ export default function PlanificacionPeriodoView({
                     <div style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                       <div>
                         <strong style={{ fontSize: '15px' }}>{plan.nombre}</strong>
-                        <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                           {plan.fecha_inicio} → {plan.fecha_fin}
                           {' · '}
                           {plan.num_reuniones} {t('planMeetings')}

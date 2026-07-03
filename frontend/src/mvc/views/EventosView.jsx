@@ -351,7 +351,7 @@ export default function EventosView({
         <div>
           <h1>📅 {t('events')} <PageHelpLink pageId="events" /></h1>
           {activeClubData && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               {t('clubLabel')}: <strong>{clubDisplayName(activeClubData)}</strong>
             </p>
           )}
@@ -476,7 +476,7 @@ export default function EventosView({
                   )}
 
                   {clubMembers.length === 0 && (
-                    <p style={{ color: '#6b7280', fontSize: '14px', margin: '14px 0 0' }}>{t('noMembersInClub')}</p>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: '14px 0 0' }}>{t('noMembersInClub')}</p>
                   )}
                 </FormSection>
                 )}
@@ -485,7 +485,7 @@ export default function EventosView({
                   <button onClick={saveEvent} disabled={savingEvent} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: savingEvent ? 'not-allowed' : 'pointer', opacity: savingEvent ? 0.7 : 1 }}>
                     ✓ {t('save')}
                   </button>
-                  <button type="button" onClick={closeEventForm} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                  <button type="button" onClick={closeEventForm} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                     ✕ {t('cancel')}
                   </button>
                 </div>
@@ -532,7 +532,7 @@ export default function EventosView({
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                          <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                             {evento.fecha} · {String(evento.hora).slice(0, 5)} · {evento.lugar}
                             {tipoNombre && <> · {tipoNombre}</>}
                           </div>
@@ -545,12 +545,12 @@ export default function EventosView({
                             </div>
                           )}
                           {!needsConfirmation && (
-                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {t('eventNoMemberAssignments')}
                             </div>
                           )}
                           {needsConfirmation && assignments[evento.id] && rows.length > 0 && (
-                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {t('attendanceSummary')
                                 .replace('{assigned}', String(rows.length))
                                 .replace('{recorded}', String(recordedCount))}
@@ -666,7 +666,7 @@ export default function EventosView({
                           {canManage ? t('manageAttendance') : t('attendanceList')}
                         </h4>
                         {canManage && (
-                          <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#6b7280' }}>
+                          <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
                             {t('manageAttendanceHint')}
                           </p>
                         )}
@@ -714,7 +714,7 @@ export default function EventosView({
                                 <div>
                                   <span>{memberDisplayName(row.miembros)}</span>
                                   {checkedInAt && (
-                                    <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                       {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
                                     </div>
                                   )}
@@ -722,7 +722,7 @@ export default function EventosView({
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
                                   {needsConfirmation && (
                                     <div>
-                                      <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
+                                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
                                       <ConfirmationControls
                                         eventoMiembroId={row.id}
                                         eventoId={evento.id}
@@ -734,7 +734,7 @@ export default function EventosView({
                                     </div>
                                   )}
                                   <div>
-                                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{t('attendanceList')}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceList')}</div>
                                     <AttendanceControls
                                       eventoMiembroId={row.id}
                                       eventoId={evento.id}

@@ -6,9 +6,9 @@
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--brand-primary);
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.25);
   border-radius: 999px;
   cursor: pointer;
   vertical-align: middle;
@@ -17,8 +17,8 @@
 }
 
 .page-help-link:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgba(15, 118, 110, 0.16);
+  color: var(--brand-primary-dark);
 }
 
 .page-help-link--compact {
@@ -97,15 +97,20 @@
 }
 
 .page-help-cancel-btn {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #374151;
+  border: 2px solid var(--gray-400);
+  background: var(--white);
+  color: var(--color-text-secondary);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   line-height: 1.4;
+}
+
+.page-help-cancel-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .page-help-cancel-btn:hover {
@@ -170,14 +175,14 @@
 
 .page-help-field span {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   line-height: 1.45;
 }
 
 .page-help-edit-btn {
-  border: 1px solid #bfdbfe;
+  border: 2px solid #93c5fd;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--color-badge-info);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 12px;
@@ -185,6 +190,11 @@
   cursor: pointer;
   line-height: 1.4;
   white-space: nowrap;
+}
+
+.page-help-edit-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .page-help-edit-btn:hover {

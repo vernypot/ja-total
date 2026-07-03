@@ -192,7 +192,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
               border: 'none',
               fontSize: '24px',
               cursor: 'pointer',
-              color: '#666'
+              color: 'var(--color-text-secondary)'
             }}
           >
             ✕
@@ -248,7 +248,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
               required
               disabled={loading}
             />
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '5px' }}>
               {t('passwordHintShort')}
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
                 flex: 1,
                 minWidth: '140px',
                 padding: '12px',
-                backgroundColor: '#6b7280',
+                backgroundColor: 'var(--color-btn-neutral)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -353,7 +353,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
           </div>
         </form>
 
-        <div style={{ marginTop: '15px', fontSize: '12px', color: '#666', backgroundColor: '#f3f4f6', padding: '10px', borderRadius: '4px' }}>
+        <div style={{ marginTop: '15px', fontSize: '12px', color: 'var(--color-text-secondary)', backgroundColor: '#f3f4f6', padding: '10px', borderRadius: '4px' }}>
           <strong>🔒 {t('securityTips')}:</strong>
           <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
             <li>{t('securityTip1')}</li>
