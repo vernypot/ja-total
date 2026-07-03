@@ -15,6 +15,7 @@ export function useLandingController() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState(null);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +59,14 @@ export function useLandingController() {
     return LandingModel.formatEventDay(dateStr);
   }
 
+  function openInfoModal() {
+    setInfoModalOpen(true);
+  }
+
+  function closeInfoModal() {
+    setInfoModalOpen(false);
+  }
+
   return {
     user,
     loading,
@@ -70,5 +79,8 @@ export function useLandingController() {
     formatDate,
     eventDayParts,
     language,
+    infoModalOpen,
+    openInfoModal,
+    closeInfoModal,
   };
 }

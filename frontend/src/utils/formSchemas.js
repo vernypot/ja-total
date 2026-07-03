@@ -238,6 +238,17 @@ export const FORM_SCHEMAS = {
     },
   },
 
+  landingInfoRequest: {
+    id: 'landingInfoRequest',
+    label: 'Landing info request',
+    submitAction: 'submitLandingInfoRequest',
+    fields: {
+      nombre: [v.required()],
+      email: [v.required(), v.email()],
+      mensaje: [v.required()],
+    },
+  },
+
   memberPersonal: {
     id: 'memberPersonal',
     label: 'Member personal data',
