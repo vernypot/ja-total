@@ -72,7 +72,7 @@ export default function IglesiasView({
         <div>
           <h1>⛪ {canSelectChurch ? t('churches') : t('myChurch')} <PageHelpLink pageId="churches" /></h1>
           {iglesiaData && (
-            <div style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <div style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               <div>
                 {t('activeChurch')}: <strong>{iglesiaData.nombre}</strong>
               </div>
@@ -153,7 +153,7 @@ export default function IglesiasView({
         )}
 
         {canSelectChurch && hasOrgStructure && (
-          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#6b7280' }}>
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
             {t('showing')} {data.length} {t('of')} {totalCount} {t('churches').toLowerCase()}
           </p>
         )}
@@ -168,7 +168,7 @@ export default function IglesiasView({
           }}>
             <h4 style={{ marginTop: 0 }}>{t('addNewChurch')}</h4>
             {showOrgForm && (
-              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#6b7280' }}>{t('churchOrgFormHint')}</p>
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('churchOrgFormHint')}</p>
             )}
             <FormField label={t('name')} htmlFor="iglesia-nombre" error={fieldErrors.nombre} required>
               <input
@@ -199,7 +199,7 @@ export default function IglesiasView({
               <button type="button" onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✓ {t('save')}
               </button>
-              <button type="button" onClick={() => { setShowForm(false); resetChurchForm(); }} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+              <button type="button" onClick={() => { setShowForm(false); resetChurchForm(); }} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
                 ✕ {t('cancel')}
               </button>
             </div>

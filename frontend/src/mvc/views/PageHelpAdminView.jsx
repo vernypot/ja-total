@@ -31,7 +31,7 @@ export default function PageHelpAdminView({
       <div className="page-header">
         <div>
           <h1>❓ {t('pageHelpAdminTitle')}</h1>
-          <p style={{ margin: '8px 0 0', color: '#666', fontSize: '14px' }}>
+          <p style={{ margin: '8px 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             {t('pageHelpAdminHint')}
           </p>
         </div>

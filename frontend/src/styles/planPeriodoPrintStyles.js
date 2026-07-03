@@ -23,7 +23,7 @@ body {
 }
 
 .plan-periodo-header {
-  border-bottom: 2px solid #1e40af;
+  border-bottom: 2px solid #0f766e;
   padding-bottom: 10px;
   margin-bottom: 16px;
 }
@@ -31,7 +31,7 @@ body {
 .plan-periodo-title {
   margin: 0 0 4px;
   font-size: 18pt;
-  color: #1e3a8a;
+  color: #0d1b2a;
 }
 
 .plan-periodo-meta {
@@ -63,7 +63,7 @@ body {
   padding: 4px 0;
   font-size: 12pt;
   font-weight: 700;
-  color: #1d4ed8;
+  color: #0f766e;
   border-bottom: 1px solid #dbeafe;
 }
 
@@ -75,7 +75,7 @@ body {
 }
 
 .plan-periodo-entry--meeting {
-  border-left-color: #2563eb;
+  border-left-color: #0f766e;
 }
 
 .plan-periodo-entry--event {
@@ -142,7 +142,7 @@ body {
 
 .plan-periodo-req-sessions {
   font-size: 9pt;
-  color: #1d4ed8;
+  color: #0f766e;
   font-weight: 600;
 }
 
@@ -165,7 +165,7 @@ body {
 .plan-periodo-sessions-summary-title {
   margin: 0 0 6px;
   font-size: 12pt;
-  color: #1e3a8a;
+  color: #0d1b2a;
 }
 
 .plan-periodo-sessions-summary-total {

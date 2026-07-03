@@ -1,0 +1,122 @@
+.theme-switcher-head {
+  margin-bottom: 1rem;
+}
+
+.theme-switcher-hint {
+  margin: 0.35rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.theme-switcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.theme-switcher-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.theme-switcher-card:hover {
+  border-color: var(--gray-400);
+}
+
+.theme-switcher-card.is-selected {
+  border-color: var(--primary);
+  background: var(--info-light);
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.12);
+}
+
+.theme-switcher-card:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.theme-switcher-card-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.theme-switcher-card-title {
+  font-size: var(--text-sm);
+}
+
+.theme-switcher-card-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.theme-switcher--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.theme-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-switcher-btn:hover {
+  border-color: var(--gray-400);
+}
+
+.theme-switcher-btn.is-active {
+  border-color: var(--primary);
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
+.theme-switcher-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.theme-switcher-btn-label {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .theme-switcher-btn-label {
+    display: inline;
+  }
+}
+
+.theme-switcher-status,
+.theme-switcher-error {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-sm);
+}
+
+.theme-switcher-status {
+  color: var(--color-text-muted);
+}
+
+.theme-switcher-error {
+  color: var(--color-badge-danger);
+}

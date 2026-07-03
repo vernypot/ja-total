@@ -161,7 +161,7 @@ export default function MiembrosView({
         <div>
           <h1>👥 {t('members')} <PageHelpLink pageId="members" /></h1>
           {activeIglesiaData && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{activeIglesiaData.nombre}</strong>
             </p>
           )}
@@ -196,7 +196,7 @@ export default function MiembrosView({
       {canManage && showBulkUpload && (
         <div className="card" style={{ marginBottom: '20px', padding: '20px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2' }}>
           <h3 style={{ marginTop: 0 }}>📋 {t('bulkUploadTitle')}</h3>
-          <p style={{ color: '#666', fontSize: '14px', marginTop: 0 }}>{t('bulkUploadHint')}</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginTop: 0 }}>{t('bulkUploadHint')}</p>
           {!clubId && (
             <p style={{ color: '#b45309', fontSize: '13px' }}>⚠️ {t('bulkSelectClubFirst')}</p>
           )}
@@ -263,7 +263,7 @@ export default function MiembrosView({
             {selectedFile && (
               <button
                 onClick={clearBulkUpload}
-                style={{ ...headerBtnStyle, backgroundColor: '#6b7280', color: 'white' }}
+                style={{ ...headerBtnStyle, backgroundColor: 'var(--color-btn-neutral)', color: 'white' }}
               >
                 ✕ {t('bulkClear')}
               </button>
@@ -302,7 +302,7 @@ export default function MiembrosView({
                         <td style={{ padding: '10px' }}>
                           {[row.member.nombre, row.member.apellido1, row.member.apellido2].filter(Boolean).join(' ')}
                           {row.member.contact && (
-                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {t('contactName')}: {row.member.contact.nombre}
                               {row.member.contact.telefono ? ` • ${row.member.contact.telefono}` : ''}
                               {row.member.contact.relacion ? ` (${row.member.contact.relacion})` : ''}

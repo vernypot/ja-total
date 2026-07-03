@@ -1,4 +1,5 @@
 # Teofila — Netlify deployment
+# Production: https://teofila.netlify.app
 # Docs: NETLIFY_DEPLOY.md
 
 [build]
@@ -9,8 +10,16 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--no-audit --no-fund"
+  # Optional: baked into build for absolute URLs (defaults in src/config/site.js if unset)
+  # VITE_SITE_URL = "https://teofila.netlify.app"
 
-# SPA fallback (React Router) — also see public/_redirects
+[context.production]
+  command = "npm ci && npm run build"
+
+[context.deploy-preview]
+  command = "npm ci && npm run build"
+
+# SPA fallback (React Router) — also copied from public/_redirects
 [[redirects]]
   from = "/*"
   to = "/index.html"

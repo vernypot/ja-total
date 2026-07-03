@@ -1,5 +1,6 @@
 import LanguageProvider from "./context/LanguageContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { PageHelpProvider } from "./context/PageHelpContext";
 import { IglesiaProvider } from "./context/IglesiaContext";
 import { ClubProvider } from "./context/ClubContext";
@@ -15,13 +16,15 @@ export default function App() {
         <ConfigRequired />
       ) : (
         <AuthProvider>
-          <PageHelpProvider>
-            <IglesiaProvider>
-              <ClubProvider>
-                <AppRouter />
-              </ClubProvider>
-            </IglesiaProvider>
-          </PageHelpProvider>
+          <ThemeProvider>
+            <PageHelpProvider>
+              <IglesiaProvider>
+                <ClubProvider>
+                  <AppRouter />
+                </ClubProvider>
+              </IglesiaProvider>
+            </PageHelpProvider>
+          </ThemeProvider>
         </AuthProvider>
       )}
     </LanguageProvider>

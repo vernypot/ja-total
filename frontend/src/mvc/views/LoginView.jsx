@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
-import { PathfinderShield } from '../../components/landing/YouthClubIcons';
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/login.css';
+
+const BRAND_MARK = '/teofila-mark.svg';
 
 export default function LoginView({
   email,
@@ -21,7 +22,7 @@ export default function LoginView({
     <div className="login-page">
       <div className="login-page-brand">
         <div className="login-page-brand-content">
-          <PathfinderShield className="login-page-brand-mark" />
+          <img src={BRAND_MARK} alt="" className="login-page-brand-mark" />
           <h1>{t('loginBrandTitle')}</h1>
           <p>{t('loginBrandText')}</p>
         </div>

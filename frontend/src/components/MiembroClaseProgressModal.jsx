@@ -79,38 +79,38 @@ export default function MiembroClaseProgressModal({
           {readOnly ? (
             <>
               <div>
-                <span style={{ color: '#6b7280' }}>{t('classCompleted')}: </span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompleted')}: </span>
                 <strong style={{ color: draft.completado ? '#059669' : '#6b7280' }}>
                   {draft.completado ? '✓' : t('requirementPending')}
                 </strong>
               </div>
               {draft.completado && draft.fecha_completado && (
                 <div>
-                  <span style={{ color: '#6b7280' }}>{t('classCompletionDate')}: </span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}: </span>
                   <strong>{draft.fecha_completado}</strong>
                 </div>
               )}
               <div>
-                <span style={{ color: '#6b7280' }}>{t('hadInvestidura')}: </span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('hadInvestidura')}: </span>
                 <strong>{draft.tiene_investidura ? t('yes') : t('no')}</strong>
               </div>
               {draft.tiene_investidura && (
                 <>
                   {draft.investidura_fecha && (
                     <div>
-                      <span style={{ color: '#6b7280' }}>{t('investiduraDate')}: </span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraDate')}: </span>
                       <strong>{draft.investidura_fecha}</strong>
                     </div>
                   )}
                   {draft.investidura_lugar && (
                     <div>
-                      <span style={{ color: '#6b7280' }}>{t('investiduraPlace')}: </span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraPlace')}: </span>
                       <strong>{draft.investidura_lugar}</strong>
                     </div>
                   )}
                   {draft.investidura_validado_por_nombre && (
                     <div>
-                      <span style={{ color: '#6b7280' }}>{t('validatedBy')}: </span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{t('validatedBy')}: </span>
                       <strong>{draft.investidura_validado_por_nombre}</strong>
                     </div>
                   )}
@@ -136,7 +136,7 @@ export default function MiembroClaseProgressModal({
                 <span>{t('classCompleted')}</span>
               </label>
               <label style={{ display: 'grid', gap: '4px' }}>
-                <span style={{ color: '#6b7280' }}>{t('classCompletionDate')}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}</span>
                 <input
                   type="date"
                   value={draft.fecha_completado}
@@ -171,7 +171,7 @@ export default function MiembroClaseProgressModal({
               {draft.tiene_investidura && (
                 <>
                   <label style={{ display: 'grid', gap: '4px' }}>
-                    <span style={{ color: '#6b7280' }}>{t('investiduraDate')}</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraDate')}</span>
                     <input
                       type="date"
                       value={draft.investidura_fecha}
@@ -181,7 +181,7 @@ export default function MiembroClaseProgressModal({
                     />
                   </label>
                   <label style={{ display: 'grid', gap: '4px' }}>
-                    <span style={{ color: '#6b7280' }}>{t('investiduraPlace')}</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraPlace')}</span>
                     <input
                       type="text"
                       value={draft.investidura_lugar}
@@ -192,7 +192,7 @@ export default function MiembroClaseProgressModal({
                     />
                   </label>
                   <label style={{ display: 'grid', gap: '4px' }}>
-                    <span style={{ color: '#6b7280' }}>{t('validatedBy')}</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('validatedBy')}</span>
                     <input
                       type="text"
                       value={draft.investidura_validado_por_nombre}

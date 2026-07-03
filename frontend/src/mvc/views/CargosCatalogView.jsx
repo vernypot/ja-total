@@ -49,10 +49,10 @@ function CargoTreeNode({
               )}
               <strong>{node.nombre}</strong>
               {node.codigo && (
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>({node.codigo})</span>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>({node.codigo})</span>
               )}
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px', marginLeft: '20px' }}>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '4px', marginLeft: '20px' }}>
               {depth > 0 && <span>{t('cargoPath')}: {path} · </span>}
               {t('clubType')}: {node.tipos_club?.nombre || t('allClubTypes')}
               {node.descripcion && <div style={{ marginTop: '4px' }}>{node.descripcion}</div>}

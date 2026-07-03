@@ -64,7 +64,7 @@ export default function CalendarioClubView({
       <div className="page-header">
         <div>
           <h1>🗓️ {t('clubCalendar')} <PageHelpLink pageId="calendar" /></h1>
-          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>{t('clubCalendarHint')}</p>
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '14px' }}>{t('clubCalendarHint')}</p>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function CalendarioClubView({
           </select>
         </label>
         {activeClubData && (
-          <span style={{ fontSize: '13px', color: '#6b7280' }}>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
             {activeClubData.tipos_club?.nombre || activeClubData.club_tipo || ''}
           </span>
         )}
@@ -151,7 +151,7 @@ export default function CalendarioClubView({
                       padding: '8px 6px',
                       fontSize: '11px',
                       fontWeight: 700,
-                      color: '#6b7280',
+                      color: 'var(--color-text-muted)',
                       textAlign: 'center',
                       textTransform: 'uppercase',
                     }}

@@ -83,7 +83,7 @@ function AssignSessionsModal({ pending, onConfirm, onCancel, t }) {
             {pending.label}
           </p>
         )}
-        <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#6b7280' }}>
+        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
           {t('planAssignSessionsHint')}
         </p>
         <label style={{ display: 'block', fontSize: '12px', color: '#374151', marginBottom: '12px' }}>
@@ -196,7 +196,7 @@ function RequisitoChip({
             <span style={{ display: 'block', fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{cls}</span>
           )}
           {!assigned && (
-            <span style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+            <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
               {expectedSesiones} {t('planSessionsShort')} ({t('planSessionsExpected')})
             </span>
           )}
@@ -243,7 +243,7 @@ function RequisitoChip({
                   borderRadius: '4px',
                 }}
               />
-              <span style={{ fontSize: '10px', color: '#6b7280' }}>{t('planSessionsShort')}</span>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{t('planSessionsShort')}</span>
             </span>
           )}
         </span>
@@ -347,7 +347,7 @@ function ClasePoolGroup({
           aria-hidden
           style={{
             fontSize: '10px',
-            color: '#6b7280',
+            color: 'var(--color-text-muted)',
             width: '12px',
             flexShrink: 0,
             transform: expanded ? 'rotate(90deg)' : 'none',
@@ -357,7 +357,7 @@ function ClasePoolGroup({
           ▸
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>{clase.nombre || t('progressiveClasses')}</span>
-        <span style={{ fontWeight: 500, color: '#6b7280', fontSize: '11px', flexShrink: 0 }}>({total})</span>
+        <span style={{ fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '11px', flexShrink: 0 }}>({total})</span>
       </button>
 
       {expanded && (
@@ -581,7 +581,7 @@ function MeetingColumn({
               cursor: 'pointer',
               padding: '2px 0',
               fontSize: '10px',
-              color: '#6b7280',
+              color: 'var(--color-text-muted)',
               width: '14px',
               flexShrink: 0,
               transform: expanded ? 'rotate(90deg)' : 'none',
@@ -632,16 +632,16 @@ function MeetingColumn({
               <span style={{ display: 'block', fontWeight: 500, color: '#374151', fontSize: '11px', marginTop: '4px' }}>
                 {scheduleLine}
                 {reunion.lugar?.trim() && (
-                  <span style={{ display: 'block', color: '#6b7280', fontWeight: 400 }}>{reunion.lugar.trim()}</span>
+                  <span style={{ display: 'block', color: 'var(--color-text-muted)', fontWeight: 400 }}>{reunion.lugar.trim()}</span>
                 )}
               </span>
             )}
             {!expanded && reunion.notas?.trim() && (
-              <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#6b7280', lineHeight: 1.35 }}>
+              <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: 1.35 }}>
                 {reunion.notas.trim()}
               </p>
             )}
-            <span style={{ display: 'block', fontWeight: 500, color: '#6b7280', fontSize: '10px', marginTop: '4px' }}>
+            <span style={{ display: 'block', fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '10px', marginTop: '4px' }}>
               {items.length} {items.length === 1 ? t('planReqSingular') : t('planReqPlural')}
               {items.length > 0 && (
                 <> · {totalSesiones} {t('planSessionsShort')}</>
@@ -676,8 +676,8 @@ function MeetingColumn({
                 {t('planMeetingDetails')}
               </div>
               <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#9ca3af' }}>{t('planMeetingOptionalHint')}</p>
-              <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#6b7280' }}>{t('planScheduleOnSaveHint')}</p>
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '10px', color: 'var(--color-text-muted)' }}>{t('planScheduleOnSaveHint')}</p>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('name')}
               </label>
               <input
@@ -687,7 +687,7 @@ function MeetingColumn({
                 placeholder={defaultLabel}
                 style={fieldStyle}
               />
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('eventType')}
               </label>
               <select
@@ -700,7 +700,7 @@ function MeetingColumn({
                   <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                 ))}
               </select>
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('eventDate')}
               </label>
               <input
@@ -709,7 +709,7 @@ function MeetingColumn({
                 onChange={e => setDraft(d => ({ ...d, fecha: e.target.value }))}
                 style={fieldStyle}
               />
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('eventTime')}
               </label>
               <input
@@ -718,7 +718,7 @@ function MeetingColumn({
                 onChange={e => setDraft(d => ({ ...d, hora: e.target.value }))}
                 style={fieldStyle}
               />
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('eventPlace')}
               </label>
               <input
@@ -728,7 +728,7 @@ function MeetingColumn({
                 placeholder={defaultClubPlace || t('eventPlace')}
                 style={fieldStyle}
               />
-              <label style={{ display: 'block', fontSize: '10px', color: '#6b7280', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('description')}
               </label>
               <textarea
@@ -757,7 +757,7 @@ function MeetingColumn({
           )}
 
           {!editing && reunion.notas?.trim() && (
-            <div style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280', lineHeight: 1.4 }}>
+            <div style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
               {reunion.notas.trim()}
             </div>
           )}
@@ -860,7 +860,7 @@ export default function PlanAgendaBoard({
         <h4 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
           {t('planUnassignedReqs')} ({unassignedRequisitos.length})
         </h4>
-        <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>{t('planGroupedPoolHint')}</p>
+        <p style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--color-text-muted)' }}>{t('planGroupedPoolHint')}</p>
         <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
           <UnassignedPool
             groupedUnassignedPool={groupedUnassignedPool}

@@ -1,15 +1,15 @@
 /* ============================================
-   SIDEBAR STYLES
+   SIDEBAR STYLES — Teófila
    ============================================ */
 
 .sidebar {
-  background: linear-gradient(180deg, var(--gray-900) 0%, var(--gray-800) 100%);
+  background: var(--gradient-sidebar);
   color: var(--white);
   padding: var(--spacing-xl);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--shadow-lg);
 }
 
@@ -22,14 +22,27 @@
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .sidebar-header h3 {
   margin: 0;
   font-size: var(--text-xl);
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--info) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: var(--font-display);
+  color: var(--color-text-inverse);
 }
 
 .role-badge {
@@ -43,19 +56,19 @@
 }
 
 .role-user {
-  background: rgba(59, 130, 246, 0.2);
-  color: var(--info);
+  background: rgba(147, 197, 253, 0.2);
+  color: #93c5fd;
 }
 
 .role-admin {
-  background: rgba(245, 158, 11, 0.2);
-  color: var(--warning);
+  background: rgba(253, 230, 138, 0.2);
+  color: #fde68a;
 }
 
 .role-superadmin {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
-  color: var(--danger);
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+  background: rgba(196, 181, 253, 0.25);
+  color: var(--brand-purple-light);
+  box-shadow: none;
 }
 
 .sidebar-nav {
@@ -71,7 +84,7 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-inverse-muted);
   transition: all var(--transition-fast);
   font-weight: 500;
   text-decoration: none;
@@ -81,14 +94,14 @@
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--white);
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: var(--gradient-brand);
   color: var(--white);
-  border-left-color: var(--info);
+  border-left-color: var(--brand-secondary);
   box-shadow: var(--shadow-md);
 }
 
@@ -108,23 +121,23 @@
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
+  color: #94a3b8;
   font-weight: 700;
 }
 
 .admin-link {
-  background: rgba(220, 38, 38, 0.1);
+  background: rgba(124, 52, 237, 0.12);
   border-left: 3px solid transparent;
 }
 
 .admin-link:hover {
-  background: rgba(220, 38, 38, 0.2);
-  color: #fca5a5;
+  background: rgba(124, 52, 237, 0.22);
+  color: #e9d5ff;
 }
 
 .admin-link.active {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
-  border-left-color: var(--danger);
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.35) 0%, rgba(124, 52, 237, 0.25) 100%);
+  border-left-color: var(--brand-purple);
 }
 
 .sidebar hr {
@@ -132,10 +145,6 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin: var(--spacing-md) 0;
 }
-
-/* ============================================
-   RESPONSIVE SIDEBAR
-   ============================================ */
 
 @media (max-width: 768px) {
   .sidebar {

@@ -1,0 +1,147 @@
+/* ============================================
+   CLEAR — minimal light layout
+   ============================================ */
+
+html[data-ui-theme='clear'] {
+  --brand-bg: #ffffff;
+  --brand-base: #ffffff;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+
+  --shadow-sm: none;
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 8px 24px rgba(15, 23, 42, 0.1);
+
+  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+html[data-ui-theme='clear'] body {
+  background-color: var(--brand-bg);
+}
+
+html[data-ui-theme='clear'] .sidebar {
+  color: var(--color-text-primary);
+  border-right: 1px solid var(--gray-200);
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .sidebar-header {
+  border-bottom-color: var(--gray-200);
+}
+
+html[data-ui-theme='clear'] .sidebar-header h3 {
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='clear'] .nav-link {
+  color: var(--color-text-secondary);
+}
+
+html[data-ui-theme='clear'] .nav-link:hover {
+  background: var(--gray-100);
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='clear'] .nav-link.active {
+  background: var(--info-light);
+  color: var(--color-badge-info);
+  border-left-color: var(--brand-primary);
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .nav-link.active::before {
+  color: var(--brand-primary);
+}
+
+html[data-ui-theme='clear'] .admin-section {
+  border-top-color: var(--gray-200);
+}
+
+html[data-ui-theme='clear'] .admin-section h4 {
+  color: var(--color-text-muted);
+}
+
+html[data-ui-theme='clear'] .admin-link {
+  background: var(--gray-50);
+}
+
+html[data-ui-theme='clear'] .admin-link:hover {
+  background: var(--gray-100);
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='clear'] .admin-link.active {
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
+html[data-ui-theme='clear'] .role-user {
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
+html[data-ui-theme='clear'] .role-admin {
+  background: var(--warning-light);
+  color: var(--color-badge-warning);
+}
+
+html[data-ui-theme='clear'] .role-superadmin {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+html[data-ui-theme='clear'] .topbar {
+  border-bottom: 1px solid var(--gray-200);
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .card {
+  box-shadow: none;
+  border: 1px solid var(--gray-200);
+}
+
+html[data-ui-theme='clear'] .card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-theme='clear'] .home-panel {
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .home-panel-head {
+  background: var(--white);
+}
+
+html[data-ui-theme='clear'] .login-page-form-wrap {
+  background: var(--white);
+}
+
+html[data-ui-theme='clear'] .landing-page {
+  --lp-cream: #ffffff;
+  --lp-white: #ffffff;
+}
+
+html[data-ui-theme='clear'] .landing-header {
+  background: #ffffff;
+  box-shadow: none;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+html[data-ui-theme='clear'] .landing-section-alt {
+  background: var(--gray-50);
+}
+
+html[data-ui-theme='clear'] .landing-program-card,
+html[data-ui-theme='clear'] .landing-news-card {
+  box-shadow: none;
+  border: 1px solid var(--gray-200);
+}
+
+html[data-ui-theme='clear'] .layout,
+html[data-ui-theme='clear'] .content,
+html[data-ui-theme='clear'] .main {
+  background: var(--brand-bg);
+}

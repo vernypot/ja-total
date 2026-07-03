@@ -46,7 +46,7 @@ export default function LabelSettingsView({
                 ) : (
                   <div>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{customValue || defaultValue}</div>
-                    {customValue && <div style={{ fontSize: '12px', color: '#666' }}>{t('defaultLabel')}: {defaultValue}</div>}
+                    {customValue && <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{t('defaultLabel')}: {defaultValue}</div>}
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

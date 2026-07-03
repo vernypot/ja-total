@@ -29,8 +29,13 @@
 }
 
 .noticia-html a {
-  color: var(--primary, #2563eb);
+  color: var(--color-link);
   text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.noticia-html a:hover {
+  color: var(--color-link-hover);
 }
 
 .noticia-html img {
@@ -46,12 +51,12 @@
 }
 
 .noticia-html--summary {
-  color: var(--gray-600, #4b5563);
+  color: var(--color-text-muted);
   font-size: var(--text-sm, 0.875rem);
 }
 
 .noticia-html--content {
-  color: var(--gray-700, #374151);
+  color: var(--color-text-secondary);
 }
 
 .noticia-form-preview {
@@ -69,5 +74,5 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--gray-500, #6b7280);
+  color: var(--color-text-muted);
 }

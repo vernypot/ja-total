@@ -4,7 +4,7 @@ import { PageHelpLink } from '../../components/PageHelp';
 function RequirementsList({ requisitos, t }) {
   const active = (requisitos || []).filter(r => (r.estado || 'activo') === 'activo');
   if (!active.length) {
-    return <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6b7280' }}>{t('noRequirements')}</p>;
+    return <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>{t('noRequirements')}</p>;
   }
   return (
     <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px', fontSize: '12px', color: '#4b5563' }}>
@@ -90,7 +90,7 @@ export default function MiembroEspecialidadesView({
           </button>
         </div>
         {memberTipos.length > 0 && unassigned.length === 0 && (
-          <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#6b7280' }}>
+          <p style={{ margin: '8px 0 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>
             {t('noAssignableHonors')}
           </p>
         )}
@@ -111,7 +111,7 @@ export default function MiembroEspecialidadesView({
                   <div>
                     <strong>{esp?.nombre || t('notAvailable')}</strong>
                     {esp?.club_tipo && (
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         {t('clubType')}: {esp.club_tipo}
                       </div>
                     )}

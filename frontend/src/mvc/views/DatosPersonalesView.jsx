@@ -118,7 +118,7 @@ function MemberPhoto({
               {t('removePhoto')}
             </button>
           )}
-          <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', maxWidth: '120px' }}>
+          <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-muted)', maxWidth: '120px' }}>
             {t('photoHint')}
           </p>
         </div>
@@ -226,7 +226,7 @@ export default function DatosPersonalesView({
         <div>
           <h2 style={{ margin: '0 0 10px 0' }}>{displayName}</h2>
           {!editing && !isNew && data?.fecha_nacimiento && (
-            <p style={{ margin: '5px 0', color: '#666' }}>
+            <p style={{ margin: '5px 0', color: 'var(--color-text-secondary)' }}>
               {calcularEdad(data.fecha_nacimiento)} {t('yearsOld')} • {data.fecha_nacimiento}
             </p>
           )}
@@ -291,7 +291,7 @@ export default function DatosPersonalesView({
             disabled={saving || uploadingPhoto}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#6b7280',
+              backgroundColor: 'var(--color-btn-neutral)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',

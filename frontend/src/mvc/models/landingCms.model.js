@@ -11,9 +11,44 @@ function pickLang(record, language) {
   return record[language] || record.es || record.en || '';
 }
 
+const HERO_SCREENSHOTS = ['members', 'progress', 'carnets'];
+
+const LEGACY_HERO_SCREENSHOT_MAP = {
+  pathfinders: 'members',
+  adventurers: 'progress',
+  masterguide: 'carnets',
+  ministerios: 'members',
+  members: 'members',
+  progress: 'progress',
+  carnets: 'carnets',
+};
+
+function mapLegacyHeroScreenshot(icon, orden) {
+  if (icon && LEGACY_HERO_SCREENSHOT_MAP[icon]) return LEGACY_HERO_SCREENSHOT_MAP[icon];
+  const index = Math.max(0, (orden || 1) - 1);
+  return HERO_SCREENSHOTS[index % HERO_SCREENSHOTS.length];
+}
+
+function normalizeLandingText(text, language) {
+  if (typeof text !== 'string' || !text) return text;
+  const brand = language === 'en' ? 'Teofila' : 'Teófila';
+  let result = text.replace(/JA\s*Total/gi, brand);
+  if (language === 'es') {
+    result = result.replaceAll('Master Guide', 'Guías Mayores');
+  }
+  return result;
+}
+
 function pickItemContent(item, language) {
   const content = language === 'en' ? item?.content_en : item?.content_es;
-  return content || item?.content_es || item?.content_en || {};
+  const picked = content || item?.content_es || item?.content_en || {};
+
+  return Object.fromEntries(
+    Object.entries(picked).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? normalizeLandingText(value, language) : value,
+    ]),
+  );
 }
 
 export const SECTION_KEYS = [
@@ -237,7 +272,8 @@ export async function deleteLandingItem(id) {
 export function sectionText(section, field, language) {
   if (!section) return '';
   const key = `${field}_${language}`;
-  return section[key] || section[`${field}_es`] || section[`${field}_en`] || '';
+  const raw = section[key] || section[`${field}_es`] || section[`${field}_en`] || '';
+  return normalizeLandingText(raw, language);
 }
 
 export function mapCmsToLandingView({ settings, sections, items }, language) {
@@ -248,7 +284,9 @@ export function mapCmsToLandingView({ settings, sections, items }, language) {
     return acc;
   }, {});
 
-  const heroItems = (itemsBySection.hero || []).filter(i => i.item_type === 'slide');
+  const heroItems = (itemsBySection.hero || [])
+    .filter(i => i.item_type === 'slide')
+    .sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const heroCard = (itemsBySection.hero || []).find(i => i.item_type === 'hero_card');
 
   const heroSlides = heroItems.map(item => {
@@ -259,7 +297,7 @@ export function mapCmsToLandingView({ settings, sections, items }, language) {
       title: content.title || '',
       text: content.text || '',
       accent: item.style_json?.accent || 'gold',
-      icon: item.style_json?.icon || 'pathfinders',
+      screenshot: item.style_json?.screenshot || mapLegacyHeroScreenshot(item.style_json?.icon, item.orden),
     };
   });
 
@@ -322,7 +360,7 @@ export function mapCmsToLandingView({ settings, sections, items }, language) {
     sections: sectionMap,
     heroSlides,
     heroCard: heroCardContent,
-    heroCardIcon: heroCard?.style_json?.icon || 'pathfinders',
+    heroCardIcon: heroCard?.style_json?.icon || 'ministerios',
     programs,
     stats,
     events,
@@ -382,7 +420,7 @@ export function emptyItemForm(sectionKey, itemType) {
   if (itemType === 'slide') {
     base.content_es = { eyebrow: '', title: '', text: '' };
     base.content_en = { eyebrow: '', title: '', text: '' };
-    base.style_json = { accent: 'gold', icon: 'pathfinders' };
+    base.style_json = { accent: 'gold', screenshot: 'members' };
   } else if (itemType === 'hero_card') {
     base.content_es = { title: '', text: '' };
     base.content_en = { title: '', text: '' };

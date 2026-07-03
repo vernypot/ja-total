@@ -1,24 +1,27 @@
 const HERO_SLIDES = [
   {
-    id: 'mission',
+    id: 'members',
     eyebrowKey: 'landingHeroEyebrow1',
     titleKey: 'landingHeroTitle1',
     textKey: 'landingHeroText1',
     accent: 'gold',
+    screenshot: 'members',
   },
   {
-    id: 'community',
+    id: 'progress',
     eyebrowKey: 'landingHeroEyebrow2',
     titleKey: 'landingHeroTitle2',
     textKey: 'landingHeroText2',
     accent: 'teal',
+    screenshot: 'progress',
   },
   {
-    id: 'service',
+    id: 'carnets',
     eyebrowKey: 'landingHeroEyebrow3',
     titleKey: 'landingHeroTitle3',
     textKey: 'landingHeroText3',
     accent: 'navy',
+    screenshot: 'carnets',
   },
 ];
 

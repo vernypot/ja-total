@@ -3,12 +3,16 @@ import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
+import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
+import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
+import '../../styles/noticias.css';
 
 export default function NoticiasView({
   effectiveIglesiaId,
   iglesiaNombre,
+  clubs,
   items,
   showForm,
   showInactive,
@@ -35,9 +39,7 @@ export default function NoticiasView({
   if (!effectiveIglesiaId) {
     return (
       <div className="container">
-        <div className="alert" style={{ backgroundColor: '#fef3c7', color: '#854d0e' }}>
-          {t('homeSelectChurch')}
-        </div>
+        <div className="alert alert-warning">{t('homeSelectChurch')}</div>
       </div>
     );
   }
@@ -56,27 +58,20 @@ export default function NoticiasView({
         <div>
           <h1>📰 {t('noticiasTitle')} <PageHelpLink pageId="news" /></h1>
           {iglesiaNombre && (
-            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
               {t('churchLabel')}: <strong>{iglesiaNombre}</strong>
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={showForm ? closeForm : openCreateForm}
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 'bold',
-          }}
-        >
-          {showForm ? `✕ ${t('cancel')}` : `➕ ${t('noticiasNew')}`}
-        </button>
+        <div className="noticia-page-header-actions">
+          <button
+            type="button"
+            className={showForm ? 'btn btn-secondary' : 'btn btn-primary'}
+            onClick={showForm ? closeForm : openCreateForm}
+          >
+            {showForm ? `✕ ${t('cancel')}` : `➕ ${t('noticiasNew')}`}
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -84,7 +79,7 @@ export default function NoticiasView({
       {showForm && (
         <div className="card" style={{ marginBottom: '20px' }}>
           <h3 style={{ marginTop: 0 }}>{editingId ? t('noticiasEdit') : t('noticiasNew')}</h3>
-          <div style={{ display: 'grid', gap: '16px', maxWidth: '900px' }}>
+          <div className="noticia-form-grid">
             <NoticiaHtmlEditor
               label={t('noticiasFieldTitle')}
               hint={t('noticiasEditorHintTitle')}
@@ -109,9 +104,33 @@ export default function NoticiasView({
               variant="content"
               editorKey={`contenido-${editingId || 'new'}`}
             />
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontWeight: 'bold' }}>{t('noticiasFieldDate')}</span>
+            <NoticiaPlacementsField
+              value={form.placements}
+              onChange={placements => setForm(f => ({ ...f, placements }))}
+            />
+            <NoticiaAudienceField
+              value={form.audience}
+              clubId={form.club_id}
+              clubs={clubs}
+              onChange={({ audience, clubId }) => setForm(f => ({
+                ...f,
+                audience,
+                club_id: clubId ?? f.club_id,
+              }))}
+            />
+            <div className="noticia-form-fields-row">
+              <label>
+                <span>{t('noticiasFieldCategory')}</span>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={form.categoria}
+                  onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}
+                  placeholder={t('noticiasFieldCategoryPlaceholder')}
+                />
+              </label>
+              <label>
+                <span>{t('noticiasFieldDate')}</span>
                 <input
                   type="date"
                   className="form-input"
@@ -119,8 +138,8 @@ export default function NoticiasView({
                   onChange={e => setForm(f => ({ ...f, publicado_en: e.target.value }))}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontWeight: 'bold' }}>{t('status')}</span>
+              <label>
+                <span>{t('status')}</span>
                 <select
                   className="form-input"
                   value={form.estado}
@@ -131,24 +150,16 @@ export default function NoticiasView({
                 </select>
               </label>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="noticia-form-actions">
               <button
                 type="button"
+                className="btn btn-success"
                 onClick={save}
                 disabled={saving}
-                style={{
-                  padding: '10px 16px',
-                  backgroundColor: '#16a34a',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                }}
               >
                 {saving ? t('saving') : t('save')}
               </button>
-              <button type="button" onClick={closeForm} className="form-input" style={{ width: 'auto' }}>
+              <button type="button" className="btn btn-secondary" onClick={closeForm}>
                 {t('cancel')}
               </button>
             </div>
@@ -157,7 +168,7 @@ export default function NoticiasView({
       )}
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <div className="noticia-list-toolbar">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
             {t('showInactive')}
@@ -170,20 +181,15 @@ export default function NoticiasView({
         ) : !items.length ? (
           <p>{t('noticiasEmpty')}</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="noticia-list">
             {items.map(item => (
               <div
                 key={item.id}
-                style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  padding: '14px',
-                  backgroundColor: item.estado === 'activo' ? '#fff' : '#f9fafb',
-                }}
+                className={`noticia-item${item.estado === 'activo' ? '' : ' is-inactive'}`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '220px' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                <div className="noticia-list-item-row">
+                  <div className="noticia-list-item-body">
+                    <div className="noticia-item-meta">
                       {formatDate(item.publicado_en)} · {estadoLabel(item.estado, t)}
                     </div>
                     <NoticiaHtml
@@ -201,15 +207,23 @@ export default function NoticiasView({
                         style={{ margin: '6px 0 0' }}
                       />
                     )}
+                    <div className="noticia-item-badges">
+                      <NoticiaAudienceBadge
+                        audience={item.audience}
+                        clubName={item.club_nombre}
+                        t={t}
+                      />
+                      <NoticiaPlacementBadges placements={item.placements} t={t} />
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                    <button type="button" onClick={() => startEdit(item)} style={{ padding: '6px 10px' }}>
+                  <div className="noticia-item-actions">
+                    <button type="button" className="btn btn-sm btn-edit" onClick={() => startEdit(item)}>
                       {t('edit')}
                     </button>
-                    <button type="button" onClick={() => toggleEstado(item)} style={{ padding: '6px 10px' }}>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => toggleEstado(item)}>
                       {item.estado === 'activo' ? t('deactivate') : t('activate')}
                     </button>
-                    <button type="button" onClick={() => remove(item)} style={{ padding: '6px 10px', color: '#dc2626' }}>
+                    <button type="button" className="btn btn-sm btn-danger" onClick={() => remove(item)}>
                       {t('delete')}
                     </button>
                   </div>

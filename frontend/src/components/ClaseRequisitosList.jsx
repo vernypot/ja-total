@@ -11,7 +11,7 @@ function RequisitoText({ req, t }) {
       {req.numero != null && <strong>{req.numero}. </strong>}
         {req.descripcion}
         {req.texto_opcional?.trim() && (
-          <span style={{ display: 'block', fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '2px' }}>
+          <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
             {req.texto_opcional}
           </span>
         )}
@@ -31,7 +31,7 @@ export default function ClaseRequisitosList({
 
   if (!grouped.length && !ungrouped.length) {
     return (
-      <p style={{ margin: '8px 0', fontSize: compact ? '12px' : '13px', color: '#6b7280' }}>
+      <p style={{ margin: '8px 0', fontSize: compact ? '12px' : '13px', color: 'var(--color-text-muted)' }}>
         {t('noRequirements')}
       </p>
     );

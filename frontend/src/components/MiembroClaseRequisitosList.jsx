@@ -44,7 +44,7 @@ function RequisitoTextSection({ req, draft, setDraft, canManage, saving, t }) {
   if (!canManage) {
     if (!draft.usar_texto_alternativo) return null;
     return (
-      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#6b7280' }}>
+      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: 'var(--color-text-muted)' }}>
         <span>{t('requirementActiveText')}: </span>
         <span style={{ color: '#374151' }}>{activeText}</span>
       </div>
@@ -56,7 +56,7 @@ function RequisitoTextSection({ req, draft, setDraft, canManage, saving, t }) {
       open={hasCustomText || undefined}
       style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}
     >
-      <summary style={{ fontSize: '12px', color: '#6b7280', cursor: 'pointer', userSelect: 'none' }}>
+      <summary style={{ fontSize: '12px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
         {t('requirementTextCustomization')}
       </summary>
       <div style={{ display: 'grid', gap: '10px', marginTop: '10px' }}>
@@ -75,7 +75,7 @@ function RequisitoTextSection({ req, draft, setDraft, canManage, saving, t }) {
           </p>
         )}
         <label style={{ display: 'grid', gap: '4px' }}>
-          <span style={{ fontSize: '12px', color: '#6b7280' }}>{t('requirementMemberReplacement')}</span>
+          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t('requirementMemberReplacement')}</span>
           <textarea
             value={draft.texto_reemplazo}
             disabled={saving || !draft.usar_texto_alternativo}
@@ -158,26 +158,26 @@ function RequisitoCompletionModal({
           {readOnly ? (
             <>
               <div>
-                <span style={{ color: '#6b7280' }}>{t('requirementCompleted')}: </span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('requirementCompleted')}: </span>
                 <strong style={{ color: draft.completado ? '#059669' : '#6b7280' }}>
                   {draft.completado ? '✓' : t('requirementPending')}
                 </strong>
               </div>
               {draft.completado && draft.fecha_completado && (
                 <div>
-                  <span style={{ color: '#6b7280' }}>{t('dateCompleted')}: </span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t('dateCompleted')}: </span>
                   <strong>{draft.fecha_completado}</strong>
                 </div>
               )}
               {draft.validado_por_nombre && (
                 <div>
-                  <span style={{ color: '#6b7280' }}>{t('validatedBy')}: </span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t('validatedBy')}: </span>
                   <strong>{draft.validado_por_nombre}</strong>
                 </div>
               )}
               {draft.comentarios && (
                 <div>
-                  <span style={{ color: '#6b7280', display: 'block', marginBottom: '4px' }}>{t('requirementComments')}</span>
+                  <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('requirementComments')}</span>
                   <p style={{ margin: 0, color: '#374151', whiteSpace: 'pre-wrap' }}>{draft.comentarios}</p>
                 </div>
               )}
@@ -201,7 +201,7 @@ function RequisitoCompletionModal({
                 <span>{t('requirementCompleted')}</span>
               </label>
               <label style={{ display: 'grid', gap: '4px' }}>
-                <span style={{ color: '#6b7280' }}>{t('dateCompleted')}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('dateCompleted')}</span>
                 <input
                   type="date"
                   value={draft.fecha_completado}
@@ -211,7 +211,7 @@ function RequisitoCompletionModal({
                 />
               </label>
               <label style={{ display: 'grid', gap: '4px' }}>
-                <span style={{ color: '#6b7280' }}>{t('validatedBy')}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('validatedBy')}</span>
                 <input
                   type="text"
                   value={draft.validado_por_nombre}
@@ -222,7 +222,7 @@ function RequisitoCompletionModal({
                 />
               </label>
               <label style={{ display: 'grid', gap: '4px' }}>
-                <span style={{ color: '#6b7280' }}>{t('requirementComments')}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('requirementComments')}</span>
                 <textarea
                   value={draft.comentarios}
                   disabled={saving}
@@ -323,7 +323,7 @@ function RequisitoRow({
             style={{
               marginLeft: '6px',
               fontSize: '10px',
-              color: '#6b7280',
+              color: 'var(--color-text-muted)',
               fontStyle: 'normal',
             }}
           >
@@ -366,7 +366,7 @@ export default function MiembroClaseRequisitosList({
 
   if (!grouped.length && !sortedUngrouped.length) {
     return (
-      <p style={{ margin: '8px 0', fontSize: compact ? '12px' : '13px', color: '#6b7280' }}>
+      <p style={{ margin: '8px 0', fontSize: compact ? '12px' : '13px', color: 'var(--color-text-muted)' }}>
         {t('noRequirements')}
       </p>
     );

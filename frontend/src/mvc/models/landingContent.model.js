@@ -1,4 +1,5 @@
 import * as LandingCmsModel from './landingCms.model';
+import * as NoticiasModel from './noticias.model';
 import {
   getHeroSlides,
   getPrograms,
@@ -14,7 +15,7 @@ function buildDefaultLanding(language) {
     titleKey: slide.titleKey,
     textKey: slide.textKey,
     accent: slide.accent,
-    icon: 'pathfinders',
+    screenshot: slide.screenshot,
   }));
 
   return {
@@ -24,7 +25,7 @@ function buildDefaultLanding(language) {
     visibleSections: new Set(['topbar', 'hero', 'programs', 'about', 'events', 'news', 'cta', 'footer']),
     heroSlides,
     heroCard: null,
-    heroCardIcon: 'pathfinders',
+    heroCardIcon: null,
     programs: getPrograms().map(p => ({
       id: p.id,
       icon: p.icon,
@@ -44,11 +45,26 @@ function buildDefaultLanding(language) {
 }
 
 export async function loadLandingContent(language) {
-  const { data, error, hasCms } = await LandingCmsModel.fetchPublicLandingCms();
+  const [cmsResult, landingNewsResult, heroNewsResult, bannerNewsResult] = await Promise.all([
+    LandingCmsModel.fetchPublicLandingCms(),
+    NoticiasModel.fetchPublicNoticias({ placements: ['landing'], limit: 6 }),
+    NoticiasModel.fetchPublicNoticias({ placements: ['hero_slider'], limit: 5 }),
+    NoticiasModel.fetchPublicNoticias({ placements: ['standalone_banner'], limit: 1 }),
+  ]);
+
+  const dbLandingNews = (landingNewsResult.data || []).map(n => NoticiasModel.mapNoticiaToLandingCard(n, language));
+  const dbHeroSlides = (heroNewsResult.data || []).map(n => NoticiasModel.mapNoticiaToHeroSlide(n));
+  const bannerNoticias = bannerNewsResult.data || [];
+
+  const { data, error, hasCms } = cmsResult;
 
   if (!hasCms || error || !data?.sections?.length) {
+    const defaults = buildDefaultLanding(language);
     return {
-      ...buildDefaultLanding(language),
+      ...defaults,
+      news: dbLandingNews.length ? dbLandingNews : defaults.news,
+      heroSlides: dbHeroSlides.length ? [...dbHeroSlides, ...defaults.heroSlides] : defaults.heroSlides,
+      bannerNoticias,
       cmsError: error,
       hasCms: false,
     };
@@ -58,6 +74,9 @@ export async function loadLandingContent(language) {
 
   return {
     ...mapped,
+    news: dbLandingNews.length ? dbLandingNews : mapped.news,
+    heroSlides: dbHeroSlides.length ? [...dbHeroSlides, ...mapped.heroSlides] : mapped.heroSlides,
+    bannerNoticias,
     themeStyle: LandingCmsModel.buildThemeStyle(mapped.settings),
     fromCms: true,
     hasCms: true,

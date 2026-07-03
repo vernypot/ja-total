@@ -39,6 +39,7 @@ function resolveUserData(authUser, dbUser, assignment = null) {
       telefono: authUser.user_metadata?.telefono || '',
       rol: 'superadmin',
       estado: 'activo',
+      ui_theme: 'default',
     }, assignment);
   }
 

@@ -72,7 +72,7 @@ export default function Breadcrumb() {
       {onMembersPage && clubId && (
         <>
           {" > "}
-          <span style={{ color: '#666' }}>{t('members')}</span>
+          <span style={{ color: 'var(--color-text-secondary)' }}>{t('members')}</span>
         </>
       )}
 
@@ -83,7 +83,7 @@ export default function Breadcrumb() {
             {t('members')}
           </Link>
           {" > "}
-          <span style={{ color: '#666' }}>{t('memberDetail')}</span>
+          <span style={{ color: 'var(--color-text-secondary)' }}>{t('memberDetail')}</span>
         </>
       )}
     </div>

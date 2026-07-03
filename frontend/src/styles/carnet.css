@@ -40,7 +40,7 @@
 
 .carnet-letter-sheet-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -80,9 +80,9 @@
   --carnet-h: 85.6mm;
   --carnet-third: calc(var(--carnet-w) / 3);
   --carnet-photo-size: calc(var(--carnet-third) * 1.5);
-  --carnet-navy: #1a2744;
-  --carnet-cyan: #00b4d8;
-  --carnet-cyan-light: #48cae4;
+  --carnet-navy: #0d1b2a;
+  --carnet-cyan: #0f766e;
+  --carnet-cyan-light: #14b8a6;
   --carnet-bg-opacity: 0.15;
   --carnet-font-club: 'Source Sans 3', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 

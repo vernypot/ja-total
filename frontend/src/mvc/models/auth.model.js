@@ -19,7 +19,7 @@ export function onAuthStateChange(callback) {
 export async function fetchUserByEmail(email) {
   return sb
     .from('usuarios')
-    .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado')
+    .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado, ui_theme')
     .eq('email', email)
     .single();
 }

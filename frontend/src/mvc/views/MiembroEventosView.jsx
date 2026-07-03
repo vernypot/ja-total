@@ -87,7 +87,7 @@ export default function MiembroEventosView({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                   <div>
                     <strong>{evento?.nombre || t('eventUntitled')}</strong>
-                    <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                       {evento?.fecha} · {String(evento?.hora || '').slice(0, 5)} · {evento?.lugar}
                       {tipoNombre && <> · {tipoNombre}</>}
                     </div>
@@ -101,7 +101,7 @@ export default function MiembroEventosView({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
                     {needsConfirmation && (
                       <div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
                         {canManage ? (
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                             {['pendiente', 'confirmado', 'rechazado'].map(estado => (
@@ -129,7 +129,7 @@ export default function MiembroEventosView({
                     )}
 
                     <div>
-                      <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{t('attendanceList')}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceList')}</div>
                       {canManage ? (
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                           {['a_tiempo', 'tarde', 'ausente'].map(estado => (

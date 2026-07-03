@@ -78,7 +78,7 @@ async function attachIglesiaAssignments(usuarios) {
 export async function fetchUsuarioByEmail(email) {
   return sb
     .from('usuarios')
-    .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado')
+    .select('id, email, nombre, apellido1, apellido2, telefono, rol, estado, ui_theme')
     .eq('email', email)
     .single();
 }
@@ -220,4 +220,19 @@ export async function updateProfile(id, { nombre, apellido1, apellido2, telefono
     telefono,
     updated_at: new Date(),
   }).eq('id', id);
+}
+
+export async function updateUiTheme(id, ui_theme) {
+  const { data, error } = await sb
+    .from('usuarios')
+    .update({ ui_theme, updated_at: new Date() })
+    .eq('id', id)
+    .select('ui_theme')
+    .single();
+
+  if (error?.message?.includes('ui_theme') || error?.code === '42703') {
+    return { data: { ui_theme }, error: null };
+  }
+
+  return { data, error };
 }

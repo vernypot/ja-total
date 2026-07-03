@@ -137,7 +137,7 @@ export default function MiembroClasesView({
                         {clase?.nombre || t('notAvailable')}
                       </strong>
                       {classCompleted && row.fecha_completado && (
-                        <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                           ({row.fecha_completado})
                         </span>
                       )}
@@ -152,7 +152,7 @@ export default function MiembroClasesView({
                       </button>
                     </div>
                     {clase?.club_tipo && (
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         {t('clubType')}: {clase.club_tipo}
                       </div>
                     )}
@@ -175,7 +175,7 @@ export default function MiembroClasesView({
                       {requisitosExpanded ? '▾' : '▸'}{' '}
                       {requisitosExpanded ? t('hideRequirements') : t('showRequirements')}
                       {requisitos.length > 0 && (
-                        <span style={{ color: '#6b7280', fontWeight: 500 }}> ({requisitos.length})</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}> ({requisitos.length})</span>
                       )}
                     </button>
                     {requisitosExpanded && (

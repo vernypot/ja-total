@@ -42,7 +42,7 @@ export default function EstructuraOrganizacionalView({
       <div className="page-header">
         <div>
           <h1>🌎 {t('orgStructure')} <PageHelpLink pageId="orgStructure" /></h1>
-          <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '13px' }}>{t('orgStructureSubtitle')}</p>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>{t('orgStructureSubtitle')}</p>
         </div>
         <button
           type="button"
@@ -94,7 +94,7 @@ export default function EstructuraOrganizacionalView({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '18px' }}>{levelTitle}</h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>{levelHint}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>{levelHint}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             {canGoUp && (
@@ -153,7 +153,7 @@ export default function EstructuraOrganizacionalView({
               <button type="button" onClick={save} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 ✓ {t('save')}
               </button>
-              <button type="button" onClick={closeForm} style={{ padding: '10px 20px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button type="button" onClick={closeForm} style={{ padding: '10px 20px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 ✕ {t('cancel')}
               </button>
             </div>
@@ -183,7 +183,7 @@ export default function EstructuraOrganizacionalView({
                 <div>
                   <strong>{item.nombre}</strong>
                   {item.codigo && (
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                       [{item.codigo}]
                     </span>
                   )}

@@ -60,12 +60,17 @@ function isPlaceholder(value) {
 }
 
 const missing = REQUIRED.filter(name => isPlaceholder(process.env[name]));
+const netlifyContext = process.env.CONTEXT || process.env.NETLIFY_CONTEXT || 'unknown';
 
 if (missing.length) {
   console.error('\n[build] Missing or placeholder environment variables:');
   for (const name of missing) console.error(`  - ${name}`);
+  console.error(`\nNetlify build context: ${netlifyContext}`);
   console.error('\nLocal: copy frontend/.env.example → frontend/.env');
-  console.error('Netlify: Site settings → Environment variables\n');
+  console.error('Netlify: Site configuration → Environment variables');
+  console.error('  1. Add VITE_SUPABASE_URL and VITE_SUPABASE_KEY (anon/publishable key only)');
+  console.error('  2. Set scope to "All scopes" (or include Deploy previews + Production)');
+  console.error('  3. Redeploy after saving\n');
   process.exit(1);
 }
 

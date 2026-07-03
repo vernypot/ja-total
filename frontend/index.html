@@ -2,7 +2,20 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Teofila</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Teófila — gestión de clubes de Aventureros, Conquistadores y Guías Mayores." />
+  <meta name="theme-color" content="#0F766E" />
+  <link rel="icon" type="image/svg+xml" href="/teofila-mark.svg" />
+  <title>Teófila</title>
+  <script>
+    try {
+      var theme = localStorage.getItem('teofila-ui-theme');
+      if (theme === 'clear' || theme === 'dark') {
+        document.documentElement.setAttribute('data-ui-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <div id="root"></div>

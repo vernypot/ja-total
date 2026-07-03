@@ -3,7 +3,7 @@ import FormField from './FormField';
 export function ChurchOrgPath({ label, className = '' }) {
   if (!label) return null;
   return (
-    <div className={`church-org-path ${className}`.trim()} style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+    <div className={`church-org-path ${className}`.trim()} style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
       🌎 {label}
     </div>
   );

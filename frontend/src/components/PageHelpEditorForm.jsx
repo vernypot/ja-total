@@ -109,7 +109,7 @@ export default function PageHelpEditorForm({
 
       <label style={{ ...labelStyle, marginBottom: '10px' }}>
         {t('pageHelpSteps')}
-        <span style={{ display: 'block', fontWeight: 400, color: '#6b7280', marginBottom: '4px' }}>
+        <span style={{ display: 'block', fontWeight: 400, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
           {t('pageHelpOneLineHint')}
         </span>
         <textarea
@@ -185,7 +185,7 @@ export default function PageHelpEditorForm({
 
       <label style={{ ...labelStyle, marginBottom: '12px' }}>
         {t('pageHelpTips')}
-        <span style={{ display: 'block', fontWeight: 400, color: '#6b7280', marginBottom: '4px' }}>
+        <span style={{ display: 'block', fontWeight: 400, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
           {t('pageHelpOneLineHint')}
         </span>
         <textarea

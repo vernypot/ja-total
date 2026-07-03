@@ -27,12 +27,12 @@ function CargoAssignmentCard({
         <div>
           <strong>{cargo?.nombre || t('notAvailable')}</strong>
           {path && path !== cargo?.nombre && (
-            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
               {t('cargoPath')}: {path}
             </div>
           )}
           {clubName && (
-            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
               {t('clubLabel')}: {clubName}
             </div>
           )}
@@ -50,7 +50,7 @@ function CargoAssignmentCard({
             )}
           </div>
           {row.notas && (
-            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '8px' }}>
               {t('notes')}: {row.notas}
             </div>
           )}
