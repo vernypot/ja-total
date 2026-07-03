@@ -3,10 +3,12 @@ import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { ProgramLogo } from '../../components/landing/YouthClubIcons';
 import LandingHeroScreenshot, { resolveHeroScreenshot } from '../../components/landing/LandingHeroScreenshot';
 import NoticiaBanner from '../../components/NoticiaBanner';
+import LandingInfoRequestModal from '../../components/landing/LandingInfoRequestModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getSectionCopy, resolveSlideText, resolveProgramText, resolveStatText } from '../models/landingContent.model';
 import '../../styles/landing.css';
 import '../../styles/landingHeroScreenshot.css';
+import '../../styles/landingInfoRequest.css';
 
 const BRAND_MARK = '/teofila-mark.svg';
 
@@ -31,8 +33,12 @@ export default function LandingView({
   formatDate,
   eventDayParts,
   language,
+  infoModalOpen,
+  openInfoModal,
+  closeInfoModal,
 }) {
   const { t } = useLanguage();
+  const infoCtaLabel = t('landingInfoRequestCta');
 
   if (loading || !content) {
     return <div className="landing-page" style={{ padding: '3rem', textAlign: 'center' }}>{t('loadingLanding')}</div>;
@@ -82,6 +88,9 @@ export default function LandingView({
               {show('programs') && <a href="#clubes">{t('landingNavClubs')}</a>}
               {show('events') && <a href="#eventos">{t('landingNavEvents')}</a>}
               {show('news') && <a href="#noticias">{t('landingNavNews')}</a>}
+              <button type="button" className="landing-nav-info-link" onClick={openInfoModal}>
+                {infoCtaLabel}
+              </button>
             </div>
           </nav>
 
@@ -101,7 +110,12 @@ export default function LandingView({
       </header>
 
       {bannerNoticias.length > 0 && (
-        <NoticiaBanner items={bannerNoticias} formatDate={formatDate} />
+        <NoticiaBanner
+          items={bannerNoticias}
+          formatDate={formatDate}
+          onCtaClick={openInfoModal}
+          ctaLabel={infoCtaLabel}
+        />
       )}
 
       {show('hero') && heroSlides.length > 0 && (
@@ -124,8 +138,8 @@ export default function LandingView({
                   <h1 className="landing-hero-title">{resolveSlideText(slide, 'title', t)}</h1>
                   <p className="landing-hero-text">{resolveSlideText(slide, 'text', t)}</p>
                   <div className="landing-hero-actions">
-                    <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
-                      {user ? t('landingEnterDashboard') : t('landingHeroCta')}
+                    <button type="button" className="landing-btn landing-btn-gold" onClick={openInfoModal}>
+                      {infoCtaLabel}
                     </button>
                     <a href="#clubes" className="landing-btn landing-btn-outline-on-dark">
                       {t('landingHeroSecondary')}
@@ -187,14 +201,16 @@ export default function LandingView({
                 <h2 className="landing-section-title">{getSectionCopy(sections, 'about', 'title', language, t)}</h2>
                 <p className="landing-section-text">{getSectionCopy(sections, 'about', 'body', language, t)}</p>
               </div>
-              <button type="button" className="landing-btn landing-btn-primary" onClick={user ? goToDashboard : goToLogin}>
-                {getSectionCopy(sections, 'about', 'cta_text', language, t) || (user ? t('landingEnterDashboard') : t('landingAboutCta'))}
+              <button type="button" className="landing-btn landing-btn-primary" onClick={openInfoModal}>
+                {infoCtaLabel}
               </button>
             </div>
-            <div className="landing-stats-grid">
+            <div className="landing-stats-grid" aria-live="polite">
               {stats.map(stat => (
                 <div key={stat.id} className="landing-stat-card">
-                  <div className="landing-stat-value">{resolveStatText(stat, 'value', t)}</div>
+                  <div className="landing-stat-value" aria-label={resolveStatText(stat, 'label', t)}>
+                    {resolveStatText(stat, 'value', t)}
+                  </div>
                   <div className="landing-stat-label">{resolveStatText(stat, 'label', t)}</div>
                 </div>
               ))}
@@ -269,12 +285,14 @@ export default function LandingView({
               <h2>{getSectionCopy(sections, 'cta', 'title', language, t)}</h2>
               <p>{getSectionCopy(sections, 'cta', 'body', language, t)}</p>
             </div>
-            <button type="button" className="landing-btn landing-btn-gold" onClick={user ? goToDashboard : goToLogin}>
-              {getSectionCopy(sections, 'cta', 'cta_text', language, t) || (user ? t('landingEnterDashboard') : t('landingCtaButton'))}
+            <button type="button" className="landing-btn landing-btn-gold" onClick={openInfoModal}>
+              {infoCtaLabel}
             </button>
           </div>
         </section>
       )}
+
+      <LandingInfoRequestModal open={infoModalOpen} onClose={closeInfoModal} />
 
       {show('footer') && (
         <footer className="landing-footer" style={sectionStyle(sections.footer)}>
@@ -288,6 +306,11 @@ export default function LandingView({
               <h4>{t('landingFooterLinks')}</h4>
               <p><a href="#clubes">{t('landingNavClubs')}</a></p>
               <p><a href="#eventos">{t('landingNavEvents')}</a></p>
+              <p>
+                <button type="button" className="landing-footer-link-btn" onClick={openInfoModal}>
+                  {infoCtaLabel}
+                </button>
+              </p>
               <p><Link to="/login">{t('signIn')}</Link></p>
             </div>
             <div>

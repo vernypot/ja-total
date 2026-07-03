@@ -31,13 +31,6 @@ const PROGRAMS = [
   { id: 'masterguide', icon: 'masterguide', titleKey: 'landingProgramMasterGuide', textKey: 'landingProgramMasterGuideText' },
 ];
 
-const STATS = [
-  { id: 'clubs', valueKey: 'landingStatClubsValue', labelKey: 'landingStatClubs' },
-  { id: 'members', valueKey: 'landingStatMembersValue', labelKey: 'landingStatMembers' },
-  { id: 'events', valueKey: 'landingStatEventsValue', labelKey: 'landingStatEvents' },
-  { id: 'churches', valueKey: 'landingStatChurchesValue', labelKey: 'landingStatChurches' },
-];
-
 const NEWS = [
   {
     id: 'camporee',
@@ -105,10 +98,6 @@ export function getHeroSlides() {
 
 export function getPrograms() {
   return PROGRAMS;
-}
-
-export function getStats() {
-  return STATS;
 }
 
 export function getLandingNews(language) {

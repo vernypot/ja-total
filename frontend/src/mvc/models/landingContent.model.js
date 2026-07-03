@@ -1,12 +1,19 @@
 import * as LandingCmsModel from './landingCms.model';
 import * as NoticiasModel from './noticias.model';
+import { buildUsageStatCards, fetchPublicUsageStats } from './landingUsageStats.model';
 import {
   getHeroSlides,
   getPrograms,
-  getStats,
   getLandingNews,
   getLandingEvents,
 } from './landing.model';
+
+function applyUsageStats(landing, usage, language) {
+  return {
+    ...landing,
+    stats: buildUsageStatCards(usage, language),
+  };
+}
 
 function buildDefaultLanding(language) {
   const heroSlides = getHeroSlides().map(slide => ({
@@ -32,11 +39,7 @@ function buildDefaultLanding(language) {
       titleKey: p.titleKey,
       textKey: p.textKey,
     })),
-    stats: getStats().map(s => ({
-      id: s.id,
-      valueKey: s.valueKey,
-      labelKey: s.labelKey,
-    })),
+    stats: buildUsageStatCards(null, language),
     news: getLandingNews(language),
     events: getLandingEvents(language),
     footerContact: null,
@@ -45,12 +48,15 @@ function buildDefaultLanding(language) {
 }
 
 export async function loadLandingContent(language) {
-  const [cmsResult, landingNewsResult, heroNewsResult, bannerNewsResult] = await Promise.all([
+  const [cmsResult, landingNewsResult, heroNewsResult, bannerNewsResult, usageResult] = await Promise.all([
     LandingCmsModel.fetchPublicLandingCms(),
     NoticiasModel.fetchPublicNoticias({ placements: ['landing'], limit: 6 }),
     NoticiasModel.fetchPublicNoticias({ placements: ['hero_slider'], limit: 5 }),
     NoticiasModel.fetchPublicNoticias({ placements: ['standalone_banner'], limit: 1 }),
+    fetchPublicUsageStats(),
   ]);
+
+  const usageStats = usageResult.data;
 
   const dbLandingNews = (landingNewsResult.data || []).map(n => NoticiasModel.mapNoticiaToLandingCard(n, language));
   const dbHeroSlides = (heroNewsResult.data || []).map(n => NoticiasModel.mapNoticiaToHeroSlide(n));
@@ -59,7 +65,7 @@ export async function loadLandingContent(language) {
   const { data, error, hasCms } = cmsResult;
 
   if (!hasCms || error || !data?.sections?.length) {
-    const defaults = buildDefaultLanding(language);
+    const defaults = applyUsageStats(buildDefaultLanding(language), usageStats, language);
     return {
       ...defaults,
       news: dbLandingNews.length ? dbLandingNews : defaults.news,
@@ -67,13 +73,15 @@ export async function loadLandingContent(language) {
       bannerNoticias,
       cmsError: error,
       hasCms: false,
+      usageStatsError: usageResult.error,
     };
   }
 
   const mapped = LandingCmsModel.mapCmsToLandingView(data, language);
+  const withUsage = applyUsageStats(mapped, usageStats, language);
 
   return {
-    ...mapped,
+    ...withUsage,
     news: dbLandingNews.length ? dbLandingNews : mapped.news,
     heroSlides: dbHeroSlides.length ? [...dbHeroSlides, ...mapped.heroSlides] : mapped.heroSlides,
     bannerNoticias,
@@ -81,6 +89,7 @@ export async function loadLandingContent(language) {
     fromCms: true,
     hasCms: true,
     cmsError: null,
+    usageStatsError: usageResult.error,
   };
 }
 
