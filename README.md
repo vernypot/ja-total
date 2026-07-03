@@ -31,4 +31,4 @@ See **[NETLIFY_DEPLOY.md](./NETLIFY_DEPLOY.md)** for:
 - Supabase Auth URL configuration
 - Security checklist (RLS, keys, headers)
 
-Quick summary: connect the repo to Netlify, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` (anon/publishable key only), and deploy.
+Quick summary: connect the repo to Netlify, name the site **`teofila`** (→ `https://teofila.netlify.app`), set `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` (anon/publishable key only), configure Supabase Auth redirect URLs, and deploy.
