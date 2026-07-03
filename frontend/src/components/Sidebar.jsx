@@ -140,6 +140,12 @@ export default function Sidebar() {
                     🔑 {t('userManagement')}
                   </Link>
                   <Link
+                    to="/dashboard/site-content"
+                    className={`nav-link admin-link ${isActive('/dashboard/site-content') ? 'active' : ''}`}
+                  >
+                    📝 {t('siteContentTitle')}
+                  </Link>
+                  <Link
                     to="/dashboard/landing-cms"
                     className={`nav-link admin-link ${isActive('/dashboard/landing-cms') ? 'active' : ''}`}
                   >

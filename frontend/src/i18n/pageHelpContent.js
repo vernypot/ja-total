@@ -759,6 +759,41 @@ const PAGE_HELP = {
     },
   },
 
+  siteContent: {
+    en: {
+      title: 'Site copy',
+      overview: 'Central hub to edit text on public pages: landing, modules catalog, and login.',
+      steps: [
+        'Pick the page you want to update.',
+        'Use Preview to open the live public page.',
+        'Click Edit to open the landing CMS or filtered label editor for that page.',
+      ],
+      fields: [
+        { name: 'Landing sections', description: 'Managed in Landing page CMS (database-backed sections).' },
+        { name: 'Labels', description: 'Strings stored in Advanced Settings, filtered by page prefix.' },
+      ],
+      tips: [
+        'Run sync in Advanced Settings if a new default string is missing from the database.',
+      ],
+    },
+    es: {
+      title: 'Textos del sitio',
+      overview: 'Centro para editar textos de páginas públicas: inicio, módulos e ingreso.',
+      steps: [
+        'Elija la página que desea actualizar.',
+        'Use Vista previa para abrir la página pública.',
+        'Pulse Editar para abrir el CMS de inicio o el editor de etiquetas filtrado.',
+      ],
+      fields: [
+        { name: 'Secciones de inicio', description: 'Se administran en el CMS de página de inicio (base de datos).' },
+        { name: 'Etiquetas', description: 'Textos en Configuración avanzada, filtrados por prefijo de página.' },
+      ],
+      tips: [
+        'Ejecute sincronizar en Configuración avanzada si falta una etiqueta nueva en la base de datos.',
+      ],
+    },
+  },
+
   login: {
     en: {
       title: 'Sign in',

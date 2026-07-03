@@ -25,6 +25,45 @@ const HERO_SLIDES = [
   },
 ];
 
+const STORY_SLIDES = [
+  {
+    id: 'story-intro',
+    layout: 'intro',
+    titleKey: 'landingHeroIntroTitle',
+    taglineKey: 'landingHeroIntroTagline',
+    textKey: 'landingHeroIntroText',
+    accent: 'gold',
+    visual: 'brand-stack',
+  },
+  {
+    id: 'story-about',
+    layout: 'about',
+    eyebrowKey: 'landingHeroAboutEyebrow',
+    titleKey: 'landingHeroAboutTitle',
+    textKey: 'landingHeroAboutText1',
+    text2Key: 'landingHeroAboutText2',
+    accent: 'teal',
+    visual: 'progress',
+  },
+  {
+    id: 'story-modules',
+    layout: 'modules',
+    eyebrowKey: 'landingHeroModulesEyebrow',
+    titleKey: 'landingHeroModulesTitle',
+    textKey: 'landingHeroModulesText',
+    accent: 'gold',
+    visual: 'module-logos',
+  },
+  {
+    id: 'story-why',
+    layout: 'why',
+    eyebrowKey: 'landingHeroWhyEyebrow',
+    titleKey: 'landingHeroWhyTitle',
+    accent: 'navy',
+    visual: 'carnets',
+  },
+];
+
 const PROGRAMS = [
   { id: 'adventurers', icon: 'adventurers', titleKey: 'landingProgramAdventurers', textKey: 'landingProgramAdventurersText' },
   { id: 'pathfinders', icon: 'pathfinders', titleKey: 'landingProgramPathfinders', textKey: 'landingProgramPathfindersText' },
@@ -94,6 +133,10 @@ function pickLang(record, language) {
 
 export function getHeroSlides() {
   return HERO_SLIDES;
+}
+
+export function getStorySlides() {
+  return STORY_SLIDES;
 }
 
 export function getPrograms() {
