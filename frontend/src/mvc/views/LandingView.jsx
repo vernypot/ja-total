@@ -85,7 +85,7 @@ export default function LandingView({
           <nav className="landing-nav">
             <div className="landing-nav-links">
               <a href="#inicio">{t('landingNavHome')}</a>
-              {show('programs') && <a href="#clubes">{t('landingNavClubs')}</a>}
+              {show('programs') && <Link to="/modulos">{t('landingNavModules')}</Link>}
               {show('events') && <a href="#eventos">{t('landingNavEvents')}</a>}
               {show('news') && <a href="#noticias">{t('landingNavNews')}</a>}
               <button type="button" className="landing-nav-info-link" onClick={openInfoModal}>
@@ -141,9 +141,9 @@ export default function LandingView({
                     <button type="button" className="landing-btn landing-btn-gold" onClick={openInfoModal}>
                       {infoCtaLabel}
                     </button>
-                    <a href="#clubes" className="landing-btn landing-btn-outline-on-dark">
+                    <Link to="/modulos" className="landing-btn landing-btn-outline-on-dark">
                       {t('landingHeroSecondary')}
-                    </a>
+                    </Link>
                   </div>
                 </div>
                 <div className="landing-hero-visual">
@@ -304,7 +304,7 @@ export default function LandingView({
             </div>
             <div>
               <h4>{t('landingFooterLinks')}</h4>
-              <p><a href="#clubes">{t('landingNavClubs')}</a></p>
+              <p><Link to="/modulos">{t('landingNavModules')}</Link></p>
               <p><a href="#eventos">{t('landingNavEvents')}</a></p>
               <p>
                 <button type="button" className="landing-footer-link-btn" onClick={openInfoModal}>
