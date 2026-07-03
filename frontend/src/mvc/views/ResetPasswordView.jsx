@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useLanguage } from '../../hooks/useLanguage';
+import { getPasswordResetRedirectUrl } from '../../config/site';
 import '../../styles/login.css';
 
 const BRAND_MARK = '/teofila-mark.svg';
@@ -9,6 +10,7 @@ export default function ResetPasswordView({
   ready,
   checking,
   email,
+  setEmail,
   newPassword,
   setNewPassword,
   confirmPassword,
@@ -16,9 +18,12 @@ export default function ResetPasswordView({
   error,
   success,
   loading,
+  linkExpired,
   handleSubmit,
+  handleRequestNewLink,
 }) {
   const { t } = useLanguage();
+  const redirectHint = typeof window !== 'undefined' ? getPasswordResetRedirectUrl() : '';
 
   return (
     <div className="login-page">
@@ -42,9 +47,41 @@ export default function ResetPasswordView({
           {!checking && !ready && (
             <>
               <h2>{t('resetPasswordTitle')}</h2>
-              <p className="login-page-form-sub">{t('passwordResetLinkInvalid')}</p>
+              <p className="login-page-form-sub">
+                {linkExpired ? t('passwordResetOtpExpiredHint') : t('passwordResetLinkInvalid')}
+              </p>
               {error && <div className="login-page-error">{error}</div>}
-              <Link to="/login" className="login-page-submit" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+              {success && (
+                <div className="login-page-error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' }}>
+                  {success}
+                </div>
+              )}
+
+              <form onSubmit={handleRequestNewLink}>
+                <div className="login-page-field">
+                  <label htmlFor="reset-password-email">{t('loginEmail')}</label>
+                  <input
+                    id="reset-password-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                <button type="submit" className="login-page-submit" disabled={loading}>
+                  {loading ? t('processing') : t('sendPasswordResetEmail')}
+                </button>
+              </form>
+
+              {import.meta.env.DEV && redirectHint && (
+                <p className="login-page-form-sub" style={{ marginTop: '1rem', fontSize: '0.8125rem' }}>
+                  {t('passwordResetRedirectHint')}: <code>{redirectHint}</code>
+                </p>
+              )}
+
+              <Link to="/login" className="login-page-forgot" style={{ display: 'inline-block', marginTop: '1rem' }}>
                 {t('backToLogin')}
               </Link>
             </>
@@ -57,7 +94,11 @@ export default function ResetPasswordView({
                 {t('resetPasswordPageFor')} <strong>{email}</strong>
               </p>
               {error && <div className="login-page-error">{error}</div>}
-              {success && <div className="login-page-error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' }}>{success}</div>}
+              {success && (
+                <div className="login-page-error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' }}>
+                  {success}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="login-page-field">

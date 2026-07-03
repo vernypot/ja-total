@@ -24,7 +24,7 @@ Production target: **https://teofila.netlify.app**
    |----------|--------|--------|
    | `VITE_SUPABASE_URL` | `https://YOUR-PROJECT-REF.supabase.co` | **All scopes** |
    | `VITE_SUPABASE_KEY` | Anon or publishable key from Supabase → Settings → API | **All scopes** |
-   | `VITE_SITE_URL` | `https://teofila.netlify.app` | Production *(optional)* |
+   | `VITE_SITE_URL` | `https://teofila.netlify.app` | **All scopes** (required for auth email redirects) |
 
    If you only set variables for **Production**, PR / deploy-preview builds will fail with missing `VITE_SUPABASE_*`.
 
@@ -41,8 +41,8 @@ In **Supabase Dashboard → Authentication → URL configuration**:
 | **Site URL** | `https://teofila.netlify.app` |
 | **Redirect URLs** | `https://teofila.netlify.app/**` |
 | | `https://teofila.netlify.app/reset-password` |
-| | `http://localhost:5173/**` |
-| | `http://localhost:5173/reset-password` |
+
+Password reset emails always use the live site URL (`VITE_SITE_URL` or `https://teofila.netlify.app`), not localhost. Keep Supabase **Site URL** on production as well — do not point it at localhost.
 
 Without this, login and password reset redirects fail in production.
 

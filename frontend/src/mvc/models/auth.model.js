@@ -55,6 +55,37 @@ export async function signUpAuthUser({ email, password, metadata = {} }) {
   return result;
 }
 
+export function parseAuthCallbackError() {
+  if (typeof window === 'undefined') return null;
+
+  const hash = window.location.hash?.replace(/^#/, '') || '';
+  if (!hash) return null;
+
+  const params = new URLSearchParams(hash);
+  const error = params.get('error');
+  if (!error) return null;
+
+  return {
+    error,
+    errorCode: params.get('error_code') || '',
+    errorDescription: (params.get('error_description') || '').replace(/\+/g, ' '),
+  };
+}
+
+export function formatAuthCallbackError(callbackError, t) {
+  if (!callbackError) return '';
+
+  if (callbackError.errorCode === 'otp_expired') {
+    return t('passwordResetOtpExpired');
+  }
+
+  if (callbackError.errorDescription) {
+    return callbackError.errorDescription;
+  }
+
+  return t('passwordResetLinkInvalid');
+}
+
 export async function sendPasswordResetEmail(email) {
   const redirectTo = getPasswordResetRedirectUrl();
   return sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });

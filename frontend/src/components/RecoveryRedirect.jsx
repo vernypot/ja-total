@@ -12,8 +12,9 @@ export default function RecoveryRedirect() {
     const search = location.search || '';
     const isRecoveryHash = hash.includes('type=recovery') && hash.includes('access_token');
     const isRecoveryCode = search.includes('code=');
+    const isAuthError = hash.includes('error=');
 
-    if (isRecoveryHash || isRecoveryCode) {
+    if (isRecoveryHash || isRecoveryCode || isAuthError) {
       navigate(`/reset-password${search}${hash}`, { replace: true });
     }
   }, [location.pathname, location.hash, location.search, navigate]);
