@@ -3,6 +3,7 @@ import * as NoticiasModel from './noticias.model';
 import { buildUsageStatCards, fetchPublicUsageStats } from './landingUsageStats.model';
 import {
   getHeroSlides,
+  getStorySlides,
   getPrograms,
   getLandingNews,
   getLandingEvents,
@@ -15,8 +16,8 @@ function applyUsageStats(landing, usage, language) {
   };
 }
 
-function buildDefaultLanding(language) {
-  const heroSlides = getHeroSlides().map(slide => ({
+function buildBaseHeroSlides() {
+  return getHeroSlides().map(slide => ({
     id: slide.id,
     eyebrowKey: slide.eyebrowKey,
     titleKey: slide.titleKey,
@@ -24,13 +25,34 @@ function buildDefaultLanding(language) {
     accent: slide.accent,
     screenshot: slide.screenshot,
   }));
+}
 
+function buildStorySlides() {
+  return getStorySlides().map(slide => ({
+    id: slide.id,
+    layout: slide.layout,
+    eyebrowKey: slide.eyebrowKey,
+    taglineKey: slide.taglineKey,
+    titleKey: slide.titleKey,
+    textKey: slide.textKey,
+    text2Key: slide.text2Key,
+    accent: slide.accent,
+    screenshot: slide.screenshot,
+    visual: slide.visual,
+  }));
+}
+
+function mergeHeroSlides(baseSlides) {
+  return [...baseSlides, ...buildStorySlides()];
+}
+
+function buildDefaultLanding(language) {
   return {
     settings: null,
     themeStyle: {},
     sections: {},
     visibleSections: new Set(['topbar', 'hero', 'programs', 'about', 'events', 'news', 'cta', 'footer']),
-    heroSlides,
+    heroSlides: mergeHeroSlides(buildBaseHeroSlides()),
     heroCard: null,
     heroCardIcon: null,
     programs: getPrograms().map(p => ({
@@ -66,10 +88,14 @@ export async function loadLandingContent(language) {
 
   if (!hasCms || error || !data?.sections?.length) {
     const defaults = applyUsageStats(buildDefaultLanding(language), usageStats, language);
+    const heroBase = dbHeroSlides.length
+      ? [...dbHeroSlides, ...buildBaseHeroSlides()]
+      : buildBaseHeroSlides();
+
     return {
       ...defaults,
       news: dbLandingNews.length ? dbLandingNews : defaults.news,
-      heroSlides: dbHeroSlides.length ? [...dbHeroSlides, ...defaults.heroSlides] : defaults.heroSlides,
+      heroSlides: mergeHeroSlides(heroBase),
       bannerNoticias,
       cmsError: error,
       hasCms: false,
@@ -79,11 +105,14 @@ export async function loadLandingContent(language) {
 
   const mapped = LandingCmsModel.mapCmsToLandingView(data, language);
   const withUsage = applyUsageStats(mapped, usageStats, language);
+  const heroBase = dbHeroSlides.length
+    ? [...dbHeroSlides, ...mapped.heroSlides]
+    : mapped.heroSlides;
 
   return {
     ...withUsage,
     news: dbLandingNews.length ? dbLandingNews : mapped.news,
-    heroSlides: dbHeroSlides.length ? [...dbHeroSlides, ...mapped.heroSlides] : mapped.heroSlides,
+    heroSlides: mergeHeroSlides(heroBase),
     bannerNoticias,
     themeStyle: LandingCmsModel.buildThemeStyle(mapped.settings),
     fromCms: true,

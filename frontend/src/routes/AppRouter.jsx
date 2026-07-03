@@ -23,6 +23,7 @@ import LandingCms from "../pages/LandingCms";
 import SystemModules from "../pages/SystemModules";
 import EstructuraOrganizacional from "../pages/EstructuraOrganizacional";
 import PageHelpAdmin from "../pages/PageHelpAdmin";
+import SiteContent from "../pages/SiteContent";
 import UserProfile from "../pages/UserProfile";
 
 import MiembroDetalle from "../pages/MiembroDetalle";
@@ -70,6 +71,7 @@ export default function AppRouter() {
           <Route path="label-settings" element={<SuperAdminRoute element={<LabelSettings />} />} />
           <Route path="advanced-settings" element={<SuperAdminRoute element={<AdvancedSettings />} />} />
           <Route path="landing-cms" element={<SuperAdminRoute element={<LandingCms />} />} />
+          <Route path="site-content" element={<SuperAdminRoute element={<SiteContent />} />} />
           <Route path="page-help" element={<SuperAdminRoute element={<PageHelpAdmin />} />} />
           <Route path="profile" element={<UserProfile />} />
           <Route path="miembro/:id/*" element={<MiembroDetalle />} />

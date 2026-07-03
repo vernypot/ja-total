@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { ProgramLogo } from '../../components/landing/YouthClubIcons';
 import LandingHeroScreenshot, { resolveHeroScreenshot } from '../../components/landing/LandingHeroScreenshot';
+import LandingHeroSlide from '../../components/landing/LandingHeroSlide';
 import NoticiaBanner from '../../components/NoticiaBanner';
 import LandingInfoRequestModal from '../../components/landing/LandingInfoRequestModal';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -78,7 +79,6 @@ export default function LandingView({
             <img src={BRAND_MARK} alt="" className="landing-brand-mark" />
             <div className="landing-brand-text">
               <strong>{t('appName')}</strong>
-              <span>{t('landingBrandSubtitle')}</span>
             </div>
           </a>
 
@@ -132,28 +132,44 @@ export default function LandingView({
                 <div className="landing-hero-shape landing-hero-shape-2" />
                 <div className="landing-hero-shape landing-hero-shape-3" />
               </div>
-              <div className="landing-hero-inner">
-                <div className="landing-hero-copy">
-                  <div className="landing-eyebrow">{resolveSlideText(slide, 'eyebrow', t)}</div>
-                  <h1 className="landing-hero-title">{resolveSlideText(slide, 'title', t)}</h1>
-                  <p className="landing-hero-text">{resolveSlideText(slide, 'text', t)}</p>
-                  <div className="landing-hero-actions">
-                    <button type="button" className="landing-btn landing-btn-gold" onClick={openInfoModal}>
-                      {infoCtaLabel}
-                    </button>
-                    <Link to="/modulos" className="landing-btn landing-btn-outline-on-dark">
-                      {t('landingHeroSecondary')}
-                    </Link>
+              {slide.layout ? (
+                <LandingHeroSlide
+                  slide={slide}
+                  t={t}
+                  language={language}
+                  user={user}
+                  goToLogin={goToLogin}
+                  goToDashboard={goToDashboard}
+                  openInfoModal={openInfoModal}
+                  infoCtaLabel={infoCtaLabel}
+                  resolveSlideText={resolveSlideText}
+                />
+              ) : (
+                <div className="landing-hero-inner">
+                  <div className="landing-hero-copy">
+                    <div className="landing-hero-copy-body">
+                      <div className="landing-eyebrow">{resolveSlideText(slide, 'eyebrow', t)}</div>
+                      <h1 className="landing-hero-title">{resolveSlideText(slide, 'title', t)}</h1>
+                      <p className="landing-hero-text landing-hero-text--flush">{resolveSlideText(slide, 'text', t)}</p>
+                    </div>
+                    <div className="landing-hero-actions">
+                      <button type="button" className="landing-btn landing-btn-gold" onClick={openInfoModal}>
+                        {infoCtaLabel}
+                      </button>
+                      <Link to="/modulos" className="landing-btn landing-btn-outline-on-dark">
+                        {t('landingHeroSecondary')}
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="landing-hero-visual">
+                    <LandingHeroScreenshot
+                      variant={resolveHeroScreenshot(slide)}
+                      language={language}
+                      label={resolveSlideText(slide, 'title', t)}
+                    />
                   </div>
                 </div>
-                <div className="landing-hero-visual">
-                  <LandingHeroScreenshot
-                    variant={resolveHeroScreenshot(slide)}
-                    language={language}
-                    label={resolveSlideText(slide, 'title', t)}
-                  />
-                </div>
-              </div>
+              )}
             </div>
           ))}
           <div className="landing-hero-dots">

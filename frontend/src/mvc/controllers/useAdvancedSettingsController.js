@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as LabelsModel from '../models/labels.model';
 
 export function useAdvancedSettingsController() {
   const { translations } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,6 +35,11 @@ export function useAdvancedSettingsController() {
   }
 
   useEffect(() => { loadLabels(); }, []);
+
+  useEffect(() => {
+    const query = searchParams.get('q');
+    if (query) setSearchTerm(query);
+  }, [searchParams]);
 
   const filteredLabels = labels.filter(label =>
     label.label_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
