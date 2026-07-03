@@ -14,3 +14,7 @@ export function getSiteOrigin() {
   if (import.meta.env.PROD) return PRODUCTION_SITE_URL;
   return 'http://localhost:5173';
 }
+
+export function getPasswordResetRedirectUrl() {
+  return `${getSiteOrigin()}/reset-password`;
+}

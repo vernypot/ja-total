@@ -184,6 +184,29 @@
   cursor: not-allowed;
 }
 
+.login-page-submit--secondary {
+  background: #2563eb;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.22);
+}
+
+.login-page-forgot {
+  margin-top: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brand-primary-dark, #0d9488);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-page-forgot:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 860px) {
   .login-page {
     grid-template-columns: 1fr;

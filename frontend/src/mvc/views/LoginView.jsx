@@ -15,6 +15,10 @@ export default function LoginView({
   fieldErrors = {},
   isLoading,
   handleLogin,
+  showForgotPassword,
+  setShowForgotPassword,
+  forgotMessage,
+  handleForgotPassword,
 }) {
   const { t } = useLanguage();
 
@@ -36,6 +40,11 @@ export default function LoginView({
           </div>
           <h2>{t('loginTitle')} <PageHelpLink pageId="login" compact /></h2>
           <p className="login-page-form-sub">{t('loginSubtitle')}</p>
+          {forgotMessage && (
+            <div className="login-page-error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' }}>
+              {forgotMessage}
+            </div>
+          )}
           {error && <div className="login-page-error">{error}</div>}
           <div className={`login-page-field ${fieldErrors.email ? 'login-page-field--invalid' : ''}`}>
             <label htmlFor="login-email">{t('loginEmail')}</label>
@@ -63,7 +72,25 @@ export default function LoginView({
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
             {fieldErrors.password && <span className="login-page-field-error" role="alert">{fieldErrors.password}</span>}
+            <button
+              type="button"
+              className="login-page-forgot"
+              onClick={() => setShowForgotPassword(v => !v)}
+              disabled={isLoading}
+            >
+              {t('forgotPassword')}
+            </button>
           </div>
+          {showForgotPassword && (
+            <button
+              type="button"
+              className="login-page-submit login-page-submit--secondary"
+              onClick={handleForgotPassword}
+              disabled={isLoading}
+            >
+              {isLoading ? t('processing') : t('sendPasswordResetEmail')}
+            </button>
+          )}
           <button type="button" className="login-page-submit" onClick={handleLogin} disabled={isLoading}>
             {isLoading ? t('signingIn') : t('signIn')}
           </button>

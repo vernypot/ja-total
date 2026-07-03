@@ -40,7 +40,9 @@ In **Supabase Dashboard → Authentication → URL configuration**:
 |---------|--------|
 | **Site URL** | `https://teofila.netlify.app` |
 | **Redirect URLs** | `https://teofila.netlify.app/**` |
+| | `https://teofila.netlify.app/reset-password` |
 | | `http://localhost:5173/**` |
+| | `http://localhost:5173/reset-password` |
 
 Without this, login and password reset redirects fail in production.
 
