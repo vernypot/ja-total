@@ -3,6 +3,8 @@ import Landing from "../pages/Landing";
 import Home from "../pages/Home";
 import Noticias from "../pages/Noticias";
 import Login from "../pages/Login";
+import ResetPassword from "../pages/ResetPassword";
+import RecoveryRedirect from "../components/RecoveryRedirect";
 import Dashboard from "../pages/Dashboard";
 
 import Miembros from "../pages/Miembros";
@@ -41,10 +43,12 @@ import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <RecoveryRedirect />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/modulos" element={<SystemModules />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />}>
           <Route index element={<Navigate to={DASHBOARD_HOME_PATH} replace />} />

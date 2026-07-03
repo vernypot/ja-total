@@ -15,6 +15,8 @@ export function useLoginController() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState('');
 
   useEffect(() => {
     if (user) navigate(DASHBOARD_HOME_PATH, { replace: true });
@@ -68,6 +70,33 @@ export function useLoginController() {
     }
   }
 
+  async function handleForgotPassword() {
+    setError('');
+    setForgotMessage('');
+    setFieldErrors({});
+
+    if (!email.trim()) {
+      setFieldErrors({ email: t('loginEmail') });
+      setError(t('loginEmail'));
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error: resetError } = await AuthModel.sendPasswordResetEmail(email);
+      if (resetError) {
+        setError(resetError.message);
+        return;
+      }
+      setForgotMessage(t('passwordResetEmailRequested'));
+      setShowForgotPassword(false);
+    } catch {
+      setError(t('passwordResetFailed'));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return {
     email,
     setEmail: updateEmail,
@@ -77,5 +106,9 @@ export function useLoginController() {
     fieldErrors,
     isLoading,
     handleLogin,
+    showForgotPassword,
+    setShowForgotPassword,
+    forgotMessage,
+    handleForgotPassword,
   };
 }

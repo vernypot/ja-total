@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import { getPasswordResetRedirectUrl } from '../../config/site';
 
 export async function signIn(email, password) {
   return sb.auth.signInWithPassword({ email, password });
@@ -55,8 +56,27 @@ export async function signUpAuthUser({ email, password, metadata = {} }) {
 }
 
 export async function sendPasswordResetEmail(email) {
-  const redirectTo = `${window.location.origin}/`;
+  const redirectTo = getPasswordResetRedirectUrl();
   return sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
+}
+
+export async function completePasswordRecoverySession() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+
+  if (code) {
+    const { data, error } = await sb.auth.exchangeCodeForSession(code);
+    return { session: data.session, error, mode: 'pkce' };
+  }
+
+  const hash = window.location.hash || '';
+  if (hash.includes('access_token') && hash.includes('type=recovery')) {
+    const { data, error } = await sb.auth.getSession();
+    return { session: data.session, error, mode: 'hash' };
+  }
+
+  const { data, error } = await sb.auth.getSession();
+  return { session: data.session, error, mode: 'session' };
 }
 
 export async function adminSetUserPassword(email, password) {
