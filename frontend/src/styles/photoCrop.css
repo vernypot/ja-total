@@ -1,0 +1,78 @@
+.photo-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.photo-crop-dialog {
+  background: var(--white, #fff);
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px;
+  max-width: calc(100vw - 40px);
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.2));
+}
+
+.photo-crop-dialog h3 {
+  margin: 0 0 8px;
+}
+
+.photo-crop-hint {
+  margin: 0 0 16px;
+  font-size: var(--text-sm, 14px);
+  color: var(--gray-600, #4b5563);
+}
+
+.photo-crop-viewport {
+  position: relative;
+  margin: 0 auto 16px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #111827;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.photo-crop-viewport:active {
+  cursor: grabbing;
+}
+
+.photo-crop-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.photo-crop-frame {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.photo-crop-zoom-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: var(--text-sm, 14px);
+  font-weight: 500;
+}
+
+.photo-crop-zoom-label input[type='range'] {
+  width: 100%;
+}
+
+.photo-crop-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

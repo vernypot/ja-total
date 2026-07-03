@@ -76,16 +76,8 @@ export function useMiembroCarnetController(miembroId) {
   }
 
   function printCard() {
-    setCardExpiresAt(CarnetModel.addOneYear(new Date()));
-    document.body.classList.add('carnet-printing');
-    const cleanup = () => {
-      document.body.classList.remove('carnet-printing');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    window.setTimeout(cleanup, 5000);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.print());
+    CarnetModel.triggerCarnetPrint(() => {
+      setCardExpiresAt(CarnetModel.addOneYear(new Date()));
     });
   }
 
@@ -114,11 +106,5 @@ export function useMiembroCarnetController(miembroId) {
     error,
     loading,
     printCard,
-    getPhotoUrl: MiembrosModel.getMiembroPhotoDisplayUrl,
-    getAssetUrl: (url) => {
-      if (!url) return null;
-      const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}t=${Date.now()}`;
-    },
   };
 }

@@ -68,6 +68,7 @@ export function useDatosPersonalesController(miembroId) {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState('');
+  const [photoCrop, setPhotoCrop] = useState(null);
 
   const displayPhotoUrl = useMemo(() => {
     if (photoPreview) return photoPreview;
@@ -100,8 +101,19 @@ export function useDatosPersonalesController(miembroId) {
     setForm(memberToForm(data));
     setSaveError('');
     setPhotoError('');
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview('');
+    clearPhotoCrop();
     setEditing(true);
+  }
+
+  function clearPhotoCrop() {
+    if (photoCrop?.url) URL.revokeObjectURL(photoCrop.url);
+    setPhotoCrop(null);
+  }
+
+  function cancelPhotoCrop() {
+    clearPhotoCrop();
   }
 
   function cancelEdit() {
@@ -115,10 +127,32 @@ export function useDatosPersonalesController(miembroId) {
     setPhotoError('');
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview('');
+    clearPhotoCrop();
     setEditing(false);
   }
 
-  async function handlePhotoSelect(file) {
+  async function uploadPhotoFile(file) {
+    setUploadingPhoto(true);
+
+    const { data: uploadData, error: uploadError, errorStage } =
+      await MiembrosModel.uploadMiembroPhoto(miembroId, file);
+    setUploadingPhoto(false);
+
+    if (uploadError) {
+      const prefix = errorStage === 'database'
+        ? 'Error saving photo URL: '
+        : 'Error uploading photo: ';
+      setPhotoError(prefix + uploadError.message);
+      return;
+    }
+
+    setData(prev => ({ ...prev, foto_url: uploadData?.foto_url || prev?.foto_url }));
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview('');
+    await load();
+  }
+
+  function handlePhotoSelect(file) {
     if (!file || !canManage || isNew) return;
 
     setPhotoError('');
@@ -128,28 +162,18 @@ export function useDatosPersonalesController(miembroId) {
       return;
     }
 
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    const previewUrl = URL.createObjectURL(file);
-    setPhotoPreview(previewUrl);
-    setUploadingPhoto(true);
+    clearPhotoCrop();
+    setPhotoCrop({
+      url: URL.createObjectURL(file),
+      fileName: file.name,
+      mimeType: file.type,
+    });
+  }
 
-    const { data: uploadData, error: uploadError, errorStage } = await MiembrosModel.uploadMiembroPhoto(miembroId, file);
-    setUploadingPhoto(false);
-
-    if (uploadError) {
-      const prefix = errorStage === 'database'
-        ? 'Error saving photo URL: '
-        : 'Error uploading photo: ';
-      setPhotoError(prefix + uploadError.message);
-      URL.revokeObjectURL(previewUrl);
-      setPhotoPreview('');
-      return;
-    }
-
-    setData(prev => ({ ...prev, foto_url: uploadData?.foto_url || prev?.foto_url }));
-    URL.revokeObjectURL(previewUrl);
-    setPhotoPreview('');
-    await load();
+  async function handlePhotoCropConfirm(croppedFile) {
+    if (!croppedFile || !canManage || isNew) return;
+    clearPhotoCrop();
+    await uploadPhotoFile(croppedFile);
   }
 
   async function handleRemovePhoto() {
@@ -243,7 +267,8 @@ export function useDatosPersonalesController(miembroId) {
 
   useEffect(() => () => {
     if (photoPreview) URL.revokeObjectURL(photoPreview);
-  }, [photoPreview]);
+    if (photoCrop?.url) URL.revokeObjectURL(photoCrop.url);
+  }, [photoPreview, photoCrop]);
 
   return {
     data,
@@ -265,6 +290,9 @@ export function useDatosPersonalesController(miembroId) {
     cancelEdit,
     save,
     handlePhotoSelect,
+    handlePhotoCropConfirm,
+    cancelPhotoCrop,
+    photoCrop,
     handleRemovePhoto,
     calcularEdad,
   };

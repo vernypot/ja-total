@@ -27,6 +27,7 @@ import UserProfile from "../pages/UserProfile";
 import MiembroDetalle from "../pages/MiembroDetalle";
 import Cargos from "../pages/Cargos";
 import ClubDirectiva from "../pages/ClubDirectiva";
+import ClubCarnetsPrint from "../pages/ClubCarnetsPrint";
 import ProtectedRoute from "../components/ProtectedRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
@@ -59,6 +60,7 @@ export default function AppRouter() {
           <Route path="planificacion" element={<AdminRoute element={<PlanificacionPeriodo />} />} />
           <Route path="tipos-evento" element={<AdminRoute element={<TiposEvento />} />} />
           <Route path="checkin" element={<AdminRoute element={<Checkin />} />} />
+          <Route path="carnets-club" element={<AdminRoute element={<ClubCarnetsPrint />} />} />
           <Route path="especialidades" element={<SuperAdminRoute element={<Especialidades />} />} />
           <Route path="cargos" element={<SuperAdminRoute element={<Cargos />} />} />
           <Route path="clases-progresivas" element={<SuperAdminRoute element={<ClasesProgresivas />} />} />
