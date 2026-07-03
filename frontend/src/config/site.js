@@ -5,6 +5,7 @@
  */
 export const PRODUCTION_SITE_URL = 'https://teofila.netlify.app';
 
+/** Current browser origin (previews, local dev UI). */
 export function getSiteOrigin() {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
@@ -15,6 +16,16 @@ export function getSiteOrigin() {
   return 'http://localhost:5173';
 }
 
+/**
+ * Public URL used in Supabase auth emails (password reset, etc.).
+ * Always points at live/prod — never localhost — so users open links on the real site.
+ */
+export function getAuthRedirectOrigin() {
+  const fromEnv = (import.meta.env.VITE_SITE_URL || '').trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  return PRODUCTION_SITE_URL;
+}
+
 export function getPasswordResetRedirectUrl() {
-  return `${getSiteOrigin()}/reset-password`;
+  return `${getAuthRedirectOrigin()}/reset-password`;
 }

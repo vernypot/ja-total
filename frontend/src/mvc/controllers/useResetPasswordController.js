@@ -20,6 +20,7 @@ export function useResetPasswordController() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [linkExpired, setLinkExpired] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -29,6 +30,7 @@ export function useResetPasswordController() {
       if (event === 'PASSWORD_RECOVERY' && session?.user) {
         setEmail(session.user.email || '');
         setReady(true);
+        setLinkExpired(false);
         setChecking(false);
         clearRecoveryParamsFromUrl();
       }
@@ -37,6 +39,19 @@ export function useResetPasswordController() {
     async function bootstrap() {
       setChecking(true);
       setError('');
+      setLinkExpired(false);
+
+      const callbackError = AuthModel.parseAuthCallbackError();
+      if (callbackError) {
+        if (active) {
+          setError(AuthModel.formatAuthCallbackError(callbackError, t));
+          setLinkExpired(callbackError.errorCode === 'otp_expired');
+          setReady(false);
+          setChecking(false);
+          clearRecoveryParamsFromUrl();
+        }
+        return;
+      }
 
       try {
         const { session, error: sessionError, mode } = await AuthModel.completePasswordRecoverySession();
@@ -110,10 +125,38 @@ export function useResetPasswordController() {
     }
   }
 
+  async function handleRequestNewLink(event) {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    if (!email.trim()) {
+      setError(t('loginEmail'));
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: resetError } = await AuthModel.sendPasswordResetEmail(email);
+      if (resetError) {
+        setError(resetError.message);
+        return;
+      }
+      setSuccess(t('passwordResetEmailRequested'));
+      setLinkExpired(false);
+    } catch (err) {
+      setError(err.message || t('passwordResetFailed'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return {
     ready,
     checking,
     email,
+    setEmail,
     newPassword,
     setNewPassword,
     confirmPassword,
@@ -121,6 +164,8 @@ export function useResetPasswordController() {
     error,
     success,
     loading,
+    linkExpired,
     handleSubmit,
+    handleRequestNewLink,
   };
 }

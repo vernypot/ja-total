@@ -28,4 +28,9 @@ if (!isSupabaseConfigured && import.meta.env.DEV) {
   );
 }
 
-export const sb = createClient(url, key);
+export const sb = createClient(url, key, {
+  auth: {
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
+});
