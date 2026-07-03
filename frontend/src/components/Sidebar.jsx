@@ -114,6 +114,12 @@ export default function Sidebar() {
               >
                 🏷️ {t('eventTypes')}
               </Link>
+              <Link
+                to="/dashboard/carnets-club"
+                className={`nav-link admin-link ${isActive('/dashboard/carnets-club') ? 'active' : ''}`}
+              >
+                🪪 {t('printClubCarnets')}
+              </Link>
               {superadmin && (
                 <Link
                   to="/dashboard/estructura"

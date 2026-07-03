@@ -1,4 +1,4 @@
-# Deploy Acutus to Netlify
+# Deploy Teofila to Netlify
 
 This guide covers publishing the Vite + React frontend and the security checklist for production.
 
@@ -24,7 +24,7 @@ This guide covers publishing the Vite + React frontend and the security checklis
 
 4. Deploy. The build script `scripts/verify-env.mjs` fails fast if variables are missing or if a service-role key is detected.
 
-5. After first deploy, note your site URL (e.g. `https://acutus.netlify.app` or custom domain).
+5. After first deploy, note your site URL (e.g. `https://teofila.netlify.app` or custom domain).
 
 ## Supabase Auth (required)
 

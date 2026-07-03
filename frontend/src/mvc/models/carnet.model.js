@@ -28,8 +28,94 @@ export function formatCarnetExpirationDate(date, language = 'es') {
   });
 }
 
+export function getCarnetAssetUrl(url) {
+  if (!url) return null;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}t=${Date.now()}`;
+}
+
+export function triggerCarnetPrint(onBeforePrint, { batch = false } = {}) {
+  if (onBeforePrint) onBeforePrint();
+  document.body.classList.add('carnet-printing');
+  if (batch) document.body.classList.add('carnet-printing--batch');
+  const cleanup = () => {
+    document.body.classList.remove('carnet-printing', 'carnet-printing--batch');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.setTimeout(cleanup, 5000);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => window.print());
+  });
+}
+
+/** CR-80 cards per US Letter sheet (3 columns × 3 rows). */
+export const CARNETS_PER_LETTER_PAGE = 9;
+
+export function chunkMembersForLetterPages(members, perPage = CARNETS_PER_LETTER_PAGE) {
+  const pages = [];
+  for (let i = 0; i < members.length; i += perPage) {
+    pages.push(members.slice(i, i + perPage));
+  }
+  return pages;
+}
+
+export function buildLetterPageSlots(pageMembers, perPage = CARNETS_PER_LETTER_PAGE) {
+  const slots = pageMembers.slice(0, perPage);
+  while (slots.length < perPage) slots.push(null);
+  return slots;
+}
+
 export async function getOrCreateProfileToken(miembroId) {
   return sb.rpc('get_or_create_miembro_profile_token', { p_miembro_id: miembroId });
+}
+
+export async function fetchActiveClubCarnetMembers(clubId) {
+  const { data: rows, error } = await sb
+    .from('miembro_club')
+    .select('miembros(id, nombre, apellido1, apellido2, estado, foto_url, miembro_datos_medicos(tipo_sangre, factor_rh))')
+    .eq('club_id', clubId);
+
+  if (error) return { data: [], error };
+
+  const members = (rows || [])
+    .map(row => {
+      const m = row.miembros;
+      if (!m) return null;
+      const medicalRaw = m.miembro_datos_medicos;
+      const medical = Array.isArray(medicalRaw) ? medicalRaw[0] : medicalRaw;
+      return {
+        id: m.id,
+        nombre: m.nombre,
+        apellido1: m.apellido1,
+        apellido2: m.apellido2,
+        estado: m.estado,
+        foto_url: m.foto_url,
+        medical: medical || null,
+      };
+    })
+    .filter(m => m && m.estado === 'activo' && m.foto_url?.trim())
+    .sort((a, b) => memberFullName(a).localeCompare(memberFullName(b), undefined, { sensitivity: 'base' }));
+
+  return { data: members, error: null };
+}
+
+export async function loadCarnetTokensForMembers(memberIds) {
+  const tokens = {};
+  if (!memberIds.length) return tokens;
+
+  const results = await Promise.all(
+    memberIds.map(async id => {
+      const { data, error } = await getOrCreateProfileToken(id);
+      return { id, token: error ? null : (data || null) };
+    })
+  );
+
+  for (const result of results) {
+    tokens[result.id] = result.token;
+  }
+
+  return tokens;
 }
 
 export function buildCheckinQrUrl(token) {

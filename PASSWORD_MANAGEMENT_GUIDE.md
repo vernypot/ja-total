@@ -1,7 +1,7 @@
 # Password Management System - User Guide
 
 ## Overview
-A comprehensive password management system has been implemented for the Acutus application, allowing users to change their own passwords and superadmins to reset passwords for other users.
+A comprehensive password management system has been implemented for the Teofila application, allowing users to change their own passwords and superadmins to reset passwords for other users.
 
 ## Features
 

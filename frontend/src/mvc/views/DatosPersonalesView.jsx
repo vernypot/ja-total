@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import PhotoCropModal from '../../components/PhotoCropModal';
 import '../../styles/form.css';
 
 const FIELDS = [
@@ -145,6 +146,9 @@ export default function DatosPersonalesView({
   cancelEdit,
   save,
   handlePhotoSelect,
+  handlePhotoCropConfirm,
+  cancelPhotoCrop,
+  photoCrop,
   handleRemovePhoto,
   calcularEdad,
 }) {
@@ -163,6 +167,15 @@ export default function DatosPersonalesView({
 
   return (
     <div style={{ padding: '20px' }}>
+      {photoCrop && (
+        <PhotoCropModal
+          imageUrl={photoCrop.url}
+          fileName={photoCrop.fileName}
+          mimeType={photoCrop.mimeType}
+          onConfirm={handlePhotoCropConfirm}
+          onCancel={cancelPhotoCrop}
+        />
+      )}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
