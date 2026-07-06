@@ -10,8 +10,9 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--no-audit --no-fund"
-  # Optional: baked into build for absolute URLs (defaults in src/config/site.js if unset)
-  # VITE_SITE_URL = "https://teofila.netlify.app"
+
+[context.production.environment]
+  VITE_SITE_URL = "https://teofila.netlify.app"
 
 [context.production]
   command = "npm ci && npm run build"

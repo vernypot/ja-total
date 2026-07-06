@@ -46,6 +46,14 @@ Password reset emails always use the live site URL (`VITE_SITE_URL` or `https://
 
 Without this, login and password reset redirects fail in production.
 
+**If reset links open `http://localhost:3000`**, the Supabase **Site URL** is still set to localhost. The app sends `https://teofila.netlify.app/reset-password`, but Supabase falls back to **Site URL** when it is wrong or the redirect URL is not allowlisted.
+
+1. Open **Supabase → Authentication → URL configuration**
+2. Set **Site URL** to `https://teofila.netlify.app` (not localhost)
+3. Under **Redirect URLs**, add `https://teofila.netlify.app/**` and Save
+4. In **Netlify**, remove any `VITE_SITE_URL` pointing at localhost (or let `netlify.toml` set production to `https://teofila.netlify.app`)
+5. Redeploy Teofila, then request a **new** password reset email
+
 ## Supabase Storage CORS (club logos / member photos)
 
 If uploads fail from the deployed site, allow your production origin in Supabase Storage settings:
