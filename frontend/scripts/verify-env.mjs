@@ -86,4 +86,18 @@ if (isServiceRoleKey(key)) {
   process.exit(1);
 }
 
+const siteUrl = (process.env.VITE_SITE_URL || '').trim();
+if (siteUrl && /localhost|127\.0\.0\.1/i.test(siteUrl)) {
+  if (netlifyContext === 'production') {
+    console.error('\n[build] REFUSED: VITE_SITE_URL must not be localhost on production.');
+    console.error('Set VITE_SITE_URL=https://teofila.netlify.app in Netlify environment variables.\n');
+    process.exit(1);
+  }
+  console.warn('[build] Warning: VITE_SITE_URL is localhost; auth emails will use https://teofila.netlify.app instead.');
+}
+
+if (netlifyContext === 'production' && !siteUrl) {
+  console.log('[build] VITE_SITE_URL not set; using https://teofila.netlify.app for auth redirects (see netlify.toml).');
+}
+
 console.log('[build] Environment variables OK');
