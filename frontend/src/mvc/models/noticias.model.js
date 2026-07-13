@@ -13,7 +13,24 @@ function isRlsError(error) {
   return msg.includes('row-level security') || msg.includes('permission denied');
 }
 
-const NOTICIA_SELECT = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+const NOTICIA_SELECT = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function isNoticiaVisible(noticia, { referenceDate } = {}) {
+  if (!noticia || noticia.estado !== 'activo') return false;
+  const today = referenceDate || todayIso();
+  if (noticia.publicado_en && noticia.publicado_en > today) return false;
+  if (noticia.expira_en && noticia.expira_en < today) return false;
+  return true;
+}
+
+export function isNoticiaExpired(noticia, referenceDate) {
+  const today = referenceDate || todayIso();
+  return Boolean(noticia?.expira_en && noticia.expira_en < today);
+}
 
 function normalizeNoticiaRow(row) {
   if (!row) return row;
@@ -77,7 +94,9 @@ export async function fetchDashboardNoticias({
   if (fallback.error) return fallback;
 
   return {
-    data: filterNoticiasByAudience(fallback.data, { iglesiaId, clubId }).slice(0, limit),
+    data: filterNoticiasByAudience(fallback.data, { iglesiaId, clubId })
+      .filter(isNoticiaVisible)
+      .slice(0, limit),
     error: null,
   };
 }
@@ -115,7 +134,9 @@ export async function fetchPublicNoticias({ placements, limit = 10 } = {}) {
 
   const fallback = await query;
   if (fallback.data) {
-    fallback.data = fallback.data.map(normalizeNoticiaRow);
+    fallback.data = fallback.data
+      .map(normalizeNoticiaRow)
+      .filter(isNoticiaVisible);
   }
   return fallback;
 }
@@ -165,6 +186,7 @@ export async function saveNoticia({
   resumen,
   contenido,
   publicadoEn,
+  expiraEn = null,
   estado = 'activo',
   categoria = '',
   placements = DEFAULT_NOTICIA_PLACEMENTS,
@@ -188,7 +210,8 @@ export async function saveNoticia({
     titulo: clean.titulo,
     resumen: clean.resumen || null,
     contenido: clean.contenido,
-    publicado_en: publicadoEn || new Date().toISOString().slice(0, 10),
+    publicado_en: publicadoEn || todayIso(),
+    expira_en: expiraEn || null,
     estado,
     categoria: categoria?.trim() || null,
     placements: normalizedPlacements,
@@ -218,6 +241,7 @@ export async function saveNoticia({
     p_placements: normalizedPlacements,
     p_audience: normalizedAudience,
     p_club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
+    p_expira_en: expiraEn || null,
   });
 }
 
@@ -248,6 +272,7 @@ export async function setNoticiaEstado(id, estado) {
     p_placements: normalizePlacements(row.placements),
     p_audience: normalizeAudience(row.audience),
     p_club_id: row.club_id || null,
+    p_expira_en: row.expira_en || null,
   });
 }
 

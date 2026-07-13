@@ -142,6 +142,10 @@ export const FORM_SCHEMAS = {
       titulo: [v.htmlRequired()],
       contenido: [v.htmlRequired()],
       publicado_en: [v.required(), v.date()],
+      expira_en: [
+        value => (isBlank(value) ? null : v.date()(value)),
+        v.dateOnOrAfter('publicado_en', 'noticiasExpirationBeforePublish'),
+      ],
     },
   },
 

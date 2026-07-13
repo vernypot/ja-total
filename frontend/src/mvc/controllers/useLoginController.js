@@ -85,7 +85,7 @@ export function useLoginController() {
     try {
       const { error: resetError } = await AuthModel.sendPasswordResetEmail(email);
       if (resetError) {
-        setError(resetError.message);
+        setError(AuthModel.formatAuthEmailError(resetError, t));
         return;
       }
       setForgotMessage(t('passwordResetEmailRequested'));

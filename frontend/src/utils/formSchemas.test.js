@@ -63,6 +63,17 @@ describe('validateForm', () => {
     expect(result.fieldErrors.contenido).toBe('validationRequired');
   });
 
+  it('rejects news expiration before publish date', () => {
+    const result = validateForm('noticia', {
+      titulo: '<p>Title</p>',
+      contenido: '<p>Body</p>',
+      publicado_en: '2026-06-18',
+      expira_en: '2026-06-10',
+    }, t);
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors.expira_en).toBe('noticiasExpirationBeforePublish');
+  });
+
   it('rejects user password mismatch on create', () => {
     const result = validateForm('usuario', {
       nombre: 'Ana',

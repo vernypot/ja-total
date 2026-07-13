@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
+import { isNoticiaExpired } from '../models/noticias.model';
 import ListSearchInput from '../../components/ListSearchInput';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
@@ -139,6 +140,16 @@ export default function NoticiasView({
                 />
               </label>
               <label>
+                <span>{t('noticiasFieldExpiration')}</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={form.expira_en}
+                  onChange={e => setForm(f => ({ ...f, expira_en: e.target.value }))}
+                />
+                <small className="noticia-field-hint">{t('noticiasFieldExpirationHint')}</small>
+              </label>
+              <label>
                 <span>{t('status')}</span>
                 <select
                   className="form-input"
@@ -185,12 +196,18 @@ export default function NoticiasView({
             {items.map(item => (
               <div
                 key={item.id}
-                className={`noticia-item${item.estado === 'activo' ? '' : ' is-inactive'}`}
+                className={`noticia-item${item.estado === 'activo' ? '' : ' is-inactive'}${isNoticiaExpired(item) ? ' is-expired' : ''}`}
               >
                 <div className="noticia-list-item-row">
                   <div className="noticia-list-item-body">
                     <div className="noticia-item-meta">
                       {formatDate(item.publicado_en)} · {estadoLabel(item.estado, t)}
+                      {item.expira_en && (
+                        <> · {t('noticiasFieldExpiration')}: {formatDate(item.expira_en)}</>
+                      )}
+                      {isNoticiaExpired(item) && (
+                        <span className="noticia-expired-badge">{t('noticiasExpired')}</span>
+                      )}
                     </div>
                     <NoticiaHtml
                       html={item.titulo}

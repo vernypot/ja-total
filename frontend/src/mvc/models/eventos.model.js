@@ -202,6 +202,7 @@ export async function updateEvento(eventoId, {
   hora,
   lugar,
   tipoEventoId,
+  requiereConfirmacion,
 }) {
   const payload = { updated_at: new Date().toISOString() };
   if (nombre !== undefined) payload.nombre = nombre?.trim() || null;
@@ -209,11 +210,12 @@ export async function updateEvento(eventoId, {
   if (hora !== undefined) payload.hora = hora;
   if (lugar !== undefined) payload.lugar = lugar.trim();
   if (tipoEventoId !== undefined) payload.tipo_evento_id = tipoEventoId || null;
+  if (requiereConfirmacion !== undefined) payload.requiere_confirmacion = Boolean(requiereConfirmacion);
 
   const direct = await sb.from('eventos').update(payload).eq('id', eventoId);
   if (!direct.error) return direct;
-  if (isMissingColumnError(direct.error, 'tipo_evento_id')) {
-    const { tipo_evento_id, ...base } = payload;
+  if (isMissingColumnError(direct.error, 'tipo_evento_id') || isMissingColumnError(direct.error, 'requiere_confirmacion')) {
+    const { tipo_evento_id, requiere_confirmacion, ...base } = payload;
     return sb.from('eventos').update(base).eq('id', eventoId);
   }
   return direct;
@@ -329,6 +331,18 @@ export async function assignMiembrosToEvento(eventoId, miembroIds, { requiereCon
 
 export async function unassignMiembroFromEvento(eventoMiembroId) {
   return sb.from('evento_miembro').delete().eq('id', eventoMiembroId);
+}
+
+export async function clearEventoAttendees(eventoId) {
+  const { data, error: loadError } = await fetchEventoAssignments(eventoId);
+  if (loadError) return { error: loadError };
+
+  for (const row of data || []) {
+    const { error } = await unassignMiembroFromEvento(row.id);
+    if (error) return { error };
+  }
+
+  return { error: null };
 }
 
 export async function syncEventoAttendees(eventoId, miembroIds, { requiereConfirmacion = true } = {}) {

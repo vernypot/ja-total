@@ -1,111 +1,15 @@
 import { useLanguage } from '../../hooks/useLanguage';
-import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
 import FormField from '../../components/FormField';
 import EventCheckinScanner from '../../components/EventCheckinScanner';
 import { PageHelpLink } from '../../components/PageHelp';
+import {
+  AttendanceControls,
+  ConfirmationControls,
+  EventActionButton,
+} from '../../components/EventAttendanceControls';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
-
-function AttendanceBadge({ estado, t }) {
-  const colors = {
-    a_tiempo: { bg: '#dcfce7', color: '#166534' },
-    tarde: { bg: '#fef9c3', color: '#854d0e' },
-    ausente: { bg: '#fee2e2', color: '#991b1b' },
-  };
-  const style = colors[estado] || { bg: '#f3f4f6', color: '#4b5563' };
-
-  return (
-    <span style={{
-      fontSize: '12px',
-      fontWeight: 'bold',
-      padding: '4px 10px',
-      borderRadius: '999px',
-      backgroundColor: style.bg,
-      color: style.color,
-    }}>
-      {attendanceLabel(estado, t)}
-    </span>
-  );
-}
-
-function AttendanceControls({ eventoMiembroId, eventoId, current, canManage, onSet, t }) {
-  if (!canManage) {
-    return <AttendanceBadge estado={current} t={t} />;
-  }
-
-  return (
-    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-      {['a_tiempo', 'tarde', 'ausente'].map(estado => (
-        <button
-          key={estado}
-          type="button"
-          onClick={() => onSet(eventoMiembroId, estado, eventoId)}
-          style={{
-            padding: '4px 10px',
-            fontSize: '11px',
-            borderRadius: '4px',
-            border: current === estado ? '2px solid #2563eb' : '1px solid #d1d5db',
-            backgroundColor: current === estado ? '#dbeafe' : '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          {attendanceLabel(estado, t)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ConfirmationBadge({ estado, t }) {
-  const colors = {
-    confirmado: { bg: '#dcfce7', color: '#166534' },
-    rechazado: { bg: '#fee2e2', color: '#991b1b' },
-    pendiente: { bg: '#fef9c3', color: '#854d0e' },
-  };
-  const style = colors[estado] || colors.pendiente;
-
-  return (
-    <span style={{
-      fontSize: '12px',
-      fontWeight: 'bold',
-      padding: '4px 10px',
-      borderRadius: '999px',
-      backgroundColor: style.bg,
-      color: style.color,
-    }}>
-      {confirmationLabel(estado, t)}
-    </span>
-  );
-}
-
-function ConfirmationControls({ eventoMiembroId, eventoId, current, canManage, onSet, t }) {
-  if (!canManage) {
-    return <ConfirmationBadge estado={current} t={t} />;
-  }
-
-  return (
-    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-      {['pendiente', 'confirmado', 'rechazado'].map(estado => (
-        <button
-          key={estado}
-          type="button"
-          onClick={() => onSet(eventoMiembroId, estado, eventoId)}
-          style={{
-            padding: '4px 10px',
-            fontSize: '11px',
-            borderRadius: '4px',
-            border: current === estado ? '2px solid #2563eb' : '1px solid #d1d5db',
-            backgroundColor: current === estado ? '#dbeafe' : '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          {confirmationLabel(estado, t)}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function FormSection({ title, children, className = '' }) {
   return (
@@ -184,37 +88,6 @@ function EventStatusBadge({ estado, t }) {
   );
 }
 
-function EventActionButton({ children, onClick, tone = 'primary', disabled = false }) {
-  const tones = {
-    primary: '#2563eb',
-    info: '#0891b2',
-    success: '#16a34a',
-    warning: '#d97706',
-    danger: '#dc2626',
-    muted: '#6b7280',
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        padding: '6px 12px',
-        fontSize: '12px',
-        backgroundColor: tones[tone] || tones.primary,
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors = {}, t }) {
   return (
     <div className="event-form-fields">
@@ -283,6 +156,79 @@ function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors 
   );
 }
 
+function EventConfirmationAndAttendeesFields({
+  eventForm,
+  setEventForm,
+  clubMembers,
+  setMemberAssignmentMode,
+  toggleMemberSelection,
+  selectAllMembers,
+  t,
+  memberDisplayName,
+  memberAssignmentName = 'memberAssignmentMode',
+}) {
+  const assignAll = eventForm.memberAssignmentMode === 'all';
+
+  return (
+    <>
+      <FormSection title={t('eventOptionsSection')}>
+        <div className="form-choice-group">
+          <ChoiceOption
+            checked={eventForm.requiere_confirmacion}
+            onChange={e => setEventForm({ ...eventForm, requiere_confirmacion: e.target.checked })}
+            label={t('eventRequiresConfirmation')}
+            hint={eventForm.requiere_confirmacion
+              ? t('eventRequiresConfirmationHint')
+              : t('eventNoConfirmationHint')}
+          />
+        </div>
+      </FormSection>
+
+      {eventForm.requiere_confirmacion && (
+        <FormSection title={t('assignMembersToEvent')}>
+          <div className="form-choice-group form-choice-group--grid">
+            <ChoiceOption
+              type="radio"
+              name={memberAssignmentName}
+              checked={assignAll}
+              onChange={() => setMemberAssignmentMode('all')}
+              label={t('addAllActiveMembers')}
+              hint={clubMembers.length > 0
+                ? t('allActiveMembersHint').replace('{count}', String(clubMembers.length))
+                : t('noMembersInClub')}
+            />
+            <ChoiceOption
+              type="radio"
+              name={memberAssignmentName}
+              checked={!assignAll}
+              onChange={() => setMemberAssignmentMode('specific')}
+              label={t('addSpecificMembers')}
+              hint={t('addSpecificMembersHint')}
+            />
+          </div>
+
+          {!assignAll && clubMembers.length > 0 && (
+            <div style={{ marginTop: '14px' }}>
+              <MemberCheckboxGrid
+                members={clubMembers}
+                selectedIds={eventForm.selectedMemberIds}
+                onToggle={toggleMemberSelection}
+                onSelectAll={selectAllMembers}
+                t={t}
+                memberDisplayName={memberDisplayName}
+              />
+            </div>
+          )}
+
+          {clubMembers.length === 0 && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: '14px 0 0' }}>{t('noMembersInClub')}</p>
+          )}
+        </FormSection>
+      )}
+    </>
+  );
+}
+
 export default function EventosView({
   clubs,
   clubId,
@@ -343,7 +289,6 @@ export default function EventosView({
   memberDisplayName,
 }) {
   const { t } = useLanguage();
-  const assignAll = eventForm.memberAssignmentMode === 'all';
 
   return (
     <div className="container">
@@ -426,60 +371,16 @@ export default function EventosView({
                   />
                 </FormSection>
 
-                <FormSection title={t('eventOptionsSection')}>
-                  <div className="form-choice-group">
-                    <ChoiceOption
-                      checked={eventForm.requiere_confirmacion}
-                      onChange={e => setEventForm({ ...eventForm, requiere_confirmacion: e.target.checked })}
-                      label={t('eventRequiresConfirmation')}
-                      hint={eventForm.requiere_confirmacion
-                        ? t('eventRequiresConfirmationHint')
-                        : t('eventNoConfirmationHint')}
-                    />
-                  </div>
-                </FormSection>
-
-                {eventForm.requiere_confirmacion && (
-                <FormSection title={t('assignMembersToEvent')}>
-                  <div className="form-choice-group form-choice-group--grid">
-                    <ChoiceOption
-                      type="radio"
-                      name="memberAssignmentMode"
-                      checked={assignAll}
-                      onChange={() => setMemberAssignmentMode('all')}
-                      label={t('addAllActiveMembers')}
-                      hint={clubMembers.length > 0
-                        ? t('allActiveMembersHint').replace('{count}', String(clubMembers.length))
-                        : t('noMembersInClub')}
-                    />
-                    <ChoiceOption
-                      type="radio"
-                      name="memberAssignmentMode"
-                      checked={!assignAll}
-                      onChange={() => setMemberAssignmentMode('specific')}
-                      label={t('addSpecificMembers')}
-                      hint={t('addSpecificMembersHint')}
-                    />
-                  </div>
-
-                  {!assignAll && clubMembers.length > 0 && (
-                    <div style={{ marginTop: '14px' }}>
-                      <MemberCheckboxGrid
-                        members={clubMembers}
-                        selectedIds={eventForm.selectedMemberIds}
-                        onToggle={toggleMemberSelection}
-                        onSelectAll={selectAllMembers}
-                        t={t}
-                        memberDisplayName={memberDisplayName}
-                      />
-                    </div>
-                  )}
-
-                  {clubMembers.length === 0 && (
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: '14px 0 0' }}>{t('noMembersInClub')}</p>
-                  )}
-                </FormSection>
-                )}
+                <EventConfirmationAndAttendeesFields
+                  eventForm={eventForm}
+                  setEventForm={setEventForm}
+                  clubMembers={clubMembers}
+                  setMemberAssignmentMode={setMemberAssignmentMode}
+                  toggleMemberSelection={toggleMemberSelection}
+                  selectAllMembers={selectAllMembers}
+                  t={t}
+                  memberDisplayName={memberDisplayName}
+                />
 
                 <div className="event-form-actions">
                   <button onClick={saveEvent} disabled={savingEvent} style={{ padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: savingEvent ? 'not-allowed' : 'pointer', opacity: savingEvent ? 0.7 : 1 }}>
@@ -614,20 +515,37 @@ export default function EventosView({
                     {isEditing && canManage && (
                       <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', backgroundColor: '#fffbeb' }}>
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>{t('editEvent')}</h4>
-                        <EventDetailsFields
-                          eventForm={eventForm}
-                          setEventForm={setEventForm}
-                          tiposEvento={tiposEvento}
-                          fieldErrors={fieldErrors}
-                          t={t}
-                        />
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
-                          <EventActionButton tone="success" onClick={saveEvent} disabled={savingEvent}>
-                            ✓ {t('save')}
-                          </EventActionButton>
-                          <EventActionButton tone="muted" onClick={closeEditForm}>
-                            ✕ {t('cancel')}
-                          </EventActionButton>
+                        <div className="event-form-layout">
+                          <FormSection title={t('eventDetailsSection')}>
+                            <EventDetailsFields
+                              eventForm={eventForm}
+                              setEventForm={setEventForm}
+                              tiposEvento={tiposEvento}
+                              fieldErrors={fieldErrors}
+                              t={t}
+                            />
+                          </FormSection>
+
+                          <EventConfirmationAndAttendeesFields
+                            eventForm={eventForm}
+                            setEventForm={setEventForm}
+                            clubMembers={clubMembers}
+                            setMemberAssignmentMode={setMemberAssignmentMode}
+                            toggleMemberSelection={toggleMemberSelection}
+                            selectAllMembers={selectAllMembers}
+                            t={t}
+                            memberDisplayName={memberDisplayName}
+                            memberAssignmentName="editMemberAssignmentMode"
+                          />
+
+                          <div className="event-form-actions">
+                            <EventActionButton tone="success" onClick={saveEvent} disabled={savingEvent}>
+                              ✓ {t('save')}
+                            </EventActionButton>
+                            <EventActionButton tone="muted" onClick={closeEditForm}>
+                              ✕ {t('cancel')}
+                            </EventActionButton>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -661,7 +579,7 @@ export default function EventosView({
                     )}
 
                     {expanded && needsConfirmation && (
-                      <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+                      <div className="event-attendance-panel">
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>
                           {canManage ? t('manageAttendance') : t('attendanceList')}
                         </h4>
@@ -722,7 +640,7 @@ export default function EventosView({
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
                                   {needsConfirmation && (
                                     <div>
-                                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
+                                      <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
                                       <ConfirmationControls
                                         eventoMiembroId={row.id}
                                         eventoId={evento.id}
@@ -734,7 +652,7 @@ export default function EventosView({
                                     </div>
                                   )}
                                   <div>
-                                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceList')}</div>
+                                    <div className="event-attendance-row-label">{t('attendanceList')}</div>
                                     <AttendanceControls
                                       eventoMiembroId={row.id}
                                       eventoId={evento.id}
