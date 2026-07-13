@@ -13,6 +13,7 @@ import './styles/app.css';
 import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/components.css";
+import "./styles/eventAttendance.css";
 import "./styles/miembro.css";
 import "./styles/usuarios.css";
 import "./styles/noticia-html.css";

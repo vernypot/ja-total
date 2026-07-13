@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.noticias (
   resumen TEXT,          -- supports sanitized HTML
   contenido TEXT NOT NULL,  -- supports sanitized HTML
   publicado_en DATE NOT NULL DEFAULT CURRENT_DATE,
+  expira_en DATE,
   estado VARCHAR(20) NOT NULL DEFAULT 'activo'
     CHECK (estado IN ('activo', 'inactivo')),
   categoria TEXT,
@@ -43,6 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_noticias_publicado_en ON public.noticias(publicad
 CREATE INDEX IF NOT EXISTS idx_noticias_placements ON public.noticias USING GIN (placements);
 CREATE INDEX IF NOT EXISTS idx_noticias_audience ON public.noticias(audience);
 CREATE INDEX IF NOT EXISTS idx_noticias_club_id ON public.noticias(club_id);
+CREATE INDEX IF NOT EXISTS idx_noticias_expira_en ON public.noticias(expira_en);
 
 ALTER TABLE public.noticias ENABLE ROW LEVEL SECURITY;
 
@@ -100,7 +102,7 @@ CREATE POLICY noticias_public_select ON public.noticias
   USING (
     estado = 'activo'
     AND publicado_en <= CURRENT_DATE
-    AND audience = 'general'
+    AND (expira_en IS NULL OR expira_en >= CURRENT_DATE)
     AND audience = 'general'
     AND placements && ARRAY['landing', 'hero_slider', 'standalone_banner']::TEXT[]
   );
@@ -144,6 +146,7 @@ AS $$
   FROM public.noticias n
   WHERE n.estado = 'activo'
     AND n.publicado_en <= CURRENT_DATE
+    AND (n.expira_en IS NULL OR n.expira_en >= CURRENT_DATE)
     AND n.audience = 'general'
     AND n.placements && p_placements
   ORDER BY n.publicado_en DESC, n.created_at DESC
@@ -168,6 +171,7 @@ AS $$
   FROM public.noticias n
   WHERE n.estado = 'activo'
     AND n.publicado_en <= CURRENT_DATE
+    AND (n.expira_en IS NULL OR n.expira_en >= CURRENT_DATE)
     AND n.placements && p_placements
     AND (
       n.audience = 'general'
@@ -200,7 +204,8 @@ CREATE OR REPLACE FUNCTION public.admin_save_noticia(
   p_categoria TEXT DEFAULT NULL,
   p_placements TEXT[] DEFAULT '{dashboard}',
   p_audience TEXT DEFAULT 'church',
-  p_club_id UUID DEFAULT NULL
+  p_club_id UUID DEFAULT NULL,
+  p_expira_en DATE DEFAULT NULL
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -214,6 +219,10 @@ DECLARE
 BEGIN
   IF NOT public.user_can_manage_iglesia(p_iglesia_id) THEN
     RAISE EXCEPTION 'permission denied for admin_save_noticia';
+  END IF;
+
+  IF p_expira_en IS NOT NULL AND p_publicado_en IS NOT NULL AND p_expira_en < p_publicado_en THEN
+    RAISE EXCEPTION 'expiration date cannot be before publish date';
   END IF;
 
   v_placements := coalesce(p_placements, ARRAY['dashboard']::TEXT[]);
@@ -242,7 +251,7 @@ BEGIN
 
   IF p_id IS NULL THEN
     INSERT INTO public.noticias (
-      iglesia_id, titulo, resumen, contenido, publicado_en, estado,
+      iglesia_id, titulo, resumen, contenido, publicado_en, expira_en, estado,
       categoria, placements, audience, club_id
     ) VALUES (
       p_iglesia_id,
@@ -250,6 +259,7 @@ BEGIN
       nullif(trim(p_resumen), ''),
       trim(p_contenido),
       coalesce(p_publicado_en, CURRENT_DATE),
+      p_expira_en,
       coalesce(p_estado, 'activo'),
       nullif(trim(p_categoria), ''),
       v_placements,
@@ -266,6 +276,7 @@ BEGIN
     resumen = nullif(trim(p_resumen), ''),
     contenido = trim(p_contenido),
     publicado_en = coalesce(p_publicado_en, publicado_en),
+    expira_en = p_expira_en,
     estado = coalesce(p_estado, estado),
     categoria = nullif(trim(p_categoria), ''),
     placements = v_placements,
@@ -309,5 +320,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.admin_save_noticia(UUID, UUID, TEXT, TEXT, TEXT, DATE, TEXT, TEXT, TEXT[], TEXT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_save_noticia(
+  UUID, UUID, TEXT, TEXT, TEXT, DATE, TEXT, TEXT, TEXT[], TEXT, UUID, DATE
+) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_noticia(UUID) TO authenticated;

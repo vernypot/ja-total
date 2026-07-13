@@ -135,7 +135,7 @@ export default function PasswordReset({ onClose, userEmail, isOwnPassword = true
       const { error: emailError } = await AuthModel.sendPasswordResetEmail(userEmail);
 
       if (emailError) {
-        setError(emailError.message);
+        setError(AuthModel.formatAuthEmailError(emailError, t));
         setLoading(false);
         return;
       }

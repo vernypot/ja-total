@@ -140,7 +140,7 @@ export function useResetPasswordController() {
     try {
       const { error: resetError } = await AuthModel.sendPasswordResetEmail(email);
       if (resetError) {
-        setError(resetError.message);
+        setError(AuthModel.formatAuthEmailError(resetError, t));
         return;
       }
       setSuccess(t('passwordResetEmailRequested'));

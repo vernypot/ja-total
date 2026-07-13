@@ -1,50 +1,11 @@
 import { useLanguage } from '../../hooks/useLanguage';
-import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { PageHelpLink } from '../../components/PageHelp';
-
-function AttendanceBadge({ estado, t }) {
-  const colors = {
-    a_tiempo: { bg: '#dcfce7', color: '#166534' },
-    tarde: { bg: '#fef9c3', color: '#854d0e' },
-    ausente: { bg: '#fee2e2', color: '#991b1b' },
-  };
-  const style = colors[estado] || { bg: '#f3f4f6', color: '#4b5563' };
-
-  return (
-    <span style={{
-      fontSize: '12px',
-      fontWeight: 'bold',
-      padding: '4px 10px',
-      borderRadius: '999px',
-      backgroundColor: style.bg,
-      color: style.color,
-    }}>
-      {attendanceLabel(estado, t)}
-    </span>
-  );
-}
-
-function ConfirmationBadge({ estado, t }) {
-  const colors = {
-    confirmado: { bg: '#dcfce7', color: '#166534' },
-    rechazado: { bg: '#fee2e2', color: '#991b1b' },
-    pendiente: { bg: '#fef9c3', color: '#854d0e' },
-  };
-  const style = colors[estado] || colors.pendiente;
-
-  return (
-    <span style={{
-      fontSize: '12px',
-      fontWeight: 'bold',
-      padding: '4px 10px',
-      borderRadius: '999px',
-      backgroundColor: style.bg,
-      color: style.color,
-    }}>
-      {confirmationLabel(estado, t)}
-    </span>
-  );
-}
+import {
+  AttendanceBadge,
+  AttendanceControls,
+  ConfirmationBadge,
+  ConfirmationControls,
+} from '../../components/EventAttendanceControls';
 
 export default function MiembroEventosView({
   rows,
@@ -83,8 +44,8 @@ export default function MiembroEventosView({
             const needsConfirmation = eventRequiresConfirmation(evento);
 
             return (
-              <div key={row.id} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+              <div key={row.id} className="list-item">
+                <div className="event-attendance-row">
                   <div>
                     <strong>{evento?.nombre || t('eventUntitled')}</strong>
                     <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
@@ -92,7 +53,7 @@ export default function MiembroEventosView({
                       {tipoNombre && <> · {tipoNombre}</>}
                     </div>
                     {clubName && (
-                      <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                         {t('clubLabel')}: {clubName}
                       </div>
                     )}
@@ -101,27 +62,16 @@ export default function MiembroEventosView({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
                     {needsConfirmation && (
                       <div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceConfirmation')}</div>
+                        <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
                         {canManage ? (
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            {['pendiente', 'confirmado', 'rechazado'].map(estado => (
-                              <button
-                                key={estado}
-                                type="button"
-                                onClick={() => updateConfirmation(row.id, estado)}
-                                style={{
-                                  padding: '4px 10px',
-                                  fontSize: '11px',
-                                  borderRadius: '4px',
-                                  border: confirmacion === estado ? '2px solid #2563eb' : '1px solid #d1d5db',
-                                  backgroundColor: confirmacion === estado ? '#dbeafe' : '#fff',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                {confirmationLabel(estado, t)}
-                              </button>
-                            ))}
-                          </div>
+                          <ConfirmationControls
+                            eventoMiembroId={row.id}
+                            eventoId={evento?.id}
+                            current={confirmacion}
+                            canManage={canManage}
+                            onSet={(eventoMiembroId, estado) => updateConfirmation(eventoMiembroId, estado)}
+                            t={t}
+                          />
                         ) : (
                           <ConfirmationBadge estado={confirmacion} t={t} />
                         )}
@@ -129,27 +79,16 @@ export default function MiembroEventosView({
                     )}
 
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>{t('attendanceList')}</div>
+                      <div className="event-attendance-row-label">{t('attendanceList')}</div>
                       {canManage ? (
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {['a_tiempo', 'tarde', 'ausente'].map(estado => (
-                            <button
-                              key={estado}
-                              type="button"
-                              onClick={() => updateAttendance(row.id, estado)}
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: '11px',
-                                borderRadius: '4px',
-                                border: asistencia === estado ? '2px solid #2563eb' : '1px solid #d1d5db',
-                                backgroundColor: asistencia === estado ? '#dbeafe' : '#fff',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              {attendanceLabel(estado, t)}
-                            </button>
-                          ))}
-                        </div>
+                        <AttendanceControls
+                          eventoMiembroId={row.id}
+                          eventoId={evento?.id}
+                          current={asistencia}
+                          canManage={canManage}
+                          onSet={(eventoMiembroId, estado) => updateAttendance(eventoMiembroId, estado)}
+                          t={t}
+                        />
                       ) : (
                         <AttendanceBadge estado={asistencia} t={t} />
                       )}

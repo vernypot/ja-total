@@ -6,6 +6,7 @@ import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import { validateForm } from '../../utils/validateForm';
 import * as UsuariosModel from '../models/usuarios.model';
+import * as AuthModel from '../models/auth.model';
 import * as IglesiasModel from '../models/iglesias.model';
 import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
 
@@ -141,14 +142,18 @@ export function useUsuariosController() {
         const msg = result.error.message || '';
         const isRls = msg.includes('row-level security');
         const isAuth = msg.includes('already registered') || msg.includes('already exists');
+        const isRateLimited = AuthModel.isAuthEmailRateLimitError(result.error)
+          || msg.toLowerCase().includes('rate limit');
         setError(
-          isRls
-            ? 'Error saving user: permission denied (RLS). Run USUARIOS_RLS_FIX.sql in Supabase SQL Editor, then log out and back in.'
-            : isAuth
-              ? t('authAccountExists')
-              : msg.includes('admin_create_usuario_auth') || msg.includes('USUARIOS_AUTH_FIX')
-                ? 'Error saving user: ' + msg + ' Run USUARIOS_AUTH_FIX.sql in Supabase.'
-                : 'Error saving user: ' + msg
+          isRateLimited
+            ? t('passwordResetEmailRateLimited')
+            : isRls
+              ? 'Error saving user: permission denied (RLS). Run USUARIOS_RLS_FIX.sql in Supabase SQL Editor, then log out and back in.'
+              : isAuth
+                ? t('authAccountExists')
+                : msg.includes('admin_create_usuario_auth') || msg.includes('USUARIOS_AUTH_FIX')
+                  ? 'Error saving user: ' + msg + ' Run USUARIOS_AUTH_FIX.sql in Supabase.'
+                  : 'Error saving user: ' + msg
         );
         return;
       }

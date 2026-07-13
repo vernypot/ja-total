@@ -181,12 +181,28 @@ export function useEventosController() {
     setShowForm(false);
   }
 
-  function openEditForm(evento) {
+  function resolveMemberIdsForForm() {
+    if (!eventForm.requiere_confirmacion) return [];
+    return eventForm.memberAssignmentMode === 'all'
+      ? clubMembers.map(m => m.id)
+      : eventForm.selectedMemberIds;
+  }
+
+  async function openEditForm(evento) {
     if (!canManage) return;
     setShowForm(false);
     setExpandedEventId('');
     closeAttendeeEditor();
     setEditingEventId(evento.id);
+    setError('');
+
+    const rows = assignments[evento.id] || await loadAssignments(evento.id);
+    const assignedIds = (rows || []).map(row => row.miembro_id).filter(Boolean);
+    const allMemberIds = clubMembers.map(m => m.id);
+    const allAssigned = assignedIds.length > 0
+      && assignedIds.length === allMemberIds.length
+      && assignedIds.every(id => allMemberIds.includes(id));
+
     setEventForm({
       nombre: evento.nombre || '',
       fecha: evento.fecha || '',
@@ -194,8 +210,8 @@ export function useEventosController() {
       lugar: evento.lugar || '',
       tipo_evento_id: evento.tipo_evento_id || '',
       requiere_confirmacion: EventosModel.eventRequiresConfirmation(evento),
-      memberAssignmentMode: 'all',
-      selectedMemberIds: [],
+      memberAssignmentMode: allAssigned || assignedIds.length === 0 ? 'all' : 'specific',
+      selectedMemberIds: assignedIds.length ? assignedIds : allMemberIds,
     });
   }
 
@@ -208,11 +224,7 @@ export function useEventosController() {
     if (!canManage || !clubId) return;
     setError('');
 
-    const miembroIds = eventForm.requiere_confirmacion
-      ? (eventForm.memberAssignmentMode === 'all'
-        ? clubMembers.map(m => m.id)
-        : eventForm.selectedMemberIds)
-      : [];
+    const miembroIds = resolveMemberIdsForForm();
 
     const validation = validateForm('event', {
       ...eventForm,
@@ -232,14 +244,36 @@ export function useEventosController() {
         hora: eventForm.hora,
         lugar: eventForm.lugar,
         tipoEventoId: eventForm.tipo_evento_id || null,
+        requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
       });
-      setSavingEvent(false);
 
       if (saveError) {
+        setSavingEvent(false);
         setError('Error updating event: ' + saveError.message);
         return;
       }
 
+      if (eventForm.requiere_confirmacion) {
+        const { error: syncError } = await EventosModel.syncEventoAttendees(
+          editingEventId,
+          miembroIds,
+          { requiereConfirmacion: true }
+        );
+        if (syncError) {
+          setSavingEvent(false);
+          setError('Error updating attendees: ' + syncError.message);
+          return;
+        }
+      } else {
+        const { error: clearError } = await EventosModel.clearEventoAttendees(editingEventId);
+        if (clearError) {
+          setSavingEvent(false);
+          setError('Error clearing attendees: ' + clearError.message);
+          return;
+        }
+      }
+
+      setSavingEvent(false);
       closeEditForm();
       loadEvents();
       return;
@@ -252,11 +286,7 @@ export function useEventosController() {
     if (!canManage || !clubId) return;
     setError('');
 
-    const miembroIds = eventForm.requiere_confirmacion
-      ? (eventForm.memberAssignmentMode === 'all'
-        ? clubMembers.map(m => m.id)
-        : eventForm.selectedMemberIds)
-      : [];
+    const miembroIds = resolveMemberIdsForForm();
 
     const validation = validateForm('event', {
       ...eventForm,

@@ -86,6 +86,29 @@ export function formatAuthCallbackError(callbackError, t) {
   return t('passwordResetLinkInvalid');
 }
 
+export function isAuthEmailRateLimitError(error) {
+  if (!error) return false;
+  const message = (error.message || '').toLowerCase();
+  return (
+    error.status === 429
+    || error.code === 'over_email_send_rate_limit'
+    || message.includes('rate limit')
+    || message.includes('email rate')
+    || message.includes('too many requests')
+    || message.includes('over_email_send_rate_limit')
+  );
+}
+
+export function formatAuthEmailError(error, t) {
+  if (!error) return '';
+
+  if (isAuthEmailRateLimitError(error)) {
+    return t('passwordResetEmailRateLimited');
+  }
+
+  return error.message || t('passwordResetFailed');
+}
+
 export async function sendPasswordResetEmail(email) {
   const redirectTo = getPasswordResetRedirectUrl();
   return sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
