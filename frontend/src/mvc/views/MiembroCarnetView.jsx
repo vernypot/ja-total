@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
 import CarnetCard from '../../components/CarnetCard';
+import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
 import '../../styles/carnet.css';
 
 export default function MiembroCarnetView({
@@ -11,7 +12,9 @@ export default function MiembroCarnetView({
   selectedClubId,
   setSelectedClubId,
   token,
+  setToken,
   expirationLabel,
+  canManage,
   error,
   loading,
   printCard,
@@ -29,6 +32,16 @@ export default function MiembroCarnetView({
           <strong style={{ fontSize: '14px' }}>{t('tabCarnet')}</strong>
           <PageHelpLink pageId="memberCarnet" compact />
         </div>
+        {canManage && (
+          <div style={{ marginBottom: '16px' }}>
+            <MemberPortalPinAdmin
+              miembroId={member.id}
+              canManage={canManage}
+              showQrRegenerate
+              onTokenRegenerated={setToken}
+            />
+          </div>
+        )}
         {clubs.length > 1 && (
           <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{t('carnetSelectClub')}</span>

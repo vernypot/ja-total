@@ -46,6 +46,20 @@ export default function LoginView({
             </div>
           )}
           {error && <div className="login-page-error">{error}</div>}
+
+          <Link to="/portal" className="login-page-member-cta">
+            <span className="login-page-member-cta-icon" aria-hidden="true">📱</span>
+            <div className="login-page-member-cta-copy">
+              <strong>{t('loginMemberQrCtaTitle')}</strong>
+              <span>{t('loginMemberQrCtaText')}</span>
+            </div>
+            <span className="login-page-member-cta-action">{t('loginMemberQrCtaButton')}</span>
+          </Link>
+
+          <div className="login-page-divider" role="separator">
+            <span>{t('loginStaffDivider')}</span>
+          </div>
+
           <div className={`login-page-field ${fieldErrors.email ? 'login-page-field--invalid' : ''}`}>
             <label htmlFor="login-email">{t('loginEmail')}</label>
             <input

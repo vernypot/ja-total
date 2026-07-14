@@ -1,23 +1,20 @@
 import { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { useLanguage } from '../hooks/useLanguage';
+import { useMemberPortal } from '../context/MemberPortalContext';
+import DashboardRouteLoading from './DashboardRouteLoading';
 
 export default function ProtectedRoute({ element }) {
-  const { user, loading } = useContext(AuthContext);
-  const { t } = useLanguage();
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const { isAuthenticated, ready: portalReady } = useMemberPortal();
 
-  if (loading) {
-    return (
-      <div className="container" style={{ padding: '40px', textAlign: 'center' }}>
-        <div className="loading">{t('loading')}</div>
-      </div>
-    );
+  if (authLoading || !portalReady) {
+    return <DashboardRouteLoading />;
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (user || isAuthenticated) {
+    return element;
   }
 
-  return element;
+  return <Navigate to="/login" replace />;
 }

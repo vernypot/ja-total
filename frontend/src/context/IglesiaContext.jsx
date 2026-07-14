@@ -1,12 +1,15 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { AuthContext } from './AuthContext';
 import { getUserRole, isSuperAdmin } from '../utils/permissions';
+import { DEFAULT_CHURCH_TIMEZONE, normalizeChurchTimezone } from '../utils/churchTimezones';
+import { fetchIglesiaById } from '../mvc/models/iglesias.model';
 
 export const IglesiaContext = createContext();
 
 export function IglesiaProvider({ children }) {
   const { user, userData, loading: authLoading } = useContext(AuthContext);
   const [activeIglesia, setActiveIglesia] = useState(null);
+  const [activeIglesiaTimezone, setActiveIglesiaTimezone] = useState(DEFAULT_CHURCH_TIMEZONE);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -14,6 +17,7 @@ export function IglesiaProvider({ children }) {
 
     if (!user) {
       setActiveIglesia(null);
+      setActiveIglesiaTimezone(DEFAULT_CHURCH_TIMEZONE);
       setInitialized(false);
       return;
     }
@@ -43,7 +47,25 @@ export function IglesiaProvider({ children }) {
     setInitialized(true);
   }, [authLoading, user, userData, initialized]);
 
-  const updateActiveIglesia = (iglesiaId) => {
+  useEffect(() => {
+    if (!activeIglesia) {
+      setActiveIglesiaTimezone(DEFAULT_CHURCH_TIMEZONE);
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchIglesiaById(activeIglesia).then(({ data }) => {
+      if (!cancelled) {
+        setActiveIglesiaTimezone(normalizeChurchTimezone(data?.timezone));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeIglesia]);
+
+  const updateActiveIglesia = (iglesiaId, timezone = null) => {
     if (!user) return;
 
     const role = getUserRole(user, userData);
@@ -53,6 +75,9 @@ export function IglesiaProvider({ children }) {
     }
 
     setActiveIglesia(iglesiaId);
+    if (timezone) {
+      setActiveIglesiaTimezone(normalizeChurchTimezone(timezone));
+    }
     if (iglesiaId) {
       localStorage.setItem('activeIglesiaId', iglesiaId);
     } else {
@@ -61,7 +86,7 @@ export function IglesiaProvider({ children }) {
   };
 
   return (
-    <IglesiaContext.Provider value={{ activeIglesia, updateActiveIglesia }}>
+    <IglesiaContext.Provider value={{ activeIglesia, activeIglesiaTimezone, updateActiveIglesia }}>
       {children}
     </IglesiaContext.Provider>
   );

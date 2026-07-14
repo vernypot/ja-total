@@ -97,6 +97,10 @@
   color: var(--color-badge-info);
 }
 
+.user-role.role-member {
+  color: #16a34a;
+}
+
 .user-role.role-admin {
   color: var(--color-badge-warning);
 }

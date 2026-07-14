@@ -1,7 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import ListSearchInput from '../../components/ListSearchInput';
 import FormField from '../../components/FormField';
-import EventCheckinScanner from '../../components/EventCheckinScanner';
 import { PageHelpLink } from '../../components/PageHelp';
 import {
   AttendanceControls,
@@ -278,8 +277,8 @@ export default function EventosView({
   toggleAttendeeEditSelection,
   selectAllAttendeeEdit,
   saveEventAttendees,
-  checkinByScan,
-  checkinNotice,
+  startEvent,
+  sortEventAttendanceRows,
   isEventInFuture,
   getCheckedInAtFromRow,
   getAsistenciaFromRow,
@@ -321,7 +320,6 @@ export default function EventosView({
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {checkinNotice && <div className="alert" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>{t(checkinNotice)}</div>}
       {!iglesiaScopeReady && (
         <div className="alert alert-error">{t('noActiveIglesiaAssignment')}</div>
       )}
@@ -406,7 +404,7 @@ export default function EventosView({
                 const isEditing = editingEventId === evento.id;
                 const isFuture = isEventInFuture(evento);
                 const isActive = !evento.estado || evento.estado === 'activo';
-                const rows = assignments[evento.id] || [];
+                const rows = sortEventAttendanceRows(assignments[evento.id] || []);
                 const recordedCount = rows.filter(row => getAsistenciaFromRow(row)).length;
                 const confirmedCount = rows.filter(row => getConfirmacionFromRow(row) === 'confirmado').length;
                 const tipoNombre = getTipoEventoNombre(evento);
@@ -447,7 +445,11 @@ export default function EventosView({
                           )}
                           {!needsConfirmation && (
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                              {t('eventNoMemberAssignments')}
+                              {rows.length > 0
+                                ? t('attendanceSummary')
+                                  .replace('{assigned}', String(rows.length))
+                                  .replace('{recorded}', String(recordedCount))
+                                : t('eventQrAttendanceHint')}
                             </div>
                           )}
                           {needsConfirmation && assignments[evento.id] && rows.length > 0 && (
@@ -461,20 +463,26 @@ export default function EventosView({
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
                           {canManage && (
                             <>
+                              {isActive && (
+                                <EventActionButton
+                                  tone="success"
+                                  onClick={() => startEvent(evento.id)}
+                                >
+                                  ▶ {t('startEvent')}
+                                </EventActionButton>
+                              )}
                               <EventActionButton
                                 tone={isEditing ? 'muted' : 'primary'}
                                 onClick={() => (isEditing ? closeEditForm() : openEditForm(evento))}
                               >
                                 {isEditing ? t('cancel') : `✏️ ${t('edit')}`}
                               </EventActionButton>
-                              {needsConfirmation && (
-                                <EventActionButton
-                                  tone={expanded ? 'muted' : 'info'}
-                                  onClick={() => toggleEventExpand(evento.id)}
-                                >
-                                  {expanded ? t('hideAttendanceList') : t('manageAttendance')}
-                                </EventActionButton>
-                              )}
+                              <EventActionButton
+                                tone={expanded ? 'muted' : 'info'}
+                                onClick={() => toggleEventExpand(evento.id)}
+                              >
+                                {expanded ? t('hideAttendanceList') : t('manageAttendance')}
+                              </EventActionButton>
                               {isActive && (
                                 <>
                                   <EventActionButton tone="warning" onClick={() => cancelEvent(evento.id)}>
@@ -500,7 +508,7 @@ export default function EventosView({
                               )}
                             </>
                           )}
-                          {!canManage && needsConfirmation && (
+                          {!canManage && (
                             <EventActionButton
                               tone={expanded ? 'muted' : 'primary'}
                               onClick={() => toggleEventExpand(evento.id)}
@@ -578,25 +586,27 @@ export default function EventosView({
                       </div>
                     )}
 
-                    {expanded && needsConfirmation && (
+                    {expanded && (
                       <div className="event-attendance-panel">
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>
                           {canManage ? t('manageAttendance') : t('attendanceList')}
                         </h4>
                         {canManage && (
                           <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                            {t('manageAttendanceHint')}
+                            {needsConfirmation ? t('manageAttendanceHint') : t('manageAttendanceQrHint')}
                           </p>
                         )}
                         {canManage && rows.length > 0 && (
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                            <EventActionButton
-                              tone="success"
-                              disabled={bulkUpdatingEventId === evento.id}
-                              onClick={() => confirmAllPending(evento.id)}
-                            >
-                              {t('confirmAllPending')}
-                            </EventActionButton>
+                            {needsConfirmation && (
+                              <EventActionButton
+                                tone="success"
+                                disabled={bulkUpdatingEventId === evento.id}
+                                onClick={() => confirmAllPending(evento.id)}
+                              >
+                                {t('confirmAllPending')}
+                              </EventActionButton>
+                            )}
                             <EventActionButton
                               tone="info"
                               disabled={bulkUpdatingEventId === evento.id}
@@ -613,15 +623,18 @@ export default function EventosView({
                             </EventActionButton>
                           </div>
                         )}
-                        {canManage && (
-                          <EventCheckinScanner
-                            eventoId={evento.id}
-                            disabled={isFuture}
-                            onCheckin={token => checkinByScan(evento.id, token)}
-                          />
+                        {canManage && isActive && (
+                          <div className="event-start-scan-cta">
+                            <p>{t('startEventScanHint')}</p>
+                            <EventActionButton tone="success" onClick={() => startEvent(evento.id)}>
+                              ▶ {t('startEvent')}
+                            </EventActionButton>
+                          </div>
                         )}
                         {rows.length === 0 ? (
-                          <p className="text-muted" style={{ margin: 0 }}>{t('noMembersAssignedToEvent')}</p>
+                          <p className="text-muted" style={{ margin: 0 }}>
+                            {needsConfirmation ? t('noMembersAssignedToEvent') : t('eventQrAttendanceEmpty')}
+                          </p>
                         ) : (
                           <div style={{ display: 'grid', gap: '10px', marginTop: canManage ? '12px' : 0 }}>
                             {rows.map(row => {
@@ -634,6 +647,7 @@ export default function EventosView({
                                   {checkedInAt && (
                                     <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                       {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
+                                      <span className="checkin-session-qr-badge">{t('checkinViaQr')}</span>
                                     </div>
                                   )}
                                 </div>

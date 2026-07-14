@@ -7,13 +7,34 @@ import { ClubContext } from "../context/ClubContext";
 import { clubDisplayName } from "../utils/club";
 import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions";
 import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
+import { useDashboardAuth } from "../hooks/useDashboardAuth";
 import * as IglesiasModel from "../mvc/models/iglesias.model";
+
+const PORTAL_PAGE_LABELS = {
+  '/dashboard/profile': 'portalNavProfile',
+  '/dashboard/noticias': 'portalNavNews',
+  '/dashboard/eventos': 'portalNavEvents',
+  '/dashboard/calendario': 'portalNavCalendar',
+};
+
+const PORTAL_PROFILE_TAB_LABELS = {
+  datos: 'tabData',
+  'datos-medicos': 'tabMedicalData',
+  contactos: 'tabContacts',
+  especialidades: 'tabSpecialties',
+  cargos: 'tabCargos',
+  clases: 'tabClasses',
+  eventos: 'tabEvents',
+  asistencia: 'tabAttendance',
+  carnet: 'tabCarnet',
+};
 
 export default function Breadcrumb() {
   const [params] = useSearchParams();
   const location = useLocation();
   const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
+  const { isPortalOnly } = useDashboardAuth();
   const { activeIglesia } = useContext(IglesiaContext);
   const { activeClub } = useContext(ClubContext);
   const [iglesiaNombre, setIglesiaNombre] = useState('');
@@ -38,6 +59,44 @@ export default function Breadcrumb() {
   const churchLabel = iglesiaNombre || t('clubs');
 
   const onHomePage = isDashboardHomePath(location.pathname);
+  const portalPageLabelKey = PORTAL_PAGE_LABELS[location.pathname];
+  const profileTabMatch = location.pathname.match(/^\/dashboard\/profile\/([^/]+)/);
+  const profileTabLabelKey = profileTabMatch
+    ? PORTAL_PROFILE_TAB_LABELS[profileTabMatch[1]]
+    : null;
+  const onPortalProfile = location.pathname.startsWith('/dashboard/profile');
+
+  if (isPortalOnly) {
+    if (onHomePage) return null;
+
+    return (
+      <div style={{ marginBottom: "10px", fontSize: '14px' }}>
+        <Link to={DASHBOARD_HOME_PATH}>{t('home')}</Link>
+        {onPortalProfile && (
+          <>
+            {' > '}
+            {profileTabLabelKey ? (
+              <Link to="/dashboard/profile">{t('portalNavProfile')}</Link>
+            ) : (
+              <span style={{ color: 'var(--color-text-secondary)' }}>{t('portalNavProfile')}</span>
+            )}
+          </>
+        )}
+        {!onPortalProfile && portalPageLabelKey && (
+          <>
+            {' > '}
+            <span style={{ color: 'var(--color-text-secondary)' }}>{t(portalPageLabelKey)}</span>
+          </>
+        )}
+        {profileTabLabelKey && (
+          <>
+            {' > '}
+            <span style={{ color: 'var(--color-text-secondary)' }}>{t(profileTabLabelKey)}</span>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: "10px", fontSize: '14px' }}>

@@ -13,18 +13,20 @@ import {
   toDateKey,
   visibleRangeForView,
 } from '../../utils/calendar';
+import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { clubDisplayName } from '../../utils/club';
 
 export function useCalendarioClubController() {
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
+  const churchTz = useChurchTimezone();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const requestedClub = params.get('club');
   const clubId = requestedClub || activeClub?.id || '';
 
   const [viewMode, setViewMode] = useState('month');
-  const [focusDateKey, setFocusDateKey] = useState(toDateKey(new Date()));
+  const [focusDateKey, setFocusDateKey] = useState(() => churchTz.getLocalTodayIso());
   const [clubs, setClubs] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,13 @@ export function useCalendarioClubController() {
   const [selectedEventAssignments, setSelectedEventAssignments] = useState([]);
   const [loadingEventDetail, setLoadingEventDetail] = useState(false);
 
-  const focusDate = useMemo(() => dateFromKey(focusDateKey), [focusDateKey]);
+  const focusDate = useMemo(() => {
+    const date = dateFromKey(focusDateKey);
+    if (Number.isNaN(date.getTime())) {
+      return dateFromKey(churchTz.getLocalTodayIso());
+    }
+    return date;
+  }, [focusDateKey, churchTz]);
   const year = focusDate.getFullYear();
   const monthIndex = focusDate.getMonth();
 
@@ -186,7 +194,7 @@ export function useCalendarioClubController() {
   }
 
   function goToToday() {
-    const today = toDateKey(new Date());
+    const today = churchTz.getLocalTodayIso();
     setFocusDateKey(today);
     setSelectedDateKey(today);
     clearEventSelection();
@@ -229,6 +237,7 @@ export function useCalendarioClubController() {
     goToNext,
     goToToday,
     toDateKey,
+    getLocalTodayIso: churchTz.getLocalTodayIso,
     clubDisplayName,
     selectedDateKey: activeSelectedDateKey,
     selectedDayEvents,
@@ -239,7 +248,7 @@ export function useCalendarioClubController() {
     selectEvent,
     closeEventDetail,
     openEventInEventsPage,
-    isEventInFuture: EventosModel.isEventInFuture,
+    isEventInFuture: churchTz.isEventInFuture,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,

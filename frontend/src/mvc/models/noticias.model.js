@@ -13,33 +13,64 @@ function isRlsError(error) {
   return msg.includes('row-level security') || msg.includes('permission denied');
 }
 
-const NOTICIA_SELECT = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+const NOTICIA_SELECT_WITH_EXPIRA = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+const NOTICIA_SELECT_LEGACY = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+
+function isMissingColumnError(error, column) {
+  const msg = error?.message || '';
+  return msg.includes(`${column} does not exist`) || msg.includes(`Could not find the '${column}' column`);
+}
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+export function normalizeExpiraEn(value) {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  return trimmed || null;
 }
 
 export function isNoticiaVisible(noticia, { referenceDate } = {}) {
   if (!noticia || noticia.estado !== 'activo') return false;
   const today = referenceDate || todayIso();
   if (noticia.publicado_en && noticia.publicado_en > today) return false;
-  if (noticia.expira_en && noticia.expira_en < today) return false;
+  const expiraEn = normalizeExpiraEn(noticia.expira_en);
+  if (expiraEn && expiraEn < today) return false;
   return true;
 }
 
 export function isNoticiaExpired(noticia, referenceDate) {
   const today = referenceDate || todayIso();
-  return Boolean(noticia?.expira_en && noticia.expira_en < today);
+  const expiraEn = normalizeExpiraEn(noticia?.expira_en);
+  return Boolean(expiraEn && expiraEn < today);
 }
 
 function normalizeNoticiaRow(row) {
   if (!row) return row;
   return {
     ...row,
+    expira_en: normalizeExpiraEn(row.expira_en),
     placements: normalizePlacements(row.placements),
     audience: normalizeAudience(row.audience),
     club_nombre: row.clubes?.nombre || row.club_nombre || '',
   };
+}
+
+async function queryNoticias(buildQuery) {
+  for (const select of [NOTICIA_SELECT_WITH_EXPIRA, NOTICIA_SELECT_LEGACY]) {
+    const result = await buildQuery(select);
+    if (!result.error) {
+      if (result.data) {
+        result.data = Array.isArray(result.data)
+          ? result.data.map(normalizeNoticiaRow)
+          : normalizeNoticiaRow(result.data);
+      }
+      return result;
+    }
+    if (!isMissingColumnError(result.error, 'expira_en')) return result;
+  }
+  return { data: [], error: null };
 }
 
 function applyPlacementsFilter(query, placements) {
@@ -50,22 +81,19 @@ function applyPlacementsFilter(query, placements) {
 export async function fetchNoticiasByIglesia(iglesiaId, { showInactive = false, limit, placements } = {}) {
   if (!iglesiaId) return { data: [], error: null };
 
-  let query = sb
-    .from('noticias')
-    .select(NOTICIA_SELECT)
-    .eq('iglesia_id', iglesiaId)
-    .order('publicado_en', { ascending: false })
-    .order('created_at', { ascending: false });
+  return queryNoticias(select => {
+    let query = sb
+      .from('noticias')
+      .select(select)
+      .eq('iglesia_id', iglesiaId)
+      .order('publicado_en', { ascending: false })
+      .order('created_at', { ascending: false });
 
-  if (!showInactive) query = query.eq('estado', 'activo');
-  query = applyPlacementsFilter(query, placements);
-  if (limit) query = query.limit(limit);
-
-  const result = await query;
-  if (result.data) {
-    result.data = result.data.map(normalizeNoticiaRow);
-  }
-  return result;
+    if (!showInactive) query = query.eq('estado', 'activo');
+    query = applyPlacementsFilter(query, placements);
+    if (limit) query = query.limit(limit);
+    return query;
+  });
 }
 
 export async function fetchDashboardNoticias({
@@ -85,7 +113,7 @@ export async function fetchDashboardNoticias({
 
   if (!rpc.error) {
     return {
-      data: (rpc.data || []).map(normalizeNoticiaRow),
+      data: (rpc.data || []).map(normalizeNoticiaRow).filter(isNoticiaVisible),
       error: null,
     };
   }
@@ -111,7 +139,7 @@ export async function fetchPublicNoticias({ placements, limit = 10 } = {}) {
 
   if (!rpc.error) {
     return {
-      data: (rpc.data || []).map(normalizeNoticiaRow),
+      data: (rpc.data || []).map(normalizeNoticiaRow).filter(isNoticiaVisible),
       error: null,
     };
   }
@@ -120,33 +148,32 @@ export async function fetchPublicNoticias({ placements, limit = 10 } = {}) {
     return rpc;
   }
 
-  let query = sb
-    .from('noticias')
-    .select(NOTICIA_SELECT)
-    .eq('estado', 'activo')
-    .eq('audience', 'general')
-    .lte('publicado_en', new Date().toISOString().slice(0, 10))
-    .order('publicado_en', { ascending: false })
-    .order('created_at', { ascending: false });
+  const today = todayIso();
+  const fallback = await queryNoticias(select => {
+    let query = sb
+      .from('noticias')
+      .select(select)
+      .eq('estado', 'activo')
+      .eq('audience', 'general')
+      .lte('publicado_en', today)
+      .order('publicado_en', { ascending: false })
+      .order('created_at', { ascending: false });
 
-  query = applyPlacementsFilter(query, placements);
-  if (limit) query = query.limit(limit);
+    query = applyPlacementsFilter(query, placements);
+    if (limit) query = query.limit(limit);
+    return query;
+  });
 
-  const fallback = await query;
   if (fallback.data) {
-    fallback.data = fallback.data
-      .map(normalizeNoticiaRow)
-      .filter(isNoticiaVisible);
+    fallback.data = fallback.data.filter(isNoticiaVisible);
   }
   return fallback;
 }
 
 export async function fetchNoticiaById(id) {
-  const result = await sb.from('noticias').select(NOTICIA_SELECT).eq('id', id).maybeSingle();
-  if (result.data) {
-    result.data = normalizeNoticiaRow(result.data);
-  }
-  return result;
+  return queryNoticias(select =>
+    sb.from('noticias').select(select).eq('id', id).maybeSingle()
+  );
 }
 
 export function noticiaPlainText(html, maxLength = 220) {
@@ -205,13 +232,15 @@ export async function saveNoticia({
     return { data: null, error: new Error('Club is required for club-only news.') };
   }
 
+  const normalizedExpira = normalizeExpiraEn(expiraEn);
+
   const payload = {
     iglesia_id: iglesiaId,
     titulo: clean.titulo,
     resumen: clean.resumen || null,
     contenido: clean.contenido,
     publicado_en: publicadoEn || todayIso(),
-    expira_en: expiraEn || null,
+    expira_en: normalizedExpira,
     estado,
     categoria: categoria?.trim() || null,
     placements: normalizedPlacements,
@@ -219,17 +248,23 @@ export async function saveNoticia({
     club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
   };
 
-  if (id) {
-    const direct = await sb.from('noticias').update(payload).eq('id', id).select('id').single();
-    if (!direct.error) return direct;
-    if (!isRlsError(direct.error)) return direct;
-  } else {
-    const direct = await sb.from('noticias').insert([payload]).select('id').single();
-    if (!direct.error) return direct;
-    if (!isRlsError(direct.error)) return direct;
-  }
+  const saveDirect = async (body) => {
+    if (id) {
+      return sb.from('noticias').update(body).eq('id', id).select('id').single();
+    }
+    return sb.from('noticias').insert([body]).select('id').single();
+  };
 
-  return sb.rpc('admin_save_noticia', {
+  let direct = await saveDirect(payload);
+  if (!direct.error) return direct;
+  if (isMissingColumnError(direct.error, 'expira_en')) {
+    const { expira_en: _ignored, ...withoutExpira } = payload;
+    direct = await saveDirect(withoutExpira);
+    if (!direct.error) return direct;
+  }
+  if (!isRlsError(direct.error)) return direct;
+
+  const rpcArgs = {
     p_id: id || null,
     p_iglesia_id: iglesiaId,
     p_titulo: clean.titulo,
@@ -241,8 +276,19 @@ export async function saveNoticia({
     p_placements: normalizedPlacements,
     p_audience: normalizedAudience,
     p_club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
-    p_expira_en: expiraEn || null,
-  });
+    p_expira_en: normalizedExpira,
+  };
+
+  const rpc = await sb.rpc('admin_save_noticia', rpcArgs);
+  if (!rpc.error) return rpc;
+
+  const rpcMsg = rpc.error?.message || '';
+  if (rpcMsg.includes('p_expira_en') || rpcMsg.includes('admin_save_noticia')) {
+    const { p_expira_en: _ignored, ...legacyRpcArgs } = rpcArgs;
+    return sb.rpc('admin_save_noticia', legacyRpcArgs);
+  }
+
+  return rpc;
 }
 
 export async function deleteNoticia(id) {

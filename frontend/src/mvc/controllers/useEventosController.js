@@ -11,6 +11,7 @@ import * as EventosModel from '../models/eventos.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
+import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 
 const emptyForm = () => ({
   nombre: '',
@@ -28,6 +29,7 @@ export function useEventosController() {
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, canSwitchIglesia, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
+  const churchTz = useChurchTimezone();
   const userRole = getUserRole(user, userData);
   const canManage = canManageClubs(userRole);
   const [params] = useSearchParams();
@@ -49,7 +51,6 @@ export function useEventosController() {
   const [editingAttendeesEventId, setEditingAttendeesEventId] = useState('');
   const [attendeeEditIds, setAttendeeEditIds] = useState([]);
   const [savingAttendees, setSavingAttendees] = useState(false);
-  const [checkinNotice, setCheckinNotice] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [editingEventId, setEditingEventId] = useState('');
   const [savingEvent, setSavingEvent] = useState(false);
@@ -132,9 +133,7 @@ export function useEventosController() {
   }
 
   async function loadAllAssignments(eventList) {
-    const eventoIds = eventList
-      .filter(evento => EventosModel.eventRequiresConfirmation(evento))
-      .map(evento => evento.id);
+    const eventoIds = eventList.map(evento => evento.id);
     if (!eventoIds.length) return;
 
     const { data, error: assignError } = await EventosModel.fetchAssignmentsForEventIds(eventoIds);
@@ -413,19 +412,9 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
-  async function checkinByScan(eventoId, token) {
-    if (!canManage) return;
-    setError('');
-    setCheckinNotice('');
-
-    const { error: checkinError } = await EventosModel.checkinEventoByToken(eventoId, token);
-    if (checkinError) {
-      setError('Check-in failed: ' + checkinError.message);
-      return;
-    }
-
-    setCheckinNotice('checkinRecorded');
-    await loadAssignments(eventoId);
+  function startEvent(eventoId) {
+    if (!canManage || !eventoId) return;
+    navigate(`/dashboard/checkin?evento=${encodeURIComponent(eventoId)}&started=1`);
   }
 
   async function openAttendeeEditor(eventoId) {
@@ -610,9 +599,9 @@ export function useEventosController() {
     toggleAttendeeEditSelection,
     selectAllAttendeeEdit,
     saveEventAttendees,
-    checkinByScan,
-    checkinNotice,
-    isEventInFuture: EventosModel.isEventInFuture,
+    startEvent,
+    sortEventAttendanceRows: EventosModel.sortEventAttendanceRows,
+    isEventInFuture: churchTz.isEventInFuture,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,

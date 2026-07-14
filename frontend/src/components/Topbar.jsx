@@ -1,21 +1,40 @@
 import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
+import { useDashboardAuth } from "../hooks/useDashboardAuth";
 import { getUserRole } from "../utils/permissions";
 import { useNavigate, Link } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 
+function memberInitials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'M';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
 export default function Topbar() {
   const { user, userData, logout } = useContext(AuthContext);
   const { t } = useLanguage();
+  const { isPortalOnly, session, logout: portalLogout } = useDashboardAuth();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const userRole = getUserRole(user, userData);
-  const userInitials = (user?.email || 'U').substring(0, 2).toUpperCase();
+  const memberName = session?.memberName || t('roleMember');
+  const displayName = isPortalOnly ? memberName : (user?.email || '');
+  const displayInitials = isPortalOnly
+    ? memberInitials(memberName)
+    : (user?.email || 'U').substring(0, 2).toUpperCase();
+  const displayRole = isPortalOnly ? t('roleMember') : userRole;
 
   async function handleLogout() {
+    if (isPortalOnly) {
+      await portalLogout();
+      return;
+    }
+
     await logout();
   }
 
@@ -34,22 +53,22 @@ export default function Topbar() {
           <button
             className="user-button"
             onClick={() => setShowMenu(!showMenu)}
-            title={user?.email}
+            title={displayName}
           >
-            <div className="user-avatar">{userInitials}</div>
+            <div className="user-avatar">{displayInitials}</div>
             <div className="user-info">
-              <span className="user-email">{user?.email}</span>
-              <span className={`user-role role-${userRole}`}>{userRole}</span>
+              <span className="user-email">{displayName}</span>
+              <span className={`user-role role-${isPortalOnly ? 'member' : userRole}`}>{displayRole}</span>
             </div>
           </button>
 
           {showMenu && (
             <div className="user-dropdown">
               <div className="dropdown-item user-profile">
-                <div className="profile-avatar">{userInitials}</div>
+                <div className="profile-avatar">{displayInitials}</div>
                 <div className="profile-info">
-                  <div className="profile-email">{user?.email}</div>
-                  <div className="profile-role">{userRole.toUpperCase()}</div>
+                  <div className="profile-email">{displayName}</div>
+                  <div className="profile-role">{displayRole.toUpperCase()}</div>
                 </div>
               </div>
               <hr />

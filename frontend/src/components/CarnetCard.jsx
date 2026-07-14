@@ -26,7 +26,7 @@ export default function CarnetCard({
   const tipoLogo = getAssetUrl(club?.tipos_club?.logo_url);
   const tipoNombre = club?.tipos_club?.nombre;
   const bloodType = CarnetModel.formatBloodType(medical?.tipo_sangre, medical?.factor_rh);
-  const qrUrl = token ? CarnetModel.buildCheckinQrUrl(token) : '';
+  const qrUrl = token ? CarnetModel.buildMemberPortalQrUrl(token) : '';
   const qrSize = Math.round(36 * 3.78);
   const bloodSubtitle = bloodType
     ? `${t('bloodType')}: ${bloodType}`

@@ -3,6 +3,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
+import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -26,6 +27,7 @@ function MemberListItem({
   t,
 }) {
   const [clubsExpanded, setClubsExpanded] = useState(false);
+  const [pinExpanded, setPinExpanded] = useState(false);
   const nombreCompleto = [member.nombre, member.apellido1, member.apellido2].filter(Boolean).join(' ');
   const assignedCount = clubsData.filter(club => member.clubIds.includes(club.id)).length;
   const showClubToggle = clubsData.length > 0;
@@ -50,6 +52,21 @@ function MemberListItem({
               {member.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
             </button>
           )}
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setPinExpanded(prev => !prev)}
+              aria-expanded={pinExpanded}
+              className="btn btn-sm"
+              style={{
+                backgroundColor: pinExpanded ? '#dbeafe' : '#eff6ff',
+                color: '#1d4ed8',
+                border: '1px solid #93c5fd',
+              }}
+            >
+              {pinExpanded ? '▲' : '▼'} {t('portalPinAdminTitle')}
+            </button>
+          )}
           {showClubToggle && (
             <button
               type="button"
@@ -67,6 +84,12 @@ function MemberListItem({
           )}
         </div>
       </div>
+
+      {canManage && pinExpanded && (
+        <div style={{ marginTop: '12px' }}>
+          <MemberPortalPinAdmin miembroId={member.id} canManage={canManage} compact />
+        </div>
+      )}
 
       {showClubToggle && clubsExpanded && (
         <div

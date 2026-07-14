@@ -1,5 +1,7 @@
 import { getPasswordValidationError } from './passwordValidation';
 import { isBlank, isValidDate, validators } from './validation';
+import { isValidChurchTimezone } from './churchTimezones';
+import { isValidChurchCountry } from './churchCountries';
 
 const v = validators;
 
@@ -58,8 +60,18 @@ export const FORM_SCHEMAS = {
     submitAction: 'saveIglesia',
     fields: {
       nombre: [v.required()],
+      country: [v.required()],
+      timezone: [v.required()],
     },
     formRules: [
+      values => {
+        if (!values.country || isValidChurchCountry(values.country)) return null;
+        return { field: 'country', message: 'validationCountryInvalid' };
+      },
+      values => {
+        if (!values.timezone || isValidChurchTimezone(values.timezone)) return null;
+        return { field: 'timezone', message: 'validationTimezoneInvalid' };
+      },
       values => {
         if (!values.requireZona) return null;
         if (!isBlank(values.zona_id)) return null;

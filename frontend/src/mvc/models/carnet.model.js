@@ -118,9 +118,25 @@ export async function loadCarnetTokensForMembers(memberIds) {
   return tokens;
 }
 
-export function buildCheckinQrUrl(token) {
+export function buildMemberPortalQrUrl(token) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/dashboard/checkin?t=${encodeURIComponent(token)}`;
+  return `${origin}/portal?t=${encodeURIComponent(token)}`;
+}
+
+export function buildCheckinQrUrl(token) {
+  return buildMemberPortalQrUrl(token);
+}
+
+export function buildEventCheckinSessionUrl(eventoId, { started = false } = {}) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const params = new URLSearchParams({ evento: eventoId });
+  if (started) params.set('started', '1');
+  return `${origin}/dashboard/checkin?${params.toString()}`;
+}
+
+export function memberNameFromTokenRow(rows) {
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return memberFullName(row);
 }
 
 export function parseTokenFromQrPayload(raw) {
