@@ -5,7 +5,6 @@ import Topbar from '../components/Topbar';
 import Breadcrumb from '../components/Breadcrumb';
 import DashboardNoticiaBanner from '../components/DashboardNoticiaBanner';
 import RouteErrorBoundary from '../components/RouteErrorBoundary';
-import PortalBottomNav from '../components/portal/PortalBottomNav';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useLanguage } from '../hooks/useLanguage';
@@ -26,8 +25,25 @@ export default function Dashboard() {
     if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
 
-  const showStaffDrawer = isMobile && !isPortalOnly;
-  const sidebarInert = isPortalOnly ? isMobile : showStaffDrawer && !drawerOpen;
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setDrawerOpen(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [drawerOpen]);
+
+  const showMobileDrawer = isMobile;
+  const sidebarInert = isMobile && !drawerOpen;
 
   return (
     <div className={`layout${isPortalOnly ? ' layout--portal' : ''}`}>
@@ -36,10 +52,11 @@ export default function Dashboard() {
           drawerOpen={drawerOpen}
           isMobile={isMobile}
           inert={sidebarInert}
+          onCloseDrawer={() => setDrawerOpen(false)}
         />
       </RouteErrorBoundary>
 
-      {showStaffDrawer && drawerOpen && (
+      {showMobileDrawer && drawerOpen && (
         <button
           type="button"
           className="layout-backdrop is-visible"
@@ -50,7 +67,7 @@ export default function Dashboard() {
 
       <div className="main">
         <Topbar
-          showMenuButton={showStaffDrawer}
+          showMenuButton={showMobileDrawer}
           onMenuToggle={() => setDrawerOpen(open => !open)}
           menuOpen={drawerOpen}
         />
@@ -65,7 +82,6 @@ export default function Dashboard() {
             <Outlet />
           </RouteErrorBoundary>
         </div>
-        {isPortalOnly && <PortalBottomNav />}
       </div>
     </div>
   );

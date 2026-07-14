@@ -50,7 +50,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
         {showMenuButton && (
           <button
             type="button"
-            className="topbar-menu-btn"
+            className={`topbar-menu-btn${menuOpen ? ' topbar-menu-btn--open' : ''}`}
             aria-label={menuOpen ? t('navMenuClose') : t('navMenuOpen')}
             aria-expanded={menuOpen}
             onClick={onMenuToggle}

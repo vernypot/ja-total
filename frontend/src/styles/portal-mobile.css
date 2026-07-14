@@ -211,19 +211,8 @@
     grid-template-columns: 1fr;
   }
 
-  .layout--portal .sidebar {
-    position: fixed;
-    left: -120%;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    pointer-events: none;
-  }
-
   .layout--portal .content {
-    padding: var(--pad-page-y) var(--pad-page-x) calc(88px + env(safe-area-inset-bottom, 0px));
+    padding: var(--pad-page-y) var(--pad-page-x);
   }
 
   .layout--portal .portal-breadcrumb {

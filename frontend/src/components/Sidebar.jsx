@@ -8,7 +8,7 @@ import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRout
 
 const BRAND_MARK = '/teofila-mark.svg';
 
-export default function Sidebar({ drawerOpen = false, isMobile = false, inert = false }) {
+export default function Sidebar({ drawerOpen = false, isMobile = false, inert = false, onCloseDrawer }) {
   const { user, userData } = useContext(AuthContext);
   const { t } = useLanguage();
   const { isPortalOnly } = useDashboardAuth();
@@ -26,6 +26,12 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
     isPortalOnly ? 'sidebar--portal' : '',
   ].filter(Boolean).join(' ');
 
+  const handleNavClick = (event) => {
+    if (isMobile && drawerOpen && event.target.closest('a')) {
+      onCloseDrawer?.();
+    }
+  };
+
   return (
     <aside
       className={sidebarClassName}
@@ -33,16 +39,28 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
       aria-hidden={inert ? true : undefined}
     >
       <div className="sidebar-header">
-        <Link to={DASHBOARD_HOME_PATH} className="sidebar-brand">
+        <Link to={DASHBOARD_HOME_PATH} className="sidebar-brand" onClick={isMobile && drawerOpen ? onCloseDrawer : undefined}>
           <img src={BRAND_MARK} alt="" className="sidebar-brand-logo" />
           <h3>{t('appName')}</h3>
         </Link>
-        <span className={`role-badge role-${isPortalOnly ? 'member' : userRole}`}>
-          {isPortalOnly ? t('roleMember') : userRole}
-        </span>
+        <div className="sidebar-header-actions">
+          <span className={`role-badge role-${isPortalOnly ? 'member' : userRole}`}>
+            {isPortalOnly ? t('roleMember') : userRole}
+          </span>
+          {isMobile && drawerOpen && (
+            <button
+              type="button"
+              className="sidebar-close-btn"
+              aria-label={t('navMenuClose')}
+              onClick={onCloseDrawer}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" onClick={handleNavClick}>
         {isPortalOnly ? (
           <>
             <Link

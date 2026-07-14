@@ -95,7 +95,7 @@ h4 { font-size: var(--type-h4); }
   font-size: var(--type-lead);
 }
 
-/* Tip 5: accessible off-canvas nav (staff mobile) */
+/* Tip 5: accessible off-canvas nav (mobile drawer) */
 .layout-backdrop {
   display: none;
   position: fixed;
@@ -150,6 +150,25 @@ h4 { font-size: var(--type-h4); }
 .topbar-menu-btn__icon::before { top: -6px; }
 .topbar-menu-btn__icon::after { top: 6px; }
 
+.topbar-menu-btn--open .topbar-menu-btn__icon {
+  background: transparent;
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::before,
+.topbar-menu-btn--open .topbar-menu-btn__icon::after {
+  transition: transform var(--transition-fast);
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: min(200px, 22vw) 1fr;
@@ -157,11 +176,11 @@ h4 { font-size: var(--type-h4); }
 }
 
 @media (max-width: 768px) {
-  .layout:not(.layout--portal) {
+  .layout {
     grid-template-columns: 1fr;
   }
 
-  .layout:not(.layout--portal) .sidebar {
+  .layout .sidebar {
     position: fixed;
     top: 0;
     left: 0;
@@ -170,18 +189,18 @@ h4 { font-size: var(--type-h4); }
     width: var(--sidebar-drawer-width);
     max-width: var(--sidebar-drawer-width);
     transform: translateX(-105%);
-    transition: transform var(--transition-base);
+    transition: transform var(--transition-base), visibility var(--transition-base);
     box-shadow: var(--shadow-xl);
     overflow-y: auto;
     visibility: hidden;
   }
 
-  .layout:not(.layout--portal) .sidebar.sidebar--drawer-open {
+  .layout .sidebar.sidebar--drawer-open {
     transform: translateX(0);
     visibility: visible;
   }
 
-  .layout:not(.layout--portal) .layout-backdrop.is-visible {
+  .layout .layout-backdrop.is-visible {
     display: block;
   }
 
@@ -189,11 +208,23 @@ h4 { font-size: var(--type-h4); }
     display: inline-flex;
   }
 
+  .topbar--with-menu {
+    flex-direction: row;
+    align-items: center;
+  }
+
   .topbar--with-menu .topbar-left {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     min-width: 0;
+    flex: 1;
+  }
+
+  .topbar--with-menu .topbar-right {
+    width: auto;
+    margin-top: 0;
+    flex-shrink: 0;
   }
 
   .tabs {
