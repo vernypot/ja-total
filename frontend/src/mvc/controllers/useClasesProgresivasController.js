@@ -41,6 +41,11 @@ export function useClasesProgresivasController() {
   const [seccionDraft, setSeccionDraft] = useState({ parte: 'basico', numero_romano: '', nombre: '', orden: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [reordering, setReordering] = useState(false);
+  const [tags, setTags] = useState([]);
+  const [tagsMissingSchema, setTagsMissingSchema] = useState(false);
+  const [newPoolTagName, setNewPoolTagName] = useState('');
+  const [draggingTagId, setDraggingTagId] = useState(null);
+  const [rowTagDrafts, setRowTagDrafts] = useState({});
 
   function resetRequisitoForms(secciones = []) {
     setNewRequisitoForm({ seccion_id: '', numero: '', descripcion: '', texto_opcional: '', sesiones_esperadas: '3' });
@@ -226,9 +231,11 @@ export function useClasesProgresivasController() {
   }
 
   async function loadRequisitos(claseId) {
-    const [{ data, error: reqError }, { data: secciones, error: secError }] = await Promise.all([
+    const [{ data, error: reqError }, { data: secciones, error: secError }, linksResult, tagsResult] = await Promise.all([
       ClasesModel.fetchRequisitosByClase(claseId),
       ClasesModel.fetchRequisitoSeccionesByClase(claseId),
+      ClasesModel.fetchClaseRequisitoTagLinksForClase(claseId),
+      ClasesModel.fetchAllClaseRequisitoTags(),
     ]);
     if (reqError) {
       setError('Error loading requirements: ' + reqError.message);
@@ -238,7 +245,21 @@ export function useClasesProgresivasController() {
       setError('Error loading requirement sections: ' + secError.message);
       return;
     }
-    setRequisitosByClase(prev => ({ ...prev, [claseId]: data || [] }));
+    if (linksResult.error) {
+      setError('Error loading requirement tags: ' + linksResult.error.message);
+      return;
+    }
+    if (tagsResult.error) {
+      setError('Error loading tag library: ' + tagsResult.error.message);
+      return;
+    }
+
+    setTagsMissingSchema(Boolean(linksResult.missingSchema || tagsResult.missingSchema));
+    setTags(tagsResult.data || []);
+    setRequisitosByClase(prev => ({
+      ...prev,
+      [claseId]: ClasesModel.attachTagsToRequisitos(data || [], linksResult.data || []),
+    }));
     setSeccionesByClase(prev => ({ ...prev, [claseId]: secciones || [] }));
     if (expandedClassId === claseId) {
       setNewSeccionForm(f => ({
@@ -252,10 +273,94 @@ export function useClasesProgresivasController() {
     if (expandedClassId === claseId) {
       setExpandedClassId(null);
       resetRequisitoForms();
+      setNewPoolTagName('');
+      setRowTagDrafts({});
+      setDraggingTagId(null);
       return;
     }
     setExpandedClassId(claseId);
     resetRequisitoForms();
+    setNewPoolTagName('');
+    setRowTagDrafts({});
+    setDraggingTagId(null);
+    await loadRequisitos(claseId);
+  }
+
+  async function createPoolTag(claseId) {
+    if (!canManage) return;
+    const nombre = ClasesModel.normalizeClaseRequisitoTagName(newPoolTagName);
+    if (!nombre) return;
+
+    setError('');
+    const { data, error: createError } = await ClasesModel.createClaseRequisitoTagOnly(claseId, nombre);
+    if (createError) {
+      setError('Error creating tag: ' + createError.message);
+      return;
+    }
+    setNewPoolTagName('');
+    await loadRequisitos(claseId);
+    return data;
+  }
+
+  async function addTagToRequisito(claseId, requisitoId, nombre) {
+    if (!canManage) return;
+    const clean = ClasesModel.normalizeClaseRequisitoTagName(nombre);
+    if (!clean) return;
+
+    setError('');
+    const { data: tag, error: tagError } = await ClasesModel.findOrCreateClaseRequisitoTag(claseId, clean);
+    if (tagError) {
+      setError('Error creating tag: ' + tagError.message);
+      return;
+    }
+
+    const { error: assignError } = await ClasesModel.assignClaseRequisitoTag(requisitoId, tag.id);
+    if (assignError) {
+      setError('Error assigning tag: ' + assignError.message);
+      return;
+    }
+
+    setRowTagDrafts(prev => ({ ...prev, [requisitoId]: '' }));
+    await loadRequisitos(claseId);
+  }
+
+  async function assignTagFromPool(claseId, requisitoId, tagId) {
+    if (!canManage || !requisitoId || !tagId) return;
+
+    const requisitos = requisitosByClase[claseId] || [];
+    const req = requisitos.find(r => r.id === requisitoId);
+    if (req?.tags?.some(tag => tag.id === tagId)) return;
+
+    setError('');
+    const { error: assignError } = await ClasesModel.assignClaseRequisitoTag(requisitoId, tagId);
+    if (assignError) {
+      setError('Error assigning tag: ' + assignError.message);
+      return;
+    }
+    await loadRequisitos(claseId);
+  }
+
+  async function removeTagFromRequisito(claseId, requisitoId, tagId) {
+    if (!canManage) return;
+    setError('');
+    const { error: unassignError } = await ClasesModel.unassignClaseRequisitoTag(requisitoId, tagId);
+    if (unassignError) {
+      setError('Error removing tag: ' + unassignError.message);
+      return;
+    }
+    await loadRequisitos(claseId);
+  }
+
+  async function deleteTagFromPool(claseId, tagId) {
+    if (!canManage) return;
+    if (!window.confirm('Delete this tag from the shared library? It will be removed from all requirements in every class.')) return;
+
+    setError('');
+    const { error: deleteError } = await ClasesModel.deleteClaseRequisitoTag(tagId);
+    if (deleteError) {
+      setError('Error deleting tag: ' + deleteError.message);
+      return;
+    }
     await loadRequisitos(claseId);
   }
 
@@ -543,5 +648,18 @@ export function useClasesProgresivasController() {
     cancelEditSeccion,
     saveSeccion,
     removeSeccion,
+    tags,
+    tagsMissingSchema,
+    newPoolTagName,
+    setNewPoolTagName,
+    draggingTagId,
+    setDraggingTagId,
+    rowTagDrafts,
+    setRowTagDrafts,
+    createPoolTag,
+    addTagToRequisito,
+    assignTagFromPool,
+    removeTagFromRequisito,
+    deleteTagFromPool,
   };
 }

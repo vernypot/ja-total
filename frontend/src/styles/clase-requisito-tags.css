@@ -1,0 +1,145 @@
+.clase-requisito-tags-pool {
+  padding: 12px;
+  background: var(--gray-50, #f9fafb);
+  border: 1px dashed var(--gray-300, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+}
+
+.clase-requisito-tags-pool__title {
+  margin: 0 0 4px;
+  font-size: var(--text-sm, 13px);
+  font-weight: 700;
+}
+
+.clase-requisito-tags-pool__hint {
+  margin: 0 0 10px;
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-muted);
+}
+
+.clase-requisito-tags-pool__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 36px;
+  align-items: center;
+}
+
+.clase-requisito-tags-pool__empty {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.clase-requisito-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #c7d2fe;
+  cursor: grab;
+  user-select: none;
+  max-width: 100%;
+}
+
+.clase-requisito-tag-chip:active {
+  cursor: grabbing;
+}
+
+.clase-requisito-tag-chip.is-dragging {
+  opacity: 0.45;
+}
+
+.clase-requisito-tag-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(55, 48, 163, 0.12);
+  color: #3730a3;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clase-requisito-tag-chip__remove:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #b91c1c;
+}
+
+.clase-requisito-tags-pool__create {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.clase-requisito-tags-pool__create .form-input {
+  flex: 1;
+  min-width: 140px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.clase-requisito-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.clase-requisito-row-tags__add {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.clase-requisito-row-tags__add input {
+  width: 120px;
+  margin: 0;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.clase-requisito-row-tags__add button {
+  padding: 4px 8px;
+  font-size: 11px;
+  border: none;
+  border-radius: 4px;
+  background: #4338ca;
+  color: #fff;
+  cursor: pointer;
+}
+
+.clase-requisito-drop-target {
+  border-radius: 6px;
+  transition: background-color 0.15s ease, outline 0.15s ease;
+}
+
+.clase-requisito-drop-target.is-drop-active {
+  outline: 2px dashed #4338ca;
+  outline-offset: 2px;
+  background: rgba(67, 56, 202, 0.06);
+}
+
+.clase-requisito-tag-chip--on-row {
+  cursor: default;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.clase-requisito-tag-chip--on-row .clase-requisito-tag-chip__remove {
+  width: 16px;
+  height: 16px;
+  font-size: 11px;
+}

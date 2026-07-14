@@ -13,6 +13,8 @@ function RequisitosSection({
   expanded,
   requisitos,
   secciones,
+  tags,
+  tagsMissingSchema,
   canManage,
   t,
   claseId,
@@ -36,6 +38,17 @@ function RequisitosSection({
   cancelEditSeccion,
   saveSeccion,
   removeSeccion,
+  newPoolTagName,
+  setNewPoolTagName,
+  draggingTagId,
+  setDraggingTagId,
+  rowTagDrafts,
+  setRowTagDrafts,
+  createPoolTag,
+  addTagToRequisito,
+  assignTagFromPool,
+  removeTagFromRequisito,
+  deleteTagFromPool,
 }) {
   if (!expanded) return null;
 
@@ -44,8 +57,11 @@ function RequisitosSection({
       <strong style={{ fontSize: '13px' }}>{t('requirements')}</strong>
       {canManage ? (
         <ClaseRequisitosEditor
+          claseId={claseId}
           requisitos={requisitos}
           secciones={secciones}
+          tags={tags}
+          tagsMissingSchema={tagsMissingSchema}
           t={t}
           newRequisitoForm={newRequisitoForm}
           setNewRequisitoForm={setNewRequisitoForm}
@@ -67,6 +83,17 @@ function RequisitosSection({
           cancelEditSeccion={cancelEditSeccion}
           saveSeccion={() => saveSeccion(claseId)}
           removeSeccion={id => removeSeccion(claseId, id)}
+          newPoolTagName={newPoolTagName}
+          setNewPoolTagName={setNewPoolTagName}
+          draggingTagId={draggingTagId}
+          setDraggingTagId={setDraggingTagId}
+          rowTagDrafts={rowTagDrafts}
+          setRowTagDrafts={setRowTagDrafts}
+          createPoolTag={createPoolTag}
+          addTagToRequisito={addTagToRequisito}
+          assignTagFromPool={assignTagFromPool}
+          removeTagFromRequisito={removeTagFromRequisito}
+          deleteTagFromPool={deleteTagFromPool}
         />
       ) : (
         <ClaseRequisitosList requisitos={requisitos} secciones={secciones} t={t} />
@@ -96,6 +123,8 @@ function ClassRow({
   expandedClassId,
   requisitosByClase,
   seccionesByClase,
+  tags,
+  tagsMissingSchema,
   newRequisitoForm,
   setNewRequisitoForm,
   newSeccionForm,
@@ -118,6 +147,17 @@ function ClassRow({
   cancelEditSeccion,
   saveSeccion,
   removeSeccion,
+  newPoolTagName,
+  setNewPoolTagName,
+  draggingTagId,
+  setDraggingTagId,
+  rowTagDrafts,
+  setRowTagDrafts,
+  createPoolTag,
+  addTagToRequisito,
+  assignTagFromPool,
+  removeTagFromRequisito,
+  deleteTagFromPool,
 }) {
   const expanded = expandedClassId === clase.id;
   const requisitos = requisitosByClase[clase.id] || [];
@@ -208,6 +248,8 @@ function ClassRow({
         expanded={expanded}
         requisitos={requisitos}
         secciones={secciones}
+        tags={tags}
+        tagsMissingSchema={tagsMissingSchema}
         canManage={canManage}
         claseId={clase.id}
         newRequisitoForm={newRequisitoForm}
@@ -230,6 +272,17 @@ function ClassRow({
         cancelEditSeccion={cancelEditSeccion}
         saveSeccion={saveSeccion}
         removeSeccion={removeSeccion}
+        newPoolTagName={newPoolTagName}
+        setNewPoolTagName={setNewPoolTagName}
+        draggingTagId={draggingTagId}
+        setDraggingTagId={setDraggingTagId}
+        rowTagDrafts={rowTagDrafts}
+        setRowTagDrafts={setRowTagDrafts}
+        createPoolTag={createPoolTag}
+        addTagToRequisito={addTagToRequisito}
+        assignTagFromPool={assignTagFromPool}
+        removeTagFromRequisito={removeTagFromRequisito}
+        deleteTagFromPool={deleteTagFromPool}
         t={t}
       />
         </div>
@@ -303,6 +356,8 @@ export default function ClasesProgresivasView({
   expandedClassId,
   requisitosByClase,
   seccionesByClase,
+  tags,
+  tagsMissingSchema,
   newRequisitoForm,
   setNewRequisitoForm,
   newSeccionForm,
@@ -325,6 +380,17 @@ export default function ClasesProgresivasView({
   cancelEditSeccion,
   saveSeccion,
   removeSeccion,
+  newPoolTagName,
+  setNewPoolTagName,
+  draggingTagId,
+  setDraggingTagId,
+  rowTagDrafts,
+  setRowTagDrafts,
+  createPoolTag,
+  addTagToRequisito,
+  assignTagFromPool,
+  removeTagFromRequisito,
+  deleteTagFromPool,
 }) {
   const { t } = useLanguage();
   const activeTipo = tipos.find(tipo => tipo.id === effectiveTipoId);
@@ -339,6 +405,8 @@ export default function ClasesProgresivasView({
     expandedClassId,
     requisitosByClase,
     seccionesByClase,
+    tags,
+    tagsMissingSchema,
     newRequisitoForm,
     setNewRequisitoForm,
     newSeccionForm,
@@ -360,6 +428,17 @@ export default function ClasesProgresivasView({
     cancelEditSeccion,
     saveSeccion,
     removeSeccion,
+    newPoolTagName,
+    setNewPoolTagName,
+    draggingTagId,
+    setDraggingTagId,
+    rowTagDrafts,
+    setRowTagDrafts,
+    createPoolTag,
+    addTagToRequisito,
+    assignTagFromPool,
+    removeTagFromRequisito,
+    deleteTagFromPool,
   };
 
   return (
