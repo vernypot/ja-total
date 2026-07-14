@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import {
   groupRequisitosBySeccion,
   nextRequisitoNumero,
 } from '../mvc/models/clases.model';
+import ClaseRequisitoTagsPool, { ClaseRequisitoTagChip, DRAG_MIME } from './ClaseRequisitoTagsPool';
+import '../styles/clase-requisito-tags.css';
+
+const UNGROUPED_SECTION_KEY = '__ungrouped__';
 
 const btnSmall = {
   padding: '2px 8px',
@@ -12,9 +17,93 @@ const btnSmall = {
   flexShrink: 0,
 };
 
+function SectionCollapseButton({ collapsed, onToggle, t }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={collapsed ? t('expand') : t('collapse')}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? t('expand') : t('collapse')}
+      style={{ ...btnSmall, backgroundColor: '#eef2ff', color: '#4338ca', minWidth: '28px' }}
+    >
+      {collapsed ? '▶' : '▼'}
+    </button>
+  );
+}
+
 function sectionTitle(seccion) {
   const roman = seccion.numero_romano ? `${seccion.numero_romano}. ` : '';
   return `${roman}${seccion.nombre}`;
+}
+
+function RequisitoTagsRow({
+  req,
+  t,
+  rowTagDraft = '',
+  onRowTagDraftChange,
+  onAddTag,
+  onRemoveTag,
+  onDropTag,
+  canEdit = true,
+}) {
+  const [dropActive, setDropActive] = useState(false);
+
+  function handleDragOver(e) {
+    if (!canEdit) return;
+    if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDropActive(true);
+  }
+
+  function handleDrop(e) {
+    if (!canEdit) return;
+    e.preventDefault();
+    setDropActive(false);
+    const tagId = e.dataTransfer.getData(DRAG_MIME);
+    if (tagId) onDropTag?.(req.id, tagId);
+  }
+
+  if (!canEdit && !(req.tags?.length)) return null;
+
+  return (
+    <div
+      className={`clase-requisito-row-tags clase-requisito-drop-target${dropActive ? ' is-drop-active' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDropActive(false)}
+      onDrop={handleDrop}
+    >
+      {(req.tags || []).map(tag => (
+        <ClaseRequisitoTagChip
+          key={tag.id}
+          tag={tag}
+          className="clase-requisito-tag-chip--on-row"
+          onRemove={canEdit ? () => onRemoveTag?.(req.id, tag.id) : undefined}
+          removeLabel={t('classReqTagRemoveFromReq')}
+        />
+      ))}
+      {canEdit && (
+        <span className="clase-requisito-row-tags__add">
+          <input
+            type="text"
+            value={rowTagDraft}
+            onChange={e => onRowTagDraftChange?.(req.id, e.target.value)}
+            placeholder={t('classReqTagAddPlaceholder')}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onAddTag?.(req.id, rowTagDraft);
+              }
+            }}
+          />
+          <button type="button" onClick={() => onAddTag?.(req.id, rowTagDraft)}>
+            +
+          </button>
+        </span>
+      )}
+    </div>
+  );
 }
 
 function RequisitoRow({
@@ -28,6 +117,11 @@ function RequisitoRow({
   cancelEditRequisito,
   saveRequisito,
   removeRequisito,
+  rowTagDraft,
+  onRowTagDraftChange,
+  onAddTag,
+  onRemoveTag,
+  onDropTag,
 }) {
   const isEditing = editingRequisitoId === req.id;
 
@@ -96,6 +190,15 @@ function RequisitoRow({
             style={{ margin: '4px 0 0', width: '72px', fontSize: '12px' }}
           />
         </label>
+        <RequisitoTagsRow
+          req={req}
+          t={t}
+          rowTagDraft={rowTagDraft}
+          onRowTagDraftChange={onRowTagDraftChange}
+          onAddTag={onAddTag}
+          onRemoveTag={onRemoveTag}
+          onDropTag={onDropTag}
+        />
         <div style={{ display: 'flex', gap: '6px' }}>
           <button type="button" onClick={saveRequisito} style={{ ...btnSmall, backgroundColor: '#16a34a', color: 'white' }}>
             ✓ {t('save')}
@@ -109,8 +212,10 @@ function RequisitoRow({
   }
 
   return (
-    <li style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-      <span>
+    <li
+      style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}
+    >
+      <span style={{ flex: 1, minWidth: 0 }}>
         {req.numero != null && <strong>{req.numero}. </strong>}
         {req.descripcion}
         {req.texto_opcional?.trim() && (
@@ -121,6 +226,15 @@ function RequisitoRow({
         <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
           {req.sesiones_esperadas ?? 3} {t('planSessionsShort')} ({t('planSessionsExpected')})
         </span>
+        <RequisitoTagsRow
+          req={req}
+          t={t}
+          rowTagDraft={rowTagDraft}
+          onRowTagDraftChange={onRowTagDraftChange}
+          onAddTag={onAddTag}
+          onRemoveTag={onRemoveTag}
+          onDropTag={onDropTag}
+        />
       </span>
       <span style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
         <button
@@ -143,8 +257,11 @@ function RequisitoRow({
 }
 
 export default function ClaseRequisitosEditor({
+  claseId,
   requisitos = [],
   secciones = [],
+  tags = [],
+  tagsMissingSchema = false,
   t,
   newRequisitoForm,
   setNewRequisitoForm,
@@ -166,23 +283,89 @@ export default function ClaseRequisitosEditor({
   cancelEditSeccion,
   saveSeccion,
   removeSeccion,
+  newPoolTagName = '',
+  setNewPoolTagName,
+  draggingTagId,
+  setDraggingTagId,
+  rowTagDrafts = {},
+  setRowTagDrafts,
+  createPoolTag,
+  addTagToRequisito,
+  assignTagFromPool,
+  removeTagFromRequisito,
+  deleteTagFromPool,
 }) {
+  const [collapsedSections, setCollapsedSections] = useState({});
+
   const { grouped, ungrouped } = groupRequisitosBySeccion(requisitos, secciones, {
     includeEmptySections: true,
   });
+
+  function isSectionCollapsed(sectionId) {
+    return collapsedSections[sectionId] === true;
+  }
+
+  function toggleSectionCollapse(sectionId) {
+    setCollapsedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  }
 
   const suggestNumero = newRequisitoForm.seccion_id
     ? nextRequisitoNumero(requisitos, newRequisitoForm.seccion_id)
     : '';
 
+  const requisitoRowTagProps = {
+    rowTagDrafts,
+    onRowTagDraftChange: (requisitoId, value) => setRowTagDrafts?.(prev => ({ ...prev, [requisitoId]: value })),
+    onAddTag: (requisitoId, name) => addTagToRequisito?.(claseId, requisitoId, name),
+    onRemoveTag: (requisitoId, tagId) => removeTagFromRequisito?.(claseId, requisitoId, tagId),
+    onDropTag: (requisitoId, tagId) => assignTagFromPool?.(claseId, requisitoId, tagId),
+  };
+
+  function renderRequisitoRow(req) {
+    return (
+      <RequisitoRow
+        key={req.id}
+        req={req}
+        secciones={secciones}
+        t={t}
+        editingRequisitoId={editingRequisitoId}
+        requisitoDraft={requisitoDraft}
+        setRequisitoDraft={setRequisitoDraft}
+        startEditRequisito={startEditRequisito}
+        cancelEditRequisito={cancelEditRequisito}
+        saveRequisito={saveRequisito}
+        removeRequisito={removeRequisito}
+        rowTagDraft={rowTagDrafts[req.id] || ''}
+        onRowTagDraftChange={requisitoRowTagProps.onRowTagDraftChange}
+        onAddTag={requisitoRowTagProps.onAddTag}
+        onRemoveTag={requisitoRowTagProps.onRemoveTag}
+        onDropTag={requisitoRowTagProps.onDropTag}
+      />
+    );
+  }
+
   return (
     <div style={{ display: 'grid', gap: '14px', marginTop: '8px' }}>
+      <ClaseRequisitoTagsPool
+        tags={tags}
+        t={t}
+        newTagName={newPoolTagName}
+        onNewTagNameChange={setNewPoolTagName}
+        onCreateTag={() => createPoolTag?.(claseId)}
+        onDeleteTag={tag => deleteTagFromPool?.(claseId, tag.id)}
+        draggingTagId={draggingTagId}
+        onDragStart={tag => setDraggingTagId?.(tag.id)}
+        onDragEnd={() => setDraggingTagId?.(null)}
+        missingSchema={tagsMissingSchema}
+      />
+
       {grouped.length === 0 && ungrouped.length === 0 && (
         <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('noRequirements')}</p>
       )}
 
       {grouped.map(({ seccion, requisitos: sectionReqs }) => {
         const isEditingSection = editingSeccionId === seccion.id;
+        const collapsed = isSectionCollapsed(seccion.id) && !isEditingSection;
         return (
           <div key={seccion.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }}>
             {isEditingSection ? (
@@ -241,16 +424,23 @@ export default function ClaseRequisitosEditor({
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#4338ca', textTransform: 'uppercase' }}>
-                    {seccion.parte === 'avanzado' ? t('classReqPartAdvanced') : t('classReqPartBasic')}
-                  </div>
-                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>
-                    {sectionTitle(seccion)}
-                    <span style={{ marginLeft: '8px', fontSize: '11px', color: '#9ca3af' }}>
-                      ({t('classReqOrder')}: {seccion.orden ?? '—'})
-                    </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: collapsed ? 0 : '6px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', minWidth: 0 }}>
+                  <SectionCollapseButton
+                    collapsed={collapsed}
+                    onToggle={() => toggleSectionCollapse(seccion.id)}
+                    t={t}
+                  />
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#4338ca', textTransform: 'uppercase' }}>
+                      {seccion.parte === 'avanzado' ? t('classReqPartAdvanced') : t('classReqPartBasic')}
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>
+                      {sectionTitle(seccion)}
+                      <span style={{ marginLeft: '8px', fontSize: '11px', color: '#9ca3af' }}>
+                        ({t('classReqOrder')}: {seccion.orden ?? '—'} · {sectionReqs.length})
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <span style={{ display: 'flex', gap: '4px' }}>
@@ -264,53 +454,46 @@ export default function ClaseRequisitosEditor({
               </div>
             )}
 
-            {sectionReqs.length === 0 ? (
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>{t('noRequirements')}</p>
-            ) : (
-              <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#4b5563' }}>
-                {sectionReqs.map(req => (
-                  <RequisitoRow
-                    key={req.id}
-                    req={req}
-                    secciones={secciones}
-                    t={t}
-                    editingRequisitoId={editingRequisitoId}
-                    requisitoDraft={requisitoDraft}
-                    setRequisitoDraft={setRequisitoDraft}
-                    startEditRequisito={startEditRequisito}
-                    cancelEditRequisito={cancelEditRequisito}
-                    saveRequisito={saveRequisito}
-                    removeRequisito={removeRequisito}
-                  />
-                ))}
-              </ol>
+            {!collapsed && (
+              sectionReqs.length === 0 ? (
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>{t('noRequirements')}</p>
+              ) : (
+                <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#4b5563' }}>
+                  {sectionReqs.map(req => renderRequisitoRow(req))}
+                </ol>
+              )
             )}
           </div>
         );
       })}
 
-      {ungrouped.length > 0 && (
+      {ungrouped.length > 0 && (() => {
+        const collapsed = isSectionCollapsed(UNGROUPED_SECTION_KEY);
+        return (
         <div style={{ border: '1px dashed #d1d5db', borderRadius: '8px', padding: '10px' }}>
-          <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px' }}>{t('uncategorized')}</div>
-          <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px' }}>
-            {ungrouped.map(req => (
-              <RequisitoRow
-                key={req.id}
-                req={req}
-                secciones={secciones}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: collapsed ? 0 : '6px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', minWidth: 0 }}>
+              <SectionCollapseButton
+                collapsed={collapsed}
+                onToggle={() => toggleSectionCollapse(UNGROUPED_SECTION_KEY)}
                 t={t}
-                editingRequisitoId={editingRequisitoId}
-                requisitoDraft={requisitoDraft}
-                setRequisitoDraft={setRequisitoDraft}
-                startEditRequisito={startEditRequisito}
-                cancelEditRequisito={cancelEditRequisito}
-                saveRequisito={saveRequisito}
-                removeRequisito={removeRequisito}
               />
-            ))}
+              <div style={{ fontWeight: 600, fontSize: '13px' }}>
+                {t('uncategorized')}
+                <span style={{ marginLeft: '8px', fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>
+                  ({ungrouped.length})
+                </span>
+              </div>
+            </div>
+          </div>
+          {!collapsed && (
+          <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px' }}>
+            {ungrouped.map(req => renderRequisitoRow(req))}
           </ol>
+          )}
         </div>
-      )}
+        );
+      })()}
 
       <div style={{ padding: '10px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
         <strong style={{ fontSize: '12px' }}>➕ {t('addRequirement')}</strong>

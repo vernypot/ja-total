@@ -1,4 +1,6 @@
 import { groupRequisitosBySeccion } from '../mvc/models/clases.model';
+import { ClaseRequisitoTagChip } from './ClaseRequisitoTagsPool';
+import '../styles/clase-requisito-tags.css';
 
 function sectionTitle(seccion) {
   const roman = seccion.numero_romano ? `${seccion.numero_romano}. ` : '';
@@ -13,6 +15,13 @@ function RequisitoText({ req, t }) {
         {req.texto_opcional?.trim() && (
           <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
             {req.texto_opcional}
+          </span>
+        )}
+        {req.tags?.length > 0 && (
+          <span className="clase-requisito-row-tags">
+            {req.tags.map(tag => (
+              <ClaseRequisitoTagChip key={tag.id} tag={tag} className="clase-requisito-tag-chip--on-row" />
+            ))}
           </span>
         )}
     </span>

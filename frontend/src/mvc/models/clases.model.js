@@ -387,6 +387,134 @@ export async function deleteClaseRequisito(id) {
   return sb.from('clase_requisitos').delete().eq('id', id);
 }
 
+// ---------------------------------------------------------------------------
+// Requisito tags (free-form, shared across all clases progresivas)
+// ---------------------------------------------------------------------------
+
+export function normalizeClaseRequisitoTagName(name) {
+  return (name || '').trim().replace(/\s+/g, ' ');
+}
+
+function isMissingTagSchemaError(error) {
+  const msg = error?.message || '';
+  return error?.code === '42P01'
+    || msg.includes('clase_requisito_tags')
+    || msg.includes('clase_requisito_tag_links');
+}
+
+export function dedupeClaseRequisitoTagsByName(tags = []) {
+  const byName = new Map();
+  for (const tag of tags) {
+    const key = (tag.nombre || '').trim().toLowerCase();
+    if (!key || byName.has(key)) continue;
+    byName.set(key, { id: tag.id, nombre: tag.nombre });
+  }
+  return [...byName.values()].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, undefined, { sensitivity: 'base' }),
+  );
+}
+
+export async function fetchAllClaseRequisitoTags() {
+  const { data, error } = await sb
+    .from('clase_requisito_tags')
+    .select('id, nombre')
+    .order('nombre', { ascending: true });
+
+  if (isMissingTagSchemaError(error)) {
+    return { data: [], error: null, missingSchema: true };
+  }
+  return {
+    data: dedupeClaseRequisitoTagsByName(data || []),
+    error,
+    missingSchema: false,
+  };
+}
+
+/** @deprecated Use fetchAllClaseRequisitoTags — tags are global, not per clase. */
+export async function fetchClaseRequisitoTags() {
+  return fetchAllClaseRequisitoTags();
+}
+
+export async function fetchClaseRequisitoTagLinksForClase(claseId) {
+  const { data, error } = await sb
+    .from('clase_requisito_tag_links')
+    .select('requisito_id, tag_id, clase_requisitos!inner(clase_id), clase_requisito_tags(id, nombre)')
+    .eq('clase_requisitos.clase_id', claseId);
+
+  if (isMissingTagSchemaError(error)) {
+    return { data: [], error: null, missingSchema: true };
+  }
+  return { data: data || [], error, missingSchema: false };
+}
+
+export function attachTagsToRequisitos(requisitos = [], links = []) {
+  const byReq = {};
+  for (const link of links) {
+    const tag = link.clase_requisito_tags;
+    if (!tag?.id) continue;
+    if (!byReq[link.requisito_id]) byReq[link.requisito_id] = [];
+    if (!byReq[link.requisito_id].some(t => t.id === tag.id)) {
+      byReq[link.requisito_id].push({ id: tag.id, nombre: tag.nombre });
+    }
+  }
+
+  return requisitos.map(row => ({
+    ...row,
+    tags: (byReq[row.id] || []).sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { sensitivity: 'base' })),
+  }));
+}
+
+export async function findOrCreateClaseRequisitoTag(claseId, nombre) {
+  const clean = normalizeClaseRequisitoTagName(nombre);
+  if (!clean) return { data: null, error: new Error('Tag name required') };
+
+  const { data: existing, error: fetchError } = await fetchAllClaseRequisitoTags();
+  if (fetchError) return { data: null, error: fetchError };
+
+  const found = (existing || []).find(
+    tag => tag.nombre.toLowerCase() === clean.toLowerCase(),
+  );
+  if (found) return { data: found, error: null };
+
+  let { data, error } = await sb
+    .from('clase_requisito_tags')
+    .insert([{ nombre: clean }])
+    .select('id, nombre')
+    .single();
+
+  if (error && claseId && (error.code === '23502' || `${error.message || ''}`.toLowerCase().includes('clase_id'))) {
+    ({ data, error } = await sb
+      .from('clase_requisito_tags')
+      .insert([{ clase_id: claseId, nombre: clean }])
+      .select('id, nombre')
+      .single());
+  }
+
+  return { data, error };
+}
+
+export async function createClaseRequisitoTagOnly(claseId, nombre) {
+  return findOrCreateClaseRequisitoTag(claseId, nombre);
+}
+
+export async function assignClaseRequisitoTag(requisitoId, tagId) {
+  return sb
+    .from('clase_requisito_tag_links')
+    .upsert([{ requisito_id: requisitoId, tag_id: tagId }], { onConflict: 'requisito_id,tag_id' });
+}
+
+export async function unassignClaseRequisitoTag(requisitoId, tagId) {
+  return sb
+    .from('clase_requisito_tag_links')
+    .delete()
+    .eq('requisito_id', requisitoId)
+    .eq('tag_id', tagId);
+}
+
+export async function deleteClaseRequisitoTag(tagId) {
+  return sb.from('clase_requisito_tags').delete().eq('id', tagId);
+}
+
 export async function fetchMiembroClases(miembroId) {
   const progressFields =
     'estado, completado, fecha_completado, tiene_investidura, investidura_fecha, investidura_lugar, investidura_validado_por_nombre';
