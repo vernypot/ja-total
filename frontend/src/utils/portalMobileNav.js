@@ -7,6 +7,7 @@ export const PORTAL_BOTTOM_NAV = [
     labelKey: 'portalNavHome',
     shortLabelKey: 'portalNavHomeShort',
     icon: '🏠',
+    blixIcon: 'home',
     isActive: pathname => isDashboardHomePath(pathname),
   },
   {
@@ -15,6 +16,7 @@ export const PORTAL_BOTTOM_NAV = [
     labelKey: 'portalNavProfile',
     shortLabelKey: 'portalNavProfileShort',
     icon: '👤',
+    blixIcon: 'user',
     isActive: pathname => pathname.startsWith('/dashboard/profile'),
   },
   {
@@ -23,6 +25,7 @@ export const PORTAL_BOTTOM_NAV = [
     labelKey: 'portalNavNews',
     shortLabelKey: 'portalNavNewsShort',
     icon: '📰',
+    blixIcon: 'blog',
     isActive: pathname => pathname.startsWith('/dashboard/noticias'),
   },
   {
@@ -31,6 +34,7 @@ export const PORTAL_BOTTOM_NAV = [
     labelKey: 'portalNavEvents',
     shortLabelKey: 'portalNavEventsShort',
     icon: '📅',
+    blixIcon: 'events',
     isActive: pathname => pathname.startsWith('/dashboard/eventos'),
   },
   {
@@ -39,6 +43,7 @@ export const PORTAL_BOTTOM_NAV = [
     labelKey: 'portalNavCalendar',
     shortLabelKey: 'portalNavCalendarShort',
     icon: '🗓️',
+    blixIcon: 'calendar',
     isActive: pathname => pathname.startsWith('/dashboard/calendario'),
   },
 ];

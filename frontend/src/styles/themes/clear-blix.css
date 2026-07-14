@@ -1,0 +1,509 @@
+/* ============================================
+   CLEAR + BLIX — mobile template styling
+   Inspired by SINDEVO Blix (Framework7)
+   https://sindevo.com/blix/blix-main/
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;900&display=swap');
+
+html[data-ui-theme='clear'] {
+  /* Blix palette */
+  --blix-primary: #445cfd;
+  --blix-primary-dark: #4155db;
+  --blix-primary-light: #556afb;
+  --blix-primary-lighter: #7586fe;
+  --blix-accent: #0be0af;
+  --blix-accent-dark: #09c99d;
+  --blix-text: #232323;
+  --blix-text-dark: #222222;
+  --blix-link: #484848;
+  --blix-panel-link: #d1d7ff;
+  --blix-border: #f0f0f0;
+  --blix-surface: #f7f7f7;
+  --blix-toolbar-label: #3f5761;
+  --blix-header-h: 60px;
+  --blix-radius-tile: 6px;
+  --blix-radius-sharp: 0;
+
+  /* Remap brand tokens */
+  --brand-primary: var(--blix-primary);
+  --brand-primary-dark: var(--blix-primary-dark);
+  --brand-primary-light: var(--blix-primary-lighter);
+  --brand-trust: var(--blix-primary);
+  --brand-trust-dark: var(--blix-primary-dark);
+  --brand-turquoise: var(--blix-accent);
+  --brand-bg: #ffffff;
+  --brand-base: #ffffff;
+  --color-text-primary: var(--blix-text);
+  --color-text-secondary: var(--blix-link);
+  --color-link: var(--blix-primary);
+  --color-link-hover: var(--blix-primary-dark);
+  --primary: var(--blix-primary);
+  --primary-dark: var(--blix-primary-dark);
+  --primary-light: var(--blix-primary-lighter);
+  --info-light: rgba(68, 92, 253, 0.08);
+
+  --font-primary: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --radius-sm: 0;
+  --radius-md: var(--blix-radius-tile);
+  --radius-lg: var(--blix-radius-tile);
+  --radius-xl: var(--blix-radius-tile);
+
+  --gradient-brand: var(--blix-accent);
+  --gradient-sidebar: var(--blix-primary);
+  --color-on-primary: var(--blix-text-dark);
+
+  --gray-50: #fafafa;
+  --gray-100: var(--blix-surface);
+  --gray-200: #e6e6e6;
+
+  --shadow-sm: none;
+  --shadow-md: 0 1px 2px rgba(35, 35, 35, 0.06);
+  --shadow-lg: 0 4px 12px rgba(35, 35, 35, 0.08);
+}
+
+html[data-ui-theme='clear'] body {
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--blix-text);
+}
+
+html[data-ui-theme='clear'] h1,
+html[data-ui-theme='clear'] h2,
+html[data-ui-theme='clear'] h3,
+html[data-ui-theme='clear'] h4 {
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+/* Buttons — mint CTAs, sharp corners */
+html[data-ui-theme='clear'] .btn {
+  border-radius: var(--blix-radius-sharp);
+  font-weight: 300;
+}
+
+html[data-ui-theme='clear'] .btn-primary {
+  background: var(--blix-accent);
+  color: var(--blix-text-dark);
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .btn-primary:hover:not(:disabled) {
+  background: var(--blix-accent-dark);
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .btn-secondary {
+  background: var(--blix-surface);
+  border-color: #ddd;
+  border-radius: var(--blix-radius-sharp);
+}
+
+/* Forms — underline style */
+html[data-ui-theme='clear'] .form-group input,
+html[data-ui-theme='clear'] .form-group select,
+html[data-ui-theme='clear'] .form-group textarea,
+html[data-ui-theme='clear'] input[type='text'],
+html[data-ui-theme='clear'] input[type='email'],
+html[data-ui-theme='clear'] input[type='password'],
+html[data-ui-theme='clear'] input[type='number'],
+html[data-ui-theme='clear'] select,
+html[data-ui-theme='clear'] textarea {
+  border: none;
+  border-bottom: 1px solid #d5d5d5;
+  border-radius: 0;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html[data-ui-theme='clear'] .form-group input:focus,
+html[data-ui-theme='clear'] .form-group select:focus,
+html[data-ui-theme='clear'] .form-group textarea:focus,
+html[data-ui-theme='clear'] input:focus,
+html[data-ui-theme='clear'] select:focus,
+html[data-ui-theme='clear'] textarea:focus {
+  background: #f5f5f5;
+  outline: none;
+  box-shadow: none;
+  border-bottom-color: var(--blix-primary);
+}
+
+/* Cards — list-row feel */
+html[data-ui-theme='clear'] .card {
+  border-radius: var(--blix-radius-sharp);
+  border-color: var(--blix-border);
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .card:hover {
+  box-shadow: none;
+  border-color: #ddd;
+}
+
+/* Sidebar — Blix blue panel */
+html[data-ui-theme='clear'] .sidebar {
+  background: var(--blix-primary);
+  color: #fff;
+  border-right: none;
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .sidebar-header {
+  border-bottom-color: var(--blix-primary-light);
+}
+
+html[data-ui-theme='clear'] .sidebar-brand-name,
+html[data-ui-theme='clear'] .sidebar-header h3 {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+html[data-ui-theme='clear'] .sidebar-close-btn {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+html[data-ui-theme='clear'] .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--blix-panel-link);
+  font-weight: 300;
+  border-left: none;
+  border-bottom: 1px solid var(--blix-primary-light);
+  border-radius: 0;
+  margin-left: 0;
+  padding: 14px 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .nav-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+html[data-ui-theme='clear'] .nav-link.active {
+  background: rgba(11, 224, 175, 0.15);
+  color: var(--blix-accent);
+  border-left: none;
+  box-shadow: none;
+}
+
+html[data-ui-theme='clear'] .nav-link.active::before {
+  display: none;
+}
+
+html[data-ui-theme='clear'] .nav-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+html[data-ui-theme='clear'] .nav-link-emoji {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+html[data-ui-theme='clear'] .nav-link-label {
+  flex: 1;
+  min-width: 0;
+}
+
+html[data-ui-theme='clear'] .admin-section {
+  border-top-color: var(--blix-primary-light);
+}
+
+html[data-ui-theme='clear'] .admin-section h4 {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+html[data-ui-theme='clear'] .admin-link {
+  background: transparent;
+}
+
+html[data-ui-theme='clear'] .admin-link:hover,
+html[data-ui-theme='clear'] .admin-link.active {
+  background: rgba(11, 224, 175, 0.12);
+  color: var(--blix-accent);
+}
+
+html[data-ui-theme='clear'] .sidebar hr {
+  border-top-color: var(--blix-primary-light);
+}
+
+html[data-ui-theme='clear'] .role-badge {
+  background: rgba(234, 202, 2, 0.2);
+  color: #eaca02;
+}
+
+/* Topbar — Blix navbar */
+html[data-ui-theme='clear'] .topbar {
+  background: var(--blix-primary);
+  border-bottom: none;
+  color: #fff;
+  min-height: var(--blix-header-h);
+  padding-top: max(var(--spacing-sm), env(safe-area-inset-top, 0px));
+}
+
+html[data-ui-theme='clear'] .topbar-title,
+html[data-ui-theme='clear'] .portal-topbar-title {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+html[data-ui-theme='clear'] .topbar-menu-btn {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: var(--blix-radius-tile);
+}
+
+html[data-ui-theme='clear'] .topbar-menu-btn:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+html[data-ui-theme='clear'] .user-button {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-ui-theme='clear'] .user-avatar {
+  background: var(--blix-accent);
+  color: var(--blix-text-dark);
+  font-weight: 900;
+}
+
+html[data-ui-theme='clear'] .language-switcher-btn,
+html[data-ui-theme='clear'] .theme-switcher-btn {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: var(--blix-radius-tile);
+}
+
+html[data-ui-theme='clear'] .language-switcher-btn.is-active,
+html[data-ui-theme='clear'] .theme-switcher-btn.is-active {
+  background: var(--blix-accent);
+  border-color: var(--blix-accent);
+  color: var(--blix-text-dark);
+}
+
+/* Page titles — Blix page_title */
+html[data-ui-theme='clear'] .page-header h1,
+html[data-ui-theme='clear'] .portal-page-header h1 {
+  font-weight: 300;
+  font-size: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--blix-border);
+  margin-bottom: var(--spacing-md);
+}
+
+html[data-ui-theme='clear'] .portal-page-header p {
+  font-weight: 300;
+}
+
+/* Profile tabs — mint active */
+html[data-ui-theme='clear'] .portal-profile-tabs--desktop a.active,
+html[data-ui-theme='clear'] .portal-profile-scroll-tabs a.active {
+  background: var(--blix-accent);
+  border-color: var(--blix-accent);
+  color: var(--blix-text-dark);
+  border-radius: var(--blix-radius-sharp);
+}
+
+html[data-ui-theme='clear'] .portal-profile-scroll-tabs a {
+  border-radius: var(--blix-radius-sharp);
+}
+
+/* Login / landing clear */
+html[data-ui-theme='clear'] .login-page-brand {
+  background: var(--blix-primary);
+}
+
+html[data-ui-theme='clear'] .login-page-brand h1 {
+  font-weight: 900;
+}
+
+html[data-ui-theme='clear'] .landing-header {
+  background: var(--blix-primary);
+  color: #fff;
+}
+
+/* Bottom nav — Blix toolbar tiles */
+html[data-ui-theme='clear'] .portal-bottom-nav {
+  background: var(--blix-primary);
+  border-top: none;
+  box-shadow: none;
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+html[data-ui-theme='clear'] .portal-bottom-nav__link {
+  color: rgba(255, 255, 255, 0.75);
+  border-radius: var(--blix-radius-tile);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+html[data-ui-theme='clear'] .portal-bottom-nav__link:hover,
+html[data-ui-theme='clear'] .portal-bottom-nav__link:focus-visible {
+  color: var(--blix-primary);
+  background: #fff;
+}
+
+html[data-ui-theme='clear'] .portal-bottom-nav__link.is-active {
+  color: var(--blix-primary);
+  background: #fff;
+}
+
+html[data-ui-theme='clear'] .portal-bottom-nav__icon-svg {
+  display: block;
+  margin: 0 auto 2px;
+}
+
+html[data-ui-theme='clear'] .layout-backdrop.is-visible {
+  background: rgba(65, 85, 219, 0.45);
+}
+
+/* ============================================
+   MOBILE — Blix breakpoints (780 / 680)
+   ============================================ */
+
+@media (max-width: 768px) {
+  html[data-ui-theme='clear'] {
+    --blix-header-h: 50px;
+    --sidebar-drawer-width: min(300px, 85vw);
+  }
+
+  html[data-ui-theme='clear'] .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding-inline: var(--spacing-md);
+  }
+
+  html[data-ui-theme='clear'] .layout .sidebar {
+    background: var(--blix-primary);
+    box-shadow: 8px 0 32px rgba(35, 35, 35, 0.2);
+  }
+
+  html[data-ui-theme='clear'] .content {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Blix bottom padding handled in clear-blix.css and portal-mobile */
+  html[data-ui-theme='clear'] .layout--blix-mobile .card,
+  html[data-ui-theme='clear'] .layout--portal .card {
+    border-radius: var(--blix-radius-sharp);
+    border-bottom: 1px solid var(--blix-border);
+  }
+
+  html[data-ui-theme='clear'] .list-item {
+    border-bottom: 1px solid var(--blix-border);
+    border-radius: 0;
+  }
+
+  html[data-ui-theme='clear'] .home-panel {
+    border-radius: var(--blix-radius-sharp);
+    border: 1px solid var(--blix-border);
+  }
+
+  html[data-ui-theme='clear'] .page-header,
+  html[data-ui-theme='clear'] .portal-page-header {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  html[data-ui-theme='clear'] .portal-profile-tab-select select {
+    border: none;
+    border-bottom: 1px solid #d5d5d5;
+    border-radius: 0;
+    background: #f5f5f5;
+  }
+}
+
+@media (max-width: 680px) {
+  html[data-ui-theme='clear'] {
+    --blix-header-h: 50px;
+  }
+
+  html[data-ui-theme='clear'] .portal-topbar-title {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 769px) {
+  html[data-ui-theme='clear'] .sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    color: var(--blix-text);
+    border-right: 1px solid var(--gray-200);
+  }
+
+  html[data-ui-theme='clear'] .sidebar-brand-name,
+  html[data-ui-theme='clear'] .sidebar-header h3 {
+    color: var(--blix-text);
+  }
+
+  html[data-ui-theme='clear'] .sidebar-header {
+    border-bottom-color: var(--gray-200);
+  }
+
+  html[data-ui-theme='clear'] .nav-link {
+    color: var(--blix-link);
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    border-radius: var(--blix-radius-tile);
+    margin-left: calc(-1 * var(--spacing-lg));
+    padding: var(--spacing-md) var(--spacing-lg);
+    padding-left: calc(var(--spacing-lg) - 3px);
+  }
+
+  html[data-ui-theme='clear'] .nav-link:hover {
+    background: var(--gray-100);
+    color: var(--blix-text);
+  }
+
+  html[data-ui-theme='clear'] .nav-link.active {
+    background: rgba(11, 224, 175, 0.15);
+    color: var(--blix-primary-dark);
+    border-left-color: var(--blix-accent);
+  }
+
+  html[data-ui-theme='clear'] .topbar {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--blix-text);
+  }
+
+  html[data-ui-theme='clear'] .topbar-title,
+  html[data-ui-theme='clear'] .portal-topbar-title {
+    color: var(--blix-text);
+  }
+
+  html[data-ui-theme='clear'] .topbar-menu-btn,
+  html[data-ui-theme='clear'] .user-button,
+  html[data-ui-theme='clear'] .language-switcher-btn,
+  html[data-ui-theme='clear'] .theme-switcher-btn {
+    border-color: var(--gray-200);
+    background: #fff;
+    color: var(--blix-text);
+  }
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as LabelsModel from '../models/labels.model';
+import { useThemeColorOverridesController } from './useThemeColorOverridesController';
 
 export function useAdvancedSettingsController() {
   const { translations } = useLanguage();
@@ -14,6 +15,7 @@ export function useAdvancedSettingsController() {
   const [editingData, setEditingData] = useState({});
   const [formMode, setFormMode] = useState('view');
   const [newLabel, setNewLabel] = useState({ label_key: '', label_es: '', label_en: '' });
+  const themeColors = useThemeColorOverridesController();
 
   async function loadLabels() {
     setLoading(true);
@@ -151,5 +153,6 @@ export function useAdvancedSettingsController() {
     deleteLabel,
     addLabel,
     syncWithDefaults,
+    themeColors,
   };
 }

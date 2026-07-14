@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { AuthContext } from './AuthContext';
 import { DEFAULT_UI_THEME, normalizeUiTheme } from '../constants/uiThemes';
 import * as UsuariosModel from '../mvc/models/usuarios.model';
+import * as UiThemeColorsModel from '../mvc/models/uiThemeColors.model';
+import { applyThemeColorOverrides } from '../utils/applyThemeColorOverrides';
 import { applyUiTheme, cacheUiTheme, readCachedUiTheme } from '../utils/uiTheme';
 
 export const ThemeContext = createContext(null);
@@ -18,6 +20,12 @@ export function ThemeProvider({ children }) {
     applyUiTheme(theme);
     cacheUiTheme(theme, userId);
   }, [theme, userId]);
+
+  useEffect(() => {
+    UiThemeColorsModel.fetchThemeColorOverrides().then(({ data, error: loadError }) => {
+      if (!loadError) applyThemeColorOverrides(data);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user) {

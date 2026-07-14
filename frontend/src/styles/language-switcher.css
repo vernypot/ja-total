@@ -1,0 +1,54 @@
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.language-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.language-switcher-btn:hover {
+  border-color: var(--gray-400);
+}
+
+.language-switcher-btn.is-active {
+  border-color: var(--primary);
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
+.language-switcher-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.language-switcher-btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .topbar .language-switcher-btn-label {
+    display: none;
+  }
+
+  .topbar .language-switcher-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-md);
+  }
+}

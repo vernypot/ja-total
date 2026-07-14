@@ -232,13 +232,31 @@
     font-size: var(--text-xl);
   }
 
-  .user-info {
+  .topbar-right {
+    gap: var(--spacing-sm);
+  }
+
+  .topbar .user-info {
     display: none;
   }
 
-  .user-avatar {
+  .topbar .user-button {
+    padding: var(--spacing-xs);
+    gap: 0;
+    border-radius: var(--radius-md);
+  }
+
+  .topbar .user-avatar {
     width: 36px;
     height: 36px;
+  }
+
+  .topbar .theme-switcher-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-md);
   }
 
   .user-dropdown {

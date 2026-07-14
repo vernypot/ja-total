@@ -5,14 +5,18 @@ import Topbar from '../components/Topbar';
 import Breadcrumb from '../components/Breadcrumb';
 import DashboardNoticiaBanner from '../components/DashboardNoticiaBanner';
 import RouteErrorBoundary from '../components/RouteErrorBoundary';
+import PortalBottomNav from '../components/portal/PortalBottomNav';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useLanguage } from '../hooks/useLanguage';
+import { useTheme } from '../hooks/useTheme';
+import { isBlixLayoutTheme } from '../constants/uiThemes';
 
 
 export default function Dashboard() {
   const { isPortalOnly } = useDashboardAuth();
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -44,9 +48,11 @@ export default function Dashboard() {
 
   const showMobileDrawer = isMobile;
   const sidebarInert = isMobile && !drawerOpen;
+  const isBlixMobile = isBlixLayoutTheme(theme) && isMobile;
+  const showPortalBottomNav = isPortalOnly && isBlixMobile;
 
   return (
-    <div className={`layout${isPortalOnly ? ' layout--portal' : ''}`}>
+    <div className={`layout${isPortalOnly ? ' layout--portal' : ''}${isBlixMobile ? ' layout--blix-mobile' : ''}`}>
       <RouteErrorBoundary>
         <Sidebar
           drawerOpen={drawerOpen}
@@ -82,6 +88,7 @@ export default function Dashboard() {
             <Outlet />
           </RouteErrorBoundary>
         </div>
+        {showPortalBottomNav && <PortalBottomNav />}
       </div>
     </div>
   );

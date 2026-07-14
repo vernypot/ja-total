@@ -211,7 +211,11 @@
     grid-template-columns: 1fr;
   }
 
-  .layout--portal .content {
+  .layout--portal.layout--blix-mobile .content {
+    padding: var(--pad-page-y) var(--pad-page-x) calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .layout--portal:not(.layout--blix-mobile) .content {
     padding: var(--pad-page-y) var(--pad-page-x);
   }
 
@@ -231,6 +235,10 @@
   }
 
   .portal-bottom-nav {
+    display: none;
+  }
+
+  .layout--portal.layout--blix-mobile .portal-bottom-nav {
     display: block;
     position: fixed;
     left: 0;
@@ -369,13 +377,3 @@
   }
 }
 
-html[data-ui-theme='dark'] .portal-bottom-nav {
-  background: rgba(15, 23, 42, 0.96);
-  border-top-color: rgba(148, 163, 184, 0.2);
-}
-
-html[data-ui-theme='dark'] .portal-profile-tab-select select {
-  background: var(--gray-800);
-  border-color: rgba(148, 163, 184, 0.25);
-  color: var(--color-text-primary);
-}
