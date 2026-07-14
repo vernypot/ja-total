@@ -3,17 +3,18 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useLanguage } from '../hooks/useLanguage';
 import { parseTokenFromQrPayload } from '../mvc/models/carnet.model';
 
-export default function EventCheckinScanner({ eventoId, onCheckin, disabled }) {
+export default function EventCheckinScanner({ eventoId, onCheckin, disabled, scannerId }) {
   const { t } = useLanguage();
   const lastScanRef = useRef('');
   const onCheckinRef = useRef(onCheckin);
   onCheckinRef.current = onCheckin;
+  const elementId = scannerId || `event-checkin-qr-reader-${eventoId || 'default'}`;
 
   useEffect(() => {
     if (!eventoId || disabled) return undefined;
 
     const scanner = new Html5QrcodeScanner(
-      'event-checkin-qr-reader',
+      elementId,
       { fps: 8, qrbox: { width: 220, height: 220 } },
       false
     );
@@ -34,7 +35,7 @@ export default function EventCheckinScanner({ eventoId, onCheckin, disabled }) {
     return () => {
       scanner.clear().catch(() => {});
     };
-  }, [eventoId, disabled]);
+  }, [eventoId, disabled, elementId]);
 
   if (!eventoId) return null;
 
@@ -45,7 +46,7 @@ export default function EventCheckinScanner({ eventoId, onCheckin, disabled }) {
       {disabled ? (
         <p className="text-muted">{t('checkinDisabled')}</p>
       ) : (
-        <div id="event-checkin-qr-reader" />
+        <div id={elementId} />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { formatCalendarPeriodLabel, formatEventTime } from '../../utils/calendar';
+import { formatEventLocalDate } from '../../utils/eventTimezone';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/calendario.css';
 
@@ -204,10 +205,12 @@ function EventDetailModal({
   const needsConfirmation = eventRequiresConfirmation(event);
   const isFuture = isEventInFuture(event);
   const dateLabel = event.fecha
-    ? new Date(`${event.fecha}T12:00:00`).toLocaleDateString(
-      language === 'en' ? 'en-US' : 'es-ES',
-      { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    )
+    ? formatEventLocalDate(event.fecha, language, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
     : event.fecha;
 
   return (
@@ -362,6 +365,7 @@ export default function CalendarioClubView({
   goToNext,
   goToToday,
   toDateKey,
+  getLocalTodayIso,
   clubDisplayName,
   selectedDateKey,
   selectedDayEvents,
@@ -386,7 +390,7 @@ export default function CalendarioClubView({
   }
 
   const periodLabel = formatCalendarPeriodLabel(viewMode, focusDate, language);
-  const todayKey = toDateKey(new Date());
+  const todayKey = getLocalTodayIso();
   const isDayView = viewMode === 'day';
   const isWeekView = viewMode === 'week';
   const isMonthView = viewMode === 'month';

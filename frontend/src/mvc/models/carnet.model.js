@@ -123,6 +123,18 @@ export function buildCheckinQrUrl(token) {
   return `${origin}/dashboard/checkin?t=${encodeURIComponent(token)}`;
 }
 
+export function buildEventCheckinSessionUrl(eventoId, { started = false } = {}) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const params = new URLSearchParams({ evento: eventoId });
+  if (started) params.set('started', '1');
+  return `${origin}/dashboard/checkin?${params.toString()}`;
+}
+
+export function memberNameFromTokenRow(rows) {
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return memberFullName(row);
+}
+
 export function parseTokenFromQrPayload(raw) {
   if (!raw) return null;
   const text = raw.trim();

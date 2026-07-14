@@ -3,6 +3,10 @@ import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
 import FormField from '../../components/FormField';
 import ChurchOrgFields, { ChurchOrgFilters, ChurchOrgPath } from '../../components/ChurchOrgFields';
+import ChurchCountrySelect from '../../components/ChurchCountrySelect';
+import ChurchTimezoneSelect from '../../components/ChurchTimezoneSelect';
+import { churchCountryLabel } from '../../utils/churchCountries';
+import { churchTimezoneLabel } from '../../utils/churchTimezones';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -77,6 +81,16 @@ export default function IglesiasView({
                 {t('activeChurch')}: <strong>{iglesiaData.nombre}</strong>
               </div>
               {activeHierarchy && <ChurchOrgPath label={activeHierarchy} />}
+              {iglesiaData?.country && (
+                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                  {t('churchCountry')}: {churchCountryLabel(iglesiaData.country, t)}
+                </div>
+              )}
+              {iglesiaData?.timezone && (
+                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                  {t('churchTimezone')}: {churchTimezoneLabel(iglesiaData.timezone, t)}
+                </div>
+              )}
               {hasOrgStructure && !activeHierarchy && (
                 <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
                   ⚠ {t('churchNoZoneHint')}
@@ -183,6 +197,20 @@ export default function IglesiasView({
                 aria-invalid={Boolean(fieldErrors.nombre)}
               />
             </FormField>
+            <ChurchCountrySelect
+              t={t}
+              value={churchForm.country}
+              onChange={value => setChurchFormField('country', value)}
+              htmlId="iglesia-country"
+              error={fieldErrors.country}
+            />
+            <ChurchTimezoneSelect
+              t={t}
+              value={churchForm.timezone}
+              onChange={value => setChurchFormField('timezone', value)}
+              htmlId="iglesia-timezone"
+              error={fieldErrors.timezone}
+            />
             {showOrgForm && (
               <ChurchOrgFields
                 t={t}
@@ -243,6 +271,20 @@ export default function IglesiasView({
                             className="form-input"
                           />
                         </FormField>
+                        <ChurchCountrySelect
+                          t={t}
+                          value={churchForm.country}
+                          onChange={value => setChurchFormField('country', value)}
+                          htmlId={`edit-iglesia-country-${i.id}`}
+                          error={fieldErrors.country}
+                        />
+                        <ChurchTimezoneSelect
+                          t={t}
+                          value={churchForm.timezone}
+                          onChange={value => setChurchFormField('timezone', value)}
+                          htmlId={`edit-iglesia-timezone-${i.id}`}
+                          error={fieldErrors.timezone}
+                        />
                         {showOrgForm && (
                           <ChurchOrgFields
                             t={t}
@@ -260,6 +302,16 @@ export default function IglesiasView({
                       <>
                         <strong>{i.nombre}</strong>
                         {hierarchy && <ChurchOrgPath label={hierarchy} />}
+                        {i.country && (
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            {t('churchCountry')}: {churchCountryLabel(i.country, t)}
+                          </div>
+                        )}
+                        {i.timezone && (
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            {t('churchTimezone')}: {churchTimezoneLabel(i.timezone, t)}
+                          </div>
+                        )}
                         {missingZone && <NoZoneBadge t={t} />}
                       </>
                     )}

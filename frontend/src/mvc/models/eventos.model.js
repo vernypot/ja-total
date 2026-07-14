@@ -1,4 +1,33 @@
 import { sb } from '../../services/supabase';
+import {
+  compareEventsByLocalDateTime,
+  computeCheckinAttendanceEstado,
+  EVENT_TIMEZONE,
+  formatEventLocalDate,
+  formatEventLocalTime,
+  getEventChurchTimezone,
+  getEventStartInstant,
+  getLocalTodayIso,
+  isEventInFuture,
+  isEventInPast,
+  isEventToday,
+  toLocalDateKey,
+} from '../../utils/eventTimezone';
+
+export {
+  EVENT_TIMEZONE,
+  compareEventsByLocalDateTime,
+  computeCheckinAttendanceEstado,
+  formatEventLocalDate,
+  formatEventLocalTime,
+  getEventChurchTimezone,
+  getEventStartInstant,
+  getLocalTodayIso,
+  isEventInFuture,
+  isEventInPast,
+  isEventToday,
+  toLocalDateKey,
+};
 
 function isRlsError(error) {
   const msg = error?.message || '';
@@ -11,6 +40,8 @@ function isMissingColumnError(error, column) {
 }
 
 const EVENTO_SELECTS = [
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,created_at,clubes(id,nombre)',
@@ -29,7 +60,7 @@ async function queryEventos(buildQuery) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await buildQuery(select);
     if (!error) return { data: data || [], error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion')) {
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone')) {
       continue;
     }
     return { data: [], error };
@@ -43,6 +74,21 @@ export async function fetchEventosByClub(clubId, { showInactive = false } = {}) 
     if (!showInactive) query = query.eq('estado', 'activo');
     return query;
   });
+}
+
+export async function fetchEventoById(id) {
+  if (!id) return { data: null, error: null };
+
+  for (const select of EVENTO_SELECTS) {
+    const { data, error } = await sb.from('eventos').select(select).eq('id', id).maybeSingle();
+    if (!error) return { data, error: null };
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone')) {
+      continue;
+    }
+    return { data: null, error };
+  }
+
+  return { data: null, error: null };
 }
 
 export async function fetchEventosByClubInRange(clubId, startDate, endDate) {
@@ -64,10 +110,14 @@ export async function fetchMiembroEventos(miembroId) {
   const selects = [
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
      eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
+       clubes ( id, nombre, iglesia_id, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
+     evento_asistencia ( id, estado, updated_at, checked_in_at )`,
+    `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
        clubes ( id, nombre ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, clubes ( id, nombre ) ),
+     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, clubes ( id, nombre, iglesia_id, iglesias ( id, timezone ) ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
   ];
 
@@ -372,25 +422,15 @@ export async function syncEventoAttendees(eventoId, miembroIds, { requiereConfir
   return { error: null };
 }
 
-export function isEventInFuture(evento) {
-  if (!evento?.fecha) return false;
-
-  const hora = evento.hora ? String(evento.hora).slice(0, 8) : '23:59:59';
-  const eventDate = new Date(`${evento.fecha}T${hora}`);
-  if (!Number.isNaN(eventDate.getTime())) {
-    return eventDate > new Date();
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  return evento.fecha >= today;
+export function memberAttendedEvent(value) {
+  const estado = typeof value === 'string' ? value : getAsistenciaFromRow(value);
+  return estado === 'a_tiempo' || estado === 'tarde';
 }
 
-export function isEventInPast(evento) {
-  return Boolean(evento?.fecha) && !isEventInFuture(evento);
-}
-
-export function memberAttendedEvent(asistencia) {
-  return asistencia === 'a_tiempo' || asistencia === 'tarde';
+export function wasMemberCheckedInToEvent(row) {
+  if (!row) return false;
+  if (getCheckedInAtFromRow(row)) return true;
+  return memberAttendedEvent(row);
 }
 
 export function computeMemberAttendanceStats(rows, helpers) {
@@ -457,11 +497,50 @@ export function computeMemberAttendanceStats(rows, helpers) {
   return stats;
 }
 
-export async function checkinEventoByToken(eventoId, token) {
-  return sb.rpc('admin_checkin_evento', {
+export function sortEventAttendanceRows(rows, memberDisplayNameFn = memberDisplayName) {
+  return [...(rows || [])].sort((a, b) => {
+    const checkedA = getCheckedInAtFromRow(a);
+    const checkedB = getCheckedInAtFromRow(b);
+    if (checkedA && checkedB) {
+      return new Date(checkedB).getTime() - new Date(checkedA).getTime();
+    }
+    if (checkedA) return -1;
+    if (checkedB) return 1;
+    return memberDisplayNameFn(a.miembros).localeCompare(
+      memberDisplayNameFn(b.miembros),
+      undefined,
+      { sensitivity: 'base' }
+    );
+  });
+}
+
+export async function checkinEventoByToken(eventoId, token, evento = null) {
+  const result = await sb.rpc('admin_checkin_evento', {
     p_evento_id: eventoId,
     p_token: token,
   });
+
+  if (result.error || !result.data || !evento) return result;
+
+  if (!shouldCorrectLateCheckin(result.data, evento)) return result;
+
+  const corrected = await setEventoAsistencia(result.data.evento_miembro_id, 'a_tiempo');
+  if (corrected.error) return result;
+
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      estado: 'a_tiempo',
+    },
+  };
+}
+
+export function shouldCorrectLateCheckin(attendance, evento, checkinAt) {
+  if (!attendance?.evento_miembro_id || !evento) return false;
+  const at = checkinAt || attendance.checked_in_at || new Date();
+  const expected = computeCheckinAttendanceEstado(at, evento);
+  return expected === 'a_tiempo' && attendance.estado === 'tarde';
 }
 
 export function getCheckedInAtFromRow(row) {
@@ -484,7 +563,7 @@ export function eventRequiresConfirmation(evento) {
   return evento?.requiere_confirmacion !== false;
 }
 
-export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4) {
+export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4, timeZone = EVENT_TIMEZONE) {
   if (!iglesiaId) return { data: [], error: null };
 
   const { data: clubs, error: clubsError } = await sb
@@ -497,7 +576,7 @@ export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4) {
   if (!clubs?.length) return { data: [], error: null };
 
   const clubIds = clubs.map(c => c.id);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalTodayIso(new Date(), timeZone);
 
   const { data, error } = await queryEventos(select =>
     sb.from('eventos')
@@ -513,7 +592,7 @@ export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4) {
   if (error) return { data: [], error };
 
   const upcoming = (data || [])
-    .filter(isEventInFuture)
+    .filter(evento => isEventInFuture(evento, new Date(), timeZone))
     .slice(0, limit);
 
   return { data: upcoming, error: null };

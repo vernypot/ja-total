@@ -104,3 +104,150 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   color: var(--color-text-muted);
   margin-bottom: 4px;
 }
+
+.member-events-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.member-events-attended-summary {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.member-events-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-event-attended {
+  border-left: 3px solid var(--success);
+}
+
+.member-event-attended-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--success-light);
+  color: var(--color-badge-success, #166534);
+}
+
+.member-events-attended-section,
+.member-events-other-section {
+  margin-bottom: 20px;
+}
+
+.member-events-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: var(--color-text-primary);
+}
+
+.checkin-session-page {
+  padding: 24px 0;
+}
+
+.checkin-session-event-title {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+.checkin-session-event-meta {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.checkin-session-notice {
+  background: var(--success-light);
+  color: #166534;
+}
+
+.checkin-session-registry {
+  margin-top: 20px;
+  padding: 16px;
+}
+
+.checkin-session-registry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.checkin-session-registry-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.checkin-session-registry-count {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.checkin-session-registry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.checkin-session-registry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.checkin-session-registry-time {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.checkin-session-qr-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
+.event-start-scan-cta {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.event-start-scan-cta p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.event-started-banner {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--success-light);
+  color: #166534;
+  font-weight: 600;
+  font-size: 14px;
+}

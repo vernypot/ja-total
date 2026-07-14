@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   club_id UUID NOT NULL REFERENCES public.clubes(id) ON DELETE CASCADE,
   nombre TEXT,
-  fecha DATE NOT NULL,
-  hora TIME NOT NULL,
+  fecha DATE NOT NULL,  -- church-local calendar date (iglesias.timezone)
+  hora TIME NOT NULL,   -- church-local wall-clock time (iglesias.timezone)
   lugar TEXT NOT NULL,
   estado VARCHAR(20) NOT NULL DEFAULT 'activo'
     CHECK (estado IN ('activo', 'inactivo', 'cancelado')),

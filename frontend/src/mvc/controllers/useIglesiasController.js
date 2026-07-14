@@ -10,6 +10,8 @@ import {
   canDeactivateIglesia,
 } from '../../utils/permissions';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { DEFAULT_CHURCH_COUNTRY } from '../../utils/churchCountries';
+import { DEFAULT_CHURCH_TIMEZONE } from '../../utils/churchTimezones';
 import { filterBySearch } from '../../utils/listSearch';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -18,6 +20,8 @@ import * as OrgModel from '../models/estructuraOrganizacional.model';
 
 const emptyChurchForm = () => ({
   nombre: '',
+  country: DEFAULT_CHURCH_COUNTRY,
+  timezone: DEFAULT_CHURCH_TIMEZONE,
   division_id: '',
   union_id: '',
   campo_id: '',
@@ -230,6 +234,8 @@ export function useIglesiasController() {
     setError('');
     const validation = validateForm('iglesia', {
       nombre: churchForm.nombre,
+      country: churchForm.country,
+      timezone: churchForm.timezone,
       zona_id: churchForm.zona_id,
       requireZona: requiresZona(),
     }, t);
@@ -242,6 +248,8 @@ export function useIglesiasController() {
     const { error: saveError } = await IglesiasModel.createIglesia({
       nombre: churchForm.nombre.trim(),
       zona_id: churchForm.zona_id || null,
+      country: churchForm.country,
+      timezone: churchForm.timezone,
     });
     if (saveError) {
       setError(t('churchesSaveError') + saveError.message);
@@ -271,6 +279,8 @@ export function useIglesiasController() {
 
     const validation = validateForm('iglesia', {
       nombre: churchForm.nombre,
+      country: churchForm.country,
+      timezone: churchForm.timezone,
       zona_id: churchForm.zona_id,
       requireZona: requiresZona(),
     }, t);
@@ -282,6 +292,8 @@ export function useIglesiasController() {
 
     const { error: updateError } = await IglesiasModel.updateIglesia(editingId, {
       nombre: churchForm.nombre.trim(),
+      country: churchForm.country,
+      timezone: churchForm.timezone,
       zona_id: hasOrgStructure ? (churchForm.zona_id || null) : undefined,
     });
 
@@ -292,6 +304,9 @@ export function useIglesiasController() {
 
     setEditingId(null);
     resetChurchForm();
+    if (editingId === activeIglesia) {
+      updateActiveIglesia(editingId, churchForm.timezone);
+    }
     load();
   }
 
@@ -324,7 +339,7 @@ export function useIglesiasController() {
 
   function selectIglesia(iglesia) {
     if (!canSelectChurch) return;
-    updateActiveIglesia(iglesia.id);
+    updateActiveIglesia(iglesia.id, iglesia.timezone);
     setIglesiaData(iglesia);
   }
 

@@ -5,6 +5,7 @@ import { IglesiaContext } from '../../context/IglesiaContext';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import * as IglesiasModel from '../models/iglesias.model';
 import * as NoticiasModel from '../models/noticias.model';
@@ -24,6 +25,7 @@ export function useHomeController() {
     assignedIglesiaActive,
     canSwitchIglesia,
   } = useScopedIglesia();
+  const churchTz = useChurchTimezone();
   const userRole = getUserRole(user, userData);
   const canManage = canManageChurchData(userRole);
 
@@ -66,7 +68,7 @@ export function useHomeController() {
           limit: 6,
         }),
         HomeModel.fetchUpcomingBirthdaysByIglesia(effectiveIglesiaId, { days: 30 }),
-        EventosModel.fetchUpcomingEventosByIglesia(effectiveIglesiaId, 4),
+        EventosModel.fetchUpcomingEventosByIglesia(effectiveIglesiaId, 4, churchTz.timeZone),
       ]);
 
       const errors = [newsResult.error, birthdayResult.error, eventsResult.error].filter(Boolean);
@@ -123,7 +125,8 @@ export function useHomeController() {
   }
 
   function selectIglesia(iglesiaId) {
-    updateActiveIglesia(iglesiaId);
+    const iglesia = iglesias.find(item => item.id === iglesiaId);
+    updateActiveIglesia(iglesiaId, iglesia?.timezone);
   }
 
   useEffect(() => {
@@ -134,12 +137,12 @@ export function useHomeController() {
   useEffect(() => {
     if (authLoading) return;
     loadHomeData();
-  }, [authLoading, effectiveIglesiaId, assignedIglesiaNombre, activeClub?.id]);
+  }, [authLoading, effectiveIglesiaId, assignedIglesiaNombre, activeClub?.id, churchTz.timeZone]);
 
   useEffect(() => {
     if (authLoading || effectiveIglesiaId || !canSwitchIglesia || !iglesias.length) return;
     if (iglesias.length === 1) {
-      updateActiveIglesia(iglesias[0].id);
+      updateActiveIglesia(iglesias[0].id, iglesias[0].timezone);
     }
   }, [authLoading, effectiveIglesiaId, canSwitchIglesia, iglesias, updateActiveIglesia]);
 
@@ -168,7 +171,7 @@ export function useHomeController() {
     toggleNewsExpand,
     selectIglesia,
     getClubName: evento => evento?.clubes?.nombre || '',
-    formatEventDate: dateStr => NoticiasModel.formatNoticiaDate(dateStr, language),
-    formatEventTime: hora => (hora ? String(hora).slice(0, 5) : ''),
+    formatEventDate: dateStr => churchTz.formatEventLocalDate(dateStr, language),
+    formatEventTime: EventosModel.formatEventLocalTime,
   };
 }

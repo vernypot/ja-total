@@ -1,7 +1,8 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import * as EventosModel from '../models/eventos.model';
+import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
 
 export function useMiembroEventosController(miembroId) {
   const { user, userData } = useContext(AuthContext);
@@ -9,6 +10,7 @@ export function useMiembroEventosController(miembroId) {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [attendanceFilter, setAttendanceFilter] = useState('all');
 
   async function load() {
     if (!miembroId) return;
@@ -24,14 +26,26 @@ export function useMiembroEventosController(miembroId) {
     }
 
     const sorted = [...(data || [])].sort((a, b) => {
-      const fa = EventosModel.getEventoFromRow(a)?.fecha || '';
-      const fb = EventosModel.getEventoFromRow(b)?.fecha || '';
-      return fb.localeCompare(fa);
+      const eventA = EventosModel.getEventoFromRow(a);
+      const eventB = EventosModel.getEventoFromRow(b);
+      return compareEventsByLocalDateTime(eventB, eventA);
     });
 
     setRows(sorted);
     setLoading(false);
   }
+
+  const attendedCount = useMemo(
+    () => rows.filter(EventosModel.memberAttendedEvent).length,
+    [rows]
+  );
+
+  const filteredRows = useMemo(() => {
+    if (attendanceFilter === 'attended') {
+      return rows.filter(EventosModel.memberAttendedEvent);
+    }
+    return rows;
+  }, [rows, attendanceFilter]);
 
   async function updateAttendance(eventoMiembroId, estado) {
     if (!canManage) return;
@@ -62,7 +76,11 @@ export function useMiembroEventosController(miembroId) {
   }, [miembroId]);
 
   return {
-    rows,
+    rows: filteredRows,
+    allRows: rows,
+    attendedCount,
+    attendanceFilter,
+    setAttendanceFilter,
     error,
     loading,
     canManage,
@@ -70,7 +88,9 @@ export function useMiembroEventosController(miembroId) {
     updateConfirmation,
     getEventoFromRow: EventosModel.getEventoFromRow,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
+    memberAttendedEvent: EventosModel.memberAttendedEvent,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
   };

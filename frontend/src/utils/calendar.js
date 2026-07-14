@@ -1,3 +1,5 @@
+import { compareEventsByLocalDateTime } from './eventTimezone';
+
 export function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -100,7 +102,7 @@ export function formatEventTime(hora) {
 }
 
 export function sortEventsByTime(events = []) {
-  return [...events].sort((a, b) => String(a.hora || '').localeCompare(String(b.hora || '')));
+  return [...events].sort(compareEventsByLocalDateTime);
 }
 
 export function buildCalendarCells(year, monthIndex) {
