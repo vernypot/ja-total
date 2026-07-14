@@ -22,6 +22,34 @@
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -162,6 +190,10 @@
 
   .sidebar-header h3 {
     font-size: var(--text-lg);
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex;
   }
 
   .nav-link {

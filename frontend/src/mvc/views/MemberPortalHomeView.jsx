@@ -18,8 +18,8 @@ export default function MemberPortalHomeView({
   getClubName,
 }) {
   return (
-    <div className="container home-dashboard" style={{ maxWidth: '1100px', margin: '0 auto' }}>
-      <div className="home-header">
+    <div className="portal-page home-dashboard">
+      <div className="portal-page-header portal-page-header--hide-mobile">
         <div>
           <h1>🏠 {t('portalNavHome')}</h1>
           <p className="home-header-sub">{t('portalHomeSubtitle')}</p>

@@ -248,7 +248,7 @@
 }
 
 @media (max-width: 480px) {
-  .topbar {
+  .topbar:not(.topbar--with-menu) {
     padding: var(--spacing-md);
     flex-direction: column;
     align-items: flex-start;
@@ -258,7 +258,7 @@
     font-size: var(--text-lg);
   }
 
-  .topbar-right {
+  .topbar:not(.topbar--with-menu) .topbar-right {
     width: 100%;
     justify-content: flex-end;
     margin-top: var(--spacing-md);

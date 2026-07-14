@@ -1,0 +1,255 @@
+/* ============================================
+   Responsive layout system
+   Based on Coding2GO — 5 CSS tips for responsive design
+   https://www.youtube.com/watch?v=2IV08sP9m3U
+   ============================================ */
+
+:root {
+  /* Tip 1: min() — fixed desktop padding, fluid on small screens */
+  --pad-page-x: min(2rem, 5vw);
+  --pad-page-y: min(2rem, 4vw);
+  --pad-card: min(1.5rem, 4vw);
+  --pad-inline: min(1.25rem, 3.5vw);
+  --pad-block: min(1rem, 3vw);
+
+  /* Tip 2: clamp() + calc() — zoom-friendly responsive headings */
+  --type-h1: clamp(1.75rem, 1rem + 2.2vw, 2.75rem);
+  --type-h2: clamp(1.375rem, 0.95rem + 1.4vw, 2rem);
+  --type-h3: clamp(1.125rem, 0.9rem + 0.7vw, 1.5rem);
+  --type-h4: clamp(1rem, 0.92rem + 0.35vw, 1.25rem);
+  --type-lead: clamp(1rem, 0.94rem + 0.25vw, 1.125rem);
+  --type-display: clamp(1.5rem, 0.85rem + 2.8vw, 2.25rem);
+
+  /* Tip 4: dvh with vh fallback for mobile browser chrome */
+  --app-height: 100vh;
+  --app-height: 100dvh;
+
+  --sidebar-width: 250px;
+  --sidebar-drawer-width: min(18rem, 86vw);
+}
+
+/* Tip 3: responsive media defaults */
+img,
+video,
+picture,
+.canvas-responsive {
+  max-width: 100%;
+  height: auto;
+}
+
+.media-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.media-cover--square {
+  aspect-ratio: 1 / 1;
+}
+
+.media-contain {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: var(--gray-100);
+}
+
+/* App shell */
+.layout {
+  min-height: var(--app-height);
+}
+
+.main {
+  min-height: var(--app-height);
+  min-width: 0;
+}
+
+.content {
+  padding: var(--pad-page-y) var(--pad-page-x);
+}
+
+.container {
+  width: 100%;
+  padding-inline: 0;
+}
+
+.card {
+  padding: var(--pad-card);
+}
+
+.page-header h1,
+.portal-page-header h1,
+.topbar-title,
+.portal-topbar-title {
+  font-size: var(--type-display);
+}
+
+h1 { font-size: var(--type-h1); }
+h2 { font-size: var(--type-h2); }
+h3 { font-size: var(--type-h3); }
+h4 { font-size: var(--type-h4); }
+
+.lead,
+.home-header-sub,
+.portal-page-header p {
+  font-size: var(--type-lead);
+}
+
+/* Tip 5: accessible off-canvas nav (mobile drawer) */
+.layout-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.topbar-menu-btn:hover {
+  border-color: var(--primary);
+  background: var(--gray-50);
+}
+
+.topbar-menu-btn__icon {
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  position: relative;
+  display: block;
+}
+
+.topbar-menu-btn__icon::before,
+.topbar-menu-btn__icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+}
+
+.topbar-menu-btn__icon::before { top: -6px; }
+.topbar-menu-btn__icon::after { top: 6px; }
+
+.topbar-menu-btn--open .topbar-menu-btn__icon {
+  background: transparent;
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+.topbar-menu-btn--open .topbar-menu-btn__icon::before,
+.topbar-menu-btn--open .topbar-menu-btn__icon::after {
+  transition: transform var(--transition-fast);
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: min(200px, 22vw) 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .layout .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: var(--sidebar-drawer-width);
+    max-width: var(--sidebar-drawer-width);
+    transform: translateX(-105%);
+    transition: transform var(--transition-base), visibility var(--transition-base);
+    box-shadow: var(--shadow-xl);
+    overflow-y: auto;
+    visibility: hidden;
+  }
+
+  .layout .sidebar.sidebar--drawer-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .layout .layout-backdrop.is-visible {
+    display: block;
+  }
+
+  .topbar-menu-btn {
+    display: inline-flex;
+  }
+
+  .topbar--with-menu {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .topbar--with-menu .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;
+    flex: 1;
+  }
+
+  .topbar--with-menu .topbar-right {
+    width: auto;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .tabs {
+    gap: var(--pad-inline);
+  }
+
+  .tabs a,
+  .portal-profile-tabs--desktop a {
+    padding: var(--pad-block) var(--pad-inline);
+    font-size: var(--text-sm);
+  }
+
+  .table-responsive,
+  .layout table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --pad-page-x: min(1rem, 4vw);
+    --pad-page-y: min(1rem, 3.5vw);
+    --pad-card: min(1rem, 3.5vw);
+  }
+}

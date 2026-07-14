@@ -3,7 +3,7 @@ import MiembroEventosView from '../mvc/views/MiembroEventosView';
 
 export default function MemberPortalEventos() {
   return (
-    <div className="container" style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div className="portal-page">
       <MiembroEventosView {...useMemberPortalEventosController()} />
     </div>
   );
