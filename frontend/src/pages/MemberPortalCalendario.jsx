@@ -2,5 +2,9 @@ import { useMemberPortalCalendarioController } from '../mvc/controllers/useMembe
 import CalendarioClubView from '../mvc/views/CalendarioClubView';
 
 export default function MemberPortalCalendario() {
-  return <CalendarioClubView {...useMemberPortalCalendarioController()} />;
+  return (
+    <div className="portal-page">
+      <CalendarioClubView {...useMemberPortalCalendarioController()} />
+    </div>
+  );
 }

@@ -1,6 +1,5 @@
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
-import '../styles/form.css';
 
 import DatosPersonalesView from '../mvc/views/DatosPersonalesView';
 import DatosMedicosView from '../mvc/views/DatosMedicosView';
@@ -11,6 +10,7 @@ import MiembroClasesView from '../mvc/views/MiembroClasesView';
 import MiembroEventosView from '../mvc/views/MiembroEventosView';
 import MiembroAsistenciaView from '../mvc/views/MiembroAsistenciaView';
 import MiembroCarnetView from '../mvc/views/MiembroCarnetView';
+import PortalProfileTabs from '../components/portal/PortalProfileTabs';
 
 import {
   useMemberPortalDatosPersonalesController,
@@ -23,6 +23,18 @@ import {
   useMemberPortalCarnetController,
 } from '../mvc/controllers/useMemberPortalProfileTabControllers';
 import { useMemberPortalEventosController } from '../mvc/controllers/useMemberPortalEventosController';
+
+const PROFILE_TABS = [
+  { path: 'datos', labelKey: 'tabData' },
+  { path: 'datos-medicos', labelKey: 'tabMedicalData' },
+  { path: 'contactos', labelKey: 'tabContacts' },
+  { path: 'especialidades', labelKey: 'tabSpecialties' },
+  { path: 'cargos', labelKey: 'tabCargos' },
+  { path: 'clases', labelKey: 'tabClasses' },
+  { path: 'eventos', labelKey: 'tabEvents' },
+  { path: 'asistencia', labelKey: 'tabAttendance' },
+  { path: 'carnet', labelKey: 'tabCarnet' },
+];
 
 function PortalDatosPersonales() {
   return <DatosPersonalesView {...useMemberPortalDatosPersonalesController()} />;
@@ -64,25 +76,15 @@ export default function MemberPortalProfile() {
   const { t } = useLanguage();
 
   return (
-    <div className="container" style={{ maxWidth: '1100px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ margin: '0 0 6px' }}>{t('portalProfileTitle')}</h1>
-        <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>{t('portalProfileSubtitle')}</p>
+    <div className="portal-page">
+      <div className="portal-page-header portal-page-header--hide-mobile">
+        <h1>{t('portalProfileTitle')}</h1>
+        <p>{t('portalProfileSubtitle')}</p>
       </div>
 
-      <div className="tabs no-print">
-        <Link to="datos">{t('tabData')}</Link>
-        <Link to="datos-medicos">{t('tabMedicalData')}</Link>
-        <Link to="contactos">{t('tabContacts')}</Link>
-        <Link to="especialidades">{t('tabSpecialties')}</Link>
-        <Link to="cargos">{t('tabCargos')}</Link>
-        <Link to="clases">{t('tabClasses')}</Link>
-        <Link to="eventos">{t('tabEvents')}</Link>
-        <Link to="asistencia">{t('tabAttendance')}</Link>
-        <Link to="carnet">{t('tabCarnet')}</Link>
-      </div>
+      <PortalProfileTabs tabs={PROFILE_TABS} />
 
-      <div className="card">
+      <div className="card portal-profile-card">
         <Routes>
           <Route index element={<Navigate to="datos" replace />} />
           <Route path="datos" element={<PortalDatosPersonales />} />

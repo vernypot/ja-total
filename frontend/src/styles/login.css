@@ -10,7 +10,7 @@
   --lp-bg: var(--brand-bg);
   --lp-font: var(--font-primary);
 
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   display: grid;
   grid-template-columns: 1fr 1fr;
   font-family: var(--lp-font);

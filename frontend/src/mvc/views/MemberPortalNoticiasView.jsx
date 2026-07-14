@@ -11,9 +11,11 @@ export default function MemberPortalNoticiasView({
   formatNewsDate,
 }) {
   return (
-    <div className="container" style={{ maxWidth: '900px', margin: '0 auto' }}>
-      <h1>📰 {t('portalNavNews')}</h1>
-      <p style={{ color: 'var(--color-text-secondary)' }}>{t('portalNewsSubtitle')}</p>
+    <div className="portal-page">
+      <div className="portal-page-header portal-page-header--hide-mobile">
+        <h1>📰 {t('portalNavNews')}</h1>
+        <p>{t('portalNewsSubtitle')}</p>
+      </div>
 
       {error && <div className="alert alert-error">{error}</div>}
       {loading && <p>{t('loading')}</p>}

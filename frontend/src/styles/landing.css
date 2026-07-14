@@ -22,7 +22,7 @@
   font-family: var(--lp-font);
   color: var(--lp-text);
   background: var(--lp-cream);
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
 }
 
 .landing-page *,

@@ -1,12 +1,13 @@
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDashboardAuth } from "../hooks/useDashboardAuth";
 import { getUserRole } from "../utils/permissions";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
+import { getPortalPageTitle } from "../utils/portalMobileNav";
 
 function memberInitials(name) {
   const parts = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -15,11 +16,12 @@ function memberInitials(name) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-export default function Topbar() {
+export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen = false }) {
   const { user, userData, logout } = useContext(AuthContext);
   const { t } = useLanguage();
   const { isPortalOnly, session, logout: portalLogout } = useDashboardAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
   const userRole = getUserRole(user, userData);
   const memberName = session?.memberName || t('roleMember');
@@ -28,6 +30,10 @@ export default function Topbar() {
     ? memberInitials(memberName)
     : (user?.email || 'U').substring(0, 2).toUpperCase();
   const displayRole = isPortalOnly ? t('roleMember') : userRole;
+  const portalPageTitle = useMemo(
+    () => (isPortalOnly ? getPortalPageTitle(location.pathname, t) : ''),
+    [isPortalOnly, location.pathname, t]
+  );
 
   async function handleLogout() {
     if (isPortalOnly) {
@@ -39,11 +45,26 @@ export default function Topbar() {
   }
 
   return (
-    <div className="topbar">
+    <div className={`topbar${isPortalOnly ? ' topbar--portal' : ''}${showMenuButton ? ' topbar--with-menu' : ''}`}>
       <div className="topbar-left">
-        <Link to={DASHBOARD_HOME_PATH} className="topbar-title" style={{ textDecoration: 'none', color: 'inherit' }}>
-          {t('home')}
-        </Link>
+        {showMenuButton && (
+          <button
+            type="button"
+            className="topbar-menu-btn"
+            aria-label={menuOpen ? t('navMenuClose') : t('navMenuOpen')}
+            aria-expanded={menuOpen}
+            onClick={onMenuToggle}
+          >
+            <span className="topbar-menu-btn__icon" aria-hidden="true" />
+          </button>
+        )}
+        {isPortalOnly ? (
+          <h1 className="portal-topbar-title">{portalPageTitle}</h1>
+        ) : (
+          <Link to={DASHBOARD_HOME_PATH} className="topbar-title topbar-title-link" style={{ textDecoration: 'none', color: 'inherit' }}>
+            {t('home')}
+          </Link>
+        )}
       </div>
 
       <div className="topbar-right">

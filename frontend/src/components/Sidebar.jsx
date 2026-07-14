@@ -8,7 +8,7 @@ import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRout
 
 const BRAND_MARK = '/teofila-mark.svg';
 
-export default function Sidebar() {
+export default function Sidebar({ drawerOpen = false, isMobile = false, inert = false }) {
   const { user, userData } = useContext(AuthContext);
   const { t } = useLanguage();
   const { isPortalOnly } = useDashboardAuth();
@@ -20,8 +20,18 @@ export default function Sidebar() {
   const isActive = (path) => location.pathname === path;
   const isEstructuraActive = location.pathname.startsWith('/dashboard/estructura');
 
+  const sidebarClassName = [
+    'sidebar',
+    drawerOpen ? 'sidebar--drawer-open' : '',
+    isPortalOnly ? 'sidebar--portal' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="sidebar">
+    <aside
+      className={sidebarClassName}
+      inert={inert ? '' : undefined}
+      aria-hidden={inert ? true : undefined}
+    >
       <div className="sidebar-header">
         <Link to={DASHBOARD_HOME_PATH} className="sidebar-brand">
           <img src={BRAND_MARK} alt="" className="sidebar-brand-logo" />
@@ -204,6 +214,6 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-    </div>
+    </aside>
   );
 }
