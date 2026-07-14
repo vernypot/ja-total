@@ -130,10 +130,12 @@ function DayActivitiesPanel({
   onSelectEvent,
 }) {
   const selectedDateLabel = selectedDateKey
-    ? new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(
-      language === 'en' ? 'en-US' : 'es-ES',
-      { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    )
+    ? formatEventLocalDate(selectedDateKey, language, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }) || selectedDateKey
     : '';
 
   return (
@@ -198,6 +200,7 @@ function EventDetailModal({
   getAsistenciaFromRow,
   getConfirmacionFromRow,
   memberDisplayName,
+  readOnly = false,
 }) {
   if (!event) return null;
 
@@ -206,12 +209,13 @@ function EventDetailModal({
   const isFuture = isEventInFuture(event);
   const dateLabel = event.fecha
     ? formatEventLocalDate(event.fecha, language, {
+      timeZone: event.clubes?.iglesias?.timezone,
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     })
-    : event.fecha;
+    : '';
 
   return (
     <div className="calendario-event-detail-overlay" onClick={onClose} role="presentation">
@@ -277,7 +281,7 @@ function EventDetailModal({
             </div>
           </div>
 
-          {needsConfirmation && (
+          {!readOnly && needsConfirmation && (
             <div className="calendario-event-detail-members">
               <h4>{t('calendarAssignedMembers')}</h4>
               {loading ? (
@@ -309,6 +313,7 @@ function EventDetailModal({
           )}
 
           <div className="calendario-event-detail-actions">
+            {!readOnly && (
             <button
               type="button"
               onClick={onManage}
@@ -325,6 +330,7 @@ function EventDetailModal({
             >
               {t('calendarManageEvent')}
             </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -358,6 +364,7 @@ export default function CalendarioClubView({
   weekDays,
   loading,
   error,
+  calendarNotice,
   iglesiaScopeReady,
   selectClub,
   setCalendarViewMode,
@@ -382,6 +389,7 @@ export default function CalendarioClubView({
   getAsistenciaFromRow,
   getConfirmacionFromRow,
   memberDisplayName,
+  readOnly = false,
 }) {
   const { t, language } = useLanguage();
 
@@ -389,7 +397,7 @@ export default function CalendarioClubView({
     return <p>{t('loading')}</p>;
   }
 
-  const periodLabel = formatCalendarPeriodLabel(viewMode, focusDate, language);
+  const periodLabel = formatCalendarPeriodLabel(viewMode, focusDate, language) || t('clubCalendar');
   const todayKey = getLocalTodayIso();
   const isDayView = viewMode === 'day';
   const isWeekView = viewMode === 'week';
@@ -406,6 +414,9 @@ export default function CalendarioClubView({
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {calendarNotice && !error && (
+        <div className="alert" style={{ marginBottom: '16px' }}>{calendarNotice}</div>
+      )}
 
       <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <label style={{ fontSize: '14px', fontWeight: 600 }}>
@@ -543,6 +554,7 @@ export default function CalendarioClubView({
           loading={loadingEventDetail}
           t={t}
           language={language}
+          readOnly={readOnly}
           onClose={closeEventDetail}
           onManage={openEventInEventsPage}
           isEventInFuture={isEventInFuture}

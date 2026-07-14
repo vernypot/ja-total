@@ -194,7 +194,10 @@ export default function MiembroAsistenciaView({
                       </div>
                       {checkedInAt && (
                         <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                          {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
+                          {t('checkedInAt')}: {(() => {
+                            const stamp = new Date(checkedInAt);
+                            return Number.isNaN(stamp.getTime()) ? String(checkedInAt) : stamp.toLocaleString();
+                          })()}
                         </div>
                       )}
                     </td>

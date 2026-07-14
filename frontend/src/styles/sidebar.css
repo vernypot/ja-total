@@ -60,6 +60,11 @@
   color: #93c5fd;
 }
 
+.role-member {
+  background: rgba(134, 239, 172, 0.2);
+  color: #86efac;
+}
+
 .role-admin {
   background: rgba(253, 230, 138, 0.2);
   color: #fde68a;

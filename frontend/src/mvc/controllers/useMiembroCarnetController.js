@@ -1,11 +1,15 @@
 import { useEffect, useState, useMemo, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
+import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import * as MiembrosModel from '../models/miembros.model';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
 import * as CarnetModel from '../models/carnet.model';
 
 export function useMiembroCarnetController(miembroId) {
   const { language } = useLanguage();
+  const { user, userData } = useContext(AuthContext);
+  const canManage = canManageChurchData(getUserRole(user, userData));
   const [member, setMember] = useState(null);
   const [medical, setMedical] = useState(null);
   const [clubs, setClubs] = useState([]);
@@ -18,11 +22,6 @@ export function useMiembroCarnetController(miembroId) {
   const selectedClub = useMemo(
     () => clubs.find(c => c.id === selectedClubId) || clubs[0] || null,
     [clubs, selectedClubId]
-  );
-
-  const qrUrl = useMemo(
-    () => (token ? CarnetModel.buildCheckinQrUrl(token) : ''),
-    [token]
   );
 
   const fullName = useMemo(() => CarnetModel.memberFullName(member), [member]);
@@ -44,7 +43,7 @@ export function useMiembroCarnetController(miembroId) {
     const [
       { data: memberData, error: memberError },
       { data: medicalData },
-      { data: clubRows, error: clubsError },
+      { data: clubRows },
       { data: tokenData, error: tokenError },
     ] = await Promise.all([
       MiembrosModel.fetchMiembroById(miembroId),
@@ -99,10 +98,11 @@ export function useMiembroCarnetController(miembroId) {
     selectedClubId,
     setSelectedClubId,
     token,
-    qrUrl,
+    setToken,
     fullName,
     bloodType,
     expirationLabel,
+    canManage,
     error,
     loading,
     printCard,

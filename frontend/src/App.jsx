@@ -6,6 +6,7 @@ import { IglesiaProvider } from "./context/IglesiaContext";
 import { ClubProvider } from "./context/ClubContext";
 import AppRouter from "./routes/AppRouter";
 import ConfigRequired from "./components/ConfigRequired";
+import { MemberPortalProvider } from "./context/MemberPortalContext";
 
 const missingEnv = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_KEY;
 
@@ -16,15 +17,17 @@ export default function App() {
         <ConfigRequired />
       ) : (
         <AuthProvider>
-          <ThemeProvider>
-            <PageHelpProvider>
-              <IglesiaProvider>
-                <ClubProvider>
-                  <AppRouter />
-                </ClubProvider>
-              </IglesiaProvider>
-            </PageHelpProvider>
-          </ThemeProvider>
+          <MemberPortalProvider>
+            <ThemeProvider>
+              <PageHelpProvider>
+                <IglesiaProvider>
+                  <ClubProvider>
+                    <AppRouter />
+                  </ClubProvider>
+                </IglesiaProvider>
+              </PageHelpProvider>
+            </ThemeProvider>
+          </MemberPortalProvider>
         </AuthProvider>
       )}
     </LanguageProvider>

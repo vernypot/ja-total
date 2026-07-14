@@ -36,7 +36,13 @@ export function useCalendarioClubController() {
   const [selectedEventAssignments, setSelectedEventAssignments] = useState([]);
   const [loadingEventDetail, setLoadingEventDetail] = useState(false);
 
-  const focusDate = useMemo(() => dateFromKey(focusDateKey), [focusDateKey]);
+  const focusDate = useMemo(() => {
+    const date = dateFromKey(focusDateKey);
+    if (Number.isNaN(date.getTime())) {
+      return dateFromKey(churchTz.getLocalTodayIso());
+    }
+    return date;
+  }, [focusDateKey, churchTz]);
   const year = focusDate.getFullYear();
   const monthIndex = focusDate.getMonth();
 

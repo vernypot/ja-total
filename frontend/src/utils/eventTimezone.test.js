@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   computeCheckinAttendanceEstado,
   formatEventLocalDate,
+  formatIsoDateInTimezone,
   getEventChurchTimezone,
   getEventStartInstant,
   getLocalTodayIso,
   isEventInFuture,
   isEventToday,
+  normalizeEventDate,
   toLocalDateKey,
   wallClockToInstant,
 } from './eventTimezone';
@@ -73,8 +75,28 @@ describe('eventTimezone', () => {
     expect(formatEventLocalDate('2026-07-13', 'es', { timeZone: 'America/Bogota' })).toContain('2026');
   });
 
+  it('normalizes ISO timestamp dates before formatting', () => {
+    expect(normalizeEventDate('2026-07-13T00:00:00.000Z')).toBe('2026-07-13');
+    expect(formatEventLocalDate('2026-07-13T00:00:00.000Z', 'es', { timeZone: 'America/Bogota' }))
+      .not.toBe('Invalid time value');
+    expect(formatEventLocalDate('2026-07-13T00:00:00.000Z', 'es', { timeZone: 'America/Bogota' }))
+      .toContain('2026');
+  });
+
   it('converts wall clock using IANA timezone', () => {
     expect(wallClockToInstant('2026-07-13', '19:00:00', 'America/Bogota')?.toISOString())
       .toBe('2026-07-14T00:00:00.000Z');
+  });
+
+  it('rejects impossible calendar dates without throwing', () => {
+    expect(normalizeEventDate('2026-13-45')).toBe('');
+    expect(wallClockToInstant('2026-13-45', '19:00:00', 'America/Bogota')).toBeNull();
+    expect(() => isEventInFuture({ fecha: '2026-13-45', hora: '19:00:00' })).not.toThrow();
+    expect(isEventInFuture({ fecha: '2026-13-45', hora: '19:00:00' })).toBe(false);
+  });
+
+  it('returns empty local today for invalid reference dates', () => {
+    expect(getLocalTodayIso(new Date(Number.NaN), 'America/Bogota')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(formatIsoDateInTimezone(new Date(Number.NaN), 'America/Bogota')).toBe('');
   });
 });

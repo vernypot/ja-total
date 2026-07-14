@@ -6,6 +6,37 @@ import { DEFAULT_CHURCH_TIMEZONE, normalizeChurchTimezone } from './churchTimezo
 
 export const EVENT_TIMEZONE = DEFAULT_CHURCH_TIMEZONE;
 
+export function isValidWallClockDateKey(dateKey) {
+  const normalized = String(dateKey || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return false;
+
+  const [year, month, day] = normalized.split('-').map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+
+  const probe = new Date(year, month - 1, day);
+  return probe.getFullYear() === year
+    && probe.getMonth() === month - 1
+    && probe.getDate() === day;
+}
+
+export function normalizeEventDate(fecha) {
+  if (!fecha) return '';
+
+  if (fecha instanceof Date) {
+    if (Number.isNaN(fecha.getTime())) return '';
+    const year = fecha.getUTCFullYear();
+    const month = String(fecha.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getUTCDate()).padStart(2, '0');
+    const key = `${year}-${month}-${day}`;
+    return isValidWallClockDateKey(key) ? key : '';
+  }
+
+  const raw = String(fecha).trim();
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  const key = match ? match[1] : '';
+  return isValidWallClockDateKey(key) ? key : '';
+}
+
 export function normalizeEventHora(hora) {
   const raw = String(hora || '00:00:00').trim();
   const match = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
@@ -14,40 +45,54 @@ export function normalizeEventHora(hora) {
 }
 
 function getOffsetMinutesAtInstant(instantMs, timeZone) {
-  const date = new Date(instantMs);
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(date);
+  if (!Number.isFinite(instantMs)) return 0;
 
-  const year = Number(parts.find(part => part.type === 'year')?.value);
-  const month = Number(parts.find(part => part.type === 'month')?.value);
-  const day = Number(parts.find(part => part.type === 'day')?.value);
-  const hour = Number(parts.find(part => part.type === 'hour')?.value);
-  const minute = Number(parts.find(part => part.type === 'minute')?.value);
-  const second = Number(parts.find(part => part.type === 'second')?.value);
-  const asUtc = Date.UTC(year, month - 1, day, hour, minute, second);
-  return (asUtc - instantMs) / 60000;
+  const date = new Date(instantMs);
+  if (Number.isNaN(date.getTime())) return 0;
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    const year = Number(parts.find(part => part.type === 'year')?.value);
+    const month = Number(parts.find(part => part.type === 'month')?.value);
+    const day = Number(parts.find(part => part.type === 'day')?.value);
+    const hour = Number(parts.find(part => part.type === 'hour')?.value);
+    const minute = Number(parts.find(part => part.type === 'minute')?.value);
+    const second = Number(parts.find(part => part.type === 'second')?.value);
+    const asUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+    return (asUtc - instantMs) / 60000;
+  } catch {
+    return 0;
+  }
 }
 
 export function wallClockToInstant(fecha, hora, timeZone = DEFAULT_CHURCH_TIMEZONE) {
-  if (!fecha) return null;
+  const normalizedFecha = normalizeEventDate(fecha);
+  if (!normalizedFecha) return null;
 
   const zone = normalizeChurchTimezone(timeZone);
   const normalizedHora = normalizeEventHora(hora);
-  const [year, month, day] = fecha.split('-').map(Number);
+  const [year, month, day] = normalizedFecha.split('-').map(Number);
   const [hour, minute, second] = normalizedHora.split(':').map(Number);
 
+  if (![year, month, day, hour, minute, second].every(Number.isFinite)) return null;
+
   let instant = Date.UTC(year, month - 1, day, hour, minute, second);
+  if (!Number.isFinite(instant)) return null;
+
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const offsetMinutes = getOffsetMinutesAtInstant(instant, zone);
     instant = Date.UTC(year, month - 1, day, hour, minute, second) - offsetMinutes * 60 * 1000;
+    if (!Number.isFinite(instant)) return null;
   }
 
   const result = new Date(instant);
@@ -63,17 +108,25 @@ export function getEventChurchTimezone(evento) {
 }
 
 export function formatIsoDateInTimezone(date, timeZone = DEFAULT_CHURCH_TIMEZONE) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: normalizeChurchTimezone(timeZone),
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
+  const safeDate = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(safeDate.getTime())) return '';
 
-  const year = parts.find(part => part.type === 'year')?.value;
-  const month = parts.find(part => part.type === 'month')?.value;
-  const day = parts.find(part => part.type === 'day')?.value;
-  return `${year}-${month}-${day}`;
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: normalizeChurchTimezone(timeZone),
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(safeDate);
+
+    const year = parts.find(part => part.type === 'year')?.value;
+    const month = parts.find(part => part.type === 'month')?.value;
+    const day = parts.find(part => part.type === 'day')?.value;
+    if (!year || !month || !day) return '';
+    return `${year}-${month}-${day}`;
+  } catch {
+    return '';
+  }
 }
 
 export function toLocalDateKey(date = new Date(), timeZone = DEFAULT_CHURCH_TIMEZONE) {
@@ -81,7 +134,9 @@ export function toLocalDateKey(date = new Date(), timeZone = DEFAULT_CHURCH_TIME
 }
 
 export function getLocalTodayIso(referenceDate = new Date(), timeZone = DEFAULT_CHURCH_TIMEZONE) {
-  return toLocalDateKey(referenceDate, timeZone);
+  const key = toLocalDateKey(referenceDate, timeZone);
+  if (key) return key;
+  return toLocalDateKey(new Date(), DEFAULT_CHURCH_TIMEZONE);
 }
 
 export function getEventStartInstant(evento, timeZone = DEFAULT_CHURCH_TIMEZONE) {
@@ -115,33 +170,37 @@ export function isEventInPast(evento, now = new Date(), timeZone = DEFAULT_CHURC
 }
 
 export function isEventToday(evento, now = new Date(), timeZone = DEFAULT_CHURCH_TIMEZONE) {
-  if (!evento?.fecha) return false;
-  return evento.fecha === getLocalTodayIso(now, timeZone);
+  const fecha = normalizeEventDate(evento?.fecha);
+  if (!fecha) return false;
+  return fecha === getLocalTodayIso(now, timeZone);
 }
 
 export function compareEventsByLocalDateTime(a, b) {
-  const keyA = `${a?.fecha || ''}T${String(a?.hora || '').slice(0, 8)}`;
-  const keyB = `${b?.fecha || ''}T${String(b?.hora || '').slice(0, 8)}`;
+  const keyA = `${normalizeEventDate(a?.fecha)}T${String(a?.hora || '').slice(0, 8)}`;
+  const keyB = `${normalizeEventDate(b?.fecha)}T${String(b?.hora || '').slice(0, 8)}`;
   return keyA.localeCompare(keyB);
 }
 
 export function formatEventLocalDate(fecha, language = 'es', options = {}) {
-  if (!fecha) return '';
+  const normalizedFecha = normalizeEventDate(fecha);
+  if (!normalizedFecha) return '';
   const {
     timeZone = DEFAULT_CHURCH_TIMEZONE,
     ...dateOptions
   } = options;
   const locale = language === 'en' ? 'en-US' : 'es-CO';
-  const anchor = wallClockToInstant(fecha, '12:00:00', timeZone);
-  if (!anchor) return '';
+  const anchor = wallClockToInstant(normalizedFecha, '12:00:00', timeZone);
+  if (!anchor || Number.isNaN(anchor.getTime())) return '';
 
-  return anchor.toLocaleDateString(locale, {
+  const formatted = anchor.toLocaleDateString(locale, {
     timeZone: normalizeChurchTimezone(timeZone),
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     ...dateOptions,
   });
+
+  return formatted === 'Invalid Date' || formatted === 'Invalid time value' ? '' : formatted;
 }
 
 export function formatEventLocalTime(hora) {

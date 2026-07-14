@@ -53,7 +53,10 @@ function MemberEventCard({
           )}
           {checkedInAt && (
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-              {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
+              {t('checkedInAt')}: {(() => {
+                const stamp = new Date(checkedInAt);
+                return Number.isNaN(stamp.getTime()) ? String(checkedInAt) : stamp.toLocaleString();
+              })()}
               <span className="checkin-session-qr-badge">{t('checkinViaQr')}</span>
             </div>
           )}

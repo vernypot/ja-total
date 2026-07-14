@@ -118,9 +118,13 @@ export async function loadCarnetTokensForMembers(memberIds) {
   return tokens;
 }
 
-export function buildCheckinQrUrl(token) {
+export function buildMemberPortalQrUrl(token) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/dashboard/checkin?t=${encodeURIComponent(token)}`;
+  return `${origin}/portal?t=${encodeURIComponent(token)}`;
+}
+
+export function buildCheckinQrUrl(token) {
+  return buildMemberPortalQrUrl(token);
 }
 
 export function buildEventCheckinSessionUrl(eventoId, { started = false } = {}) {
