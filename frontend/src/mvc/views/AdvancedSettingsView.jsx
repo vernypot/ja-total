@@ -1,6 +1,8 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import ThemeColorOverridesPanel from '../../components/ThemeColorOverridesPanel';
 import '../../styles/form.css';
+import '../../styles/theme-color-overrides.css';
 
 export default function AdvancedSettingsView({
   loading,
@@ -21,6 +23,7 @@ export default function AdvancedSettingsView({
   deleteLabel,
   addLabel,
   syncWithDefaults,
+  themeColors,
 }) {
   const { t } = useLanguage();
 
@@ -37,6 +40,10 @@ export default function AdvancedSettingsView({
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      <div className="card" style={{ marginBottom: '20px' }}>
+        <ThemeColorOverridesPanel {...themeColors} />
+      </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>

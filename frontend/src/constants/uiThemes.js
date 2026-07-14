@@ -26,3 +26,8 @@ export const UI_THEME_IDS = UI_THEMES.map(t => t.id);
 export function normalizeUiTheme(value) {
   return UI_THEME_IDS.includes(value) ? value : DEFAULT_UI_THEME;
 }
+
+/** Clear & dark themes share Blix layout, icons, and mobile shell */
+export function isBlixLayoutTheme(theme) {
+  return theme === 'clear' || theme === 'dark';
+}

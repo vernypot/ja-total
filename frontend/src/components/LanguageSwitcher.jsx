@@ -1,45 +1,32 @@
 import { useLanguage } from '../hooks/useLanguage';
+import '../styles/language-switcher.css';
 
 export default function LanguageSwitcher() {
   const { language, setLanguage, t } = useLanguage();
 
   return (
-    <div style={{
-      display: 'flex',
-      gap: '8px',
-      alignItems: 'center'
-    }}>
+    <div className="language-switcher">
       <button
+        type="button"
+        className={`language-switcher-btn${language === 'es' ? ' is-active' : ''}`}
         onClick={() => setLanguage('es')}
-        style={{
-          padding: '6px 12px',
-          backgroundColor: language === 'es' ? '#2563eb' : '#e5e7eb',
-          color: language === 'es' ? 'white' : 'black',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontWeight: language === 'es' ? 'bold' : 'normal',
-          transition: 'all 0.2s'
-        }}
         title={t('spanish')}
+        aria-label={t('spanish')}
+        aria-pressed={language === 'es'}
       >
-        🇪🇸 ES
+        <span className="language-switcher-btn-icon" aria-hidden="true">🇪🇸</span>
+        <span className="language-switcher-btn-label">ES</span>
       </button>
       <button
+        type="button"
+        className={`language-switcher-btn${language === 'en' ? ' is-active' : ''}`}
         onClick={() => setLanguage('en')}
-        style={{
-          padding: '6px 12px',
-          backgroundColor: language === 'en' ? '#2563eb' : '#e5e7eb',
-          color: language === 'en' ? 'white' : 'black',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontWeight: language === 'en' ? 'bold' : 'normal',
-          transition: 'all 0.2s'
-        }}
         title={t('english')}
+        aria-label={t('english')}
+        aria-pressed={language === 'en'}
       >
-        🇬🇧 EN
+        <span className="language-switcher-btn-icon" aria-hidden="true">🇬🇧</span>
+        <span className="language-switcher-btn-label">EN</span>
       </button>
     </div>
   );

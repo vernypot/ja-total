@@ -75,6 +75,9 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
             className="user-button"
             onClick={() => setShowMenu(!showMenu)}
             title={displayName}
+            aria-label={displayName}
+            aria-expanded={showMenu}
+            aria-haspopup="menu"
           >
             <div className="user-avatar">{displayInitials}</div>
             <div className="user-info">
