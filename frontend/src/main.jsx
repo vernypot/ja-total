@@ -10,6 +10,7 @@ import './styles/themes/dark.css';
 import './styles/themes/dark-blix.css';
 import './styles/accessibility.css';
 import './styles/sidebar.css';
+import './styles/brand-mark.css';
 import './styles/topbar.css';
 import './styles/form.css';
 import './styles/app.css';

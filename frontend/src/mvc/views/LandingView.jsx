@@ -11,7 +11,7 @@ import '../../styles/landing.css';
 import '../../styles/landingHeroScreenshot.css';
 import '../../styles/landingInfoRequest.css';
 
-const BRAND_MARK = '/teofila-mark.svg';
+import { BRAND_MARK } from '../../constants/brand';
 
 function sectionStyle(section) {
   if (!section?.style_json) return {};

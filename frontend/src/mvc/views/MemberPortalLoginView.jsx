@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import PortalQrScanner from '../../components/PortalQrScanner';
+import { BRAND_MARK } from '../../constants/brand';
 import '../../styles/login.css';
 
 export default function MemberPortalLoginView({
@@ -26,6 +27,7 @@ export default function MemberPortalLoginView({
     <div className="login-page">
       <div className="login-page-brand">
         <div className="login-page-brand-content">
+          <img src={BRAND_MARK} alt="" className="login-page-brand-mark" />
           <h1>{t('portalLoginTitle')}</h1>
           <p>{t('portalLoginBrandText')}</p>
         </div>
