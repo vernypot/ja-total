@@ -353,15 +353,15 @@ export function useClasesProgresivasController() {
 
   async function deleteTagFromPool(claseId, tagId) {
     if (!canManage) return;
-    if (!window.confirm('Delete this tag from the shared library? It will be removed from all requirements in every class.')) return;
 
     setError('');
     const { error: deleteError } = await ClasesModel.deleteClaseRequisitoTag(tagId);
     if (deleteError) {
       setError('Error deleting tag: ' + deleteError.message);
-      return;
+      return false;
     }
     await loadRequisitos(claseId);
+    return true;
   }
 
   async function addRequisito(claseId) {

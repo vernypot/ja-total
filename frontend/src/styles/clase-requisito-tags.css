@@ -5,6 +5,81 @@
   border-radius: var(--radius-md, 8px);
 }
 
+.clase-requisitos-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+  gap: 14px;
+  margin-top: 8px;
+  align-items: start;
+}
+
+.clase-requisitos-editor__main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.clase-requisitos-editor__tags-sidebar {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+}
+
+.clase-requisito-tags-pool--sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  max-height: calc(100vh - 96px);
+}
+
+.clase-requisito-tags-pool--sidebar .clase-requisito-tags-pool__chips {
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-height: 80px;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.clase-requisito-tags-pool--sidebar .clase-requisito-tag-chip {
+  width: 100%;
+  justify-content: space-between;
+  max-width: none;
+}
+
+.clase-requisito-tags-pool--sidebar .clase-requisito-tags-pool__create {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.clase-requisito-tags-pool--sidebar .clase-requisito-tags-pool__create .form-input {
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .clase-requisitos-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .clase-requisitos-editor__tags-sidebar {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+
+  .clase-requisito-tags-pool--sidebar {
+    max-height: 280px;
+  }
+}
+
 .clase-requisito-tags-pool__title {
   margin: 0 0 4px;
   font-size: var(--text-sm, 13px);

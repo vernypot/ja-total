@@ -8,7 +8,7 @@ import '../../styles/landingHeroScreenshot.css';
 import '../../styles/landingInfoRequest.css';
 import '../../styles/systemModules.css';
 
-const BRAND_MARK = '/teofila-mark.svg';
+import { BRAND_MARK } from '../../constants/brand';
 
 export default function SystemModulesView({
   user,

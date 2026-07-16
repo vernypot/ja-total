@@ -4,7 +4,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { getPasswordResetRedirectUrl } from '../../config/site';
 import '../../styles/login.css';
 
-const BRAND_MARK = '/teofila-mark.svg';
+import { BRAND_MARK } from '../../constants/brand';
 
 export default function ResetPasswordView({
   ready,

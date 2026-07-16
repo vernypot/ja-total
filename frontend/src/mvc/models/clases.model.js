@@ -289,12 +289,15 @@ export async function deleteClaseRequisitoSeccion(id) {
 
 export function getRequisitoDisplayText(req, completion = null) {
   const original = req?.descripcion || '';
-  if (!completion?.usar_texto_alternativo) return original;
-
-  const memberText = completion?.texto_reemplazo?.trim();
-  if (memberText) return memberText;
-
   const catalogAlt = req?.texto_opcional?.trim();
+
+  if (completion?.usar_texto_alternativo) {
+    const memberText = completion?.texto_reemplazo?.trim();
+    if (memberText) return memberText;
+    if (catalogAlt) return catalogAlt;
+    return original;
+  }
+
   if (catalogAlt) return catalogAlt;
 
   return original;
@@ -517,7 +520,7 @@ export async function deleteClaseRequisitoTag(tagId) {
 
 export async function fetchMiembroClases(miembroId) {
   const progressFields =
-    'estado, completado, fecha_completado, tiene_investidura, investidura_fecha, investidura_lugar, investidura_validado_por_nombre';
+    'estado, estado_progreso, completado, fecha_completado, tiene_investidura, investidura_fecha, investidura_lugar, investidura_validado_por_nombre';
   const claseJoin = 'clases_progresivas(id,nombre,tipo_id,club_tipo,estado,tipos_club(nombre))';
   const attempts = [
     `id, miembro_id, clase_progresiva_id, ${progressFields}, ${claseJoin}`,
@@ -543,7 +546,7 @@ export async function fetchMiembroClases(miembroId) {
       if (!error) return { data: data || [], error: null };
     }
 
-    if (isMissingColumnError(withEstado.error, 'completado') || isMissingColumnError(withEstado.error, 'clase_progresiva_id')) {
+    if (isMissingColumnError(withEstado.error, 'completado') || isMissingColumnError(withEstado.error, 'clase_progresiva_id') || isMissingColumnError(withEstado.error, 'estado_progreso')) {
       continue;
     }
   }
@@ -561,6 +564,7 @@ export async function fetchMiembroClases(miembroId) {
 }
 
 export async function updateMiembroClaseProgresiva(linkId, {
+  estadoProgreso,
   completado,
   fechaCompletado,
   tieneInvestidura,
@@ -578,6 +582,7 @@ export async function updateMiembroClaseProgresiva(linkId, {
     p_investidura_lugar: investiduraLugar,
     p_investidura_validado_por_usuario_id: investiduraValidadoPorUsuarioId,
     p_investidura_validado_por_nombre: investiduraValidadoPorNombre,
+    p_estado_progreso: estadoProgreso,
   });
 
   if (!rpc.error) {
@@ -591,6 +596,7 @@ export async function updateMiembroClaseProgresiva(linkId, {
   }
 
   const payload = {
+    estado_progreso: estadoProgreso,
     completado,
     fecha_completado: fechaCompletado,
     tiene_investidura: tieneInvestidura,
@@ -669,8 +675,8 @@ export async function assignClaseToMiembro(miembroId, claseId) {
   }
 
   const rows = [
-    { miembro_id: miembroId, clase_progresiva_id: claseId, estado: 'activo' },
-    { miembro_id: miembroId, clase_id: claseId, estado: 'activo' },
+    { miembro_id: miembroId, clase_progresiva_id: claseId, estado: 'activo', estado_progreso: 'sin_iniciar' },
+    { miembro_id: miembroId, clase_id: claseId, estado: 'activo', estado_progreso: 'sin_iniciar' },
     { miembro_id: miembroId, clase_progresiva_id: claseId },
     { miembro_id: miembroId, clase_id: claseId },
   ];
@@ -795,4 +801,91 @@ export async function upsertMiembroClaseRequisito({
     p_texto_reemplazo: textoReemplazo,
     p_usar_texto_alternativo: usarTextoAlternativo,
   });
+}
+
+const MIEMBRO_CLASE_HISTORIAL_SELECT =
+  'id, miembro_id, nombre, clase_progresiva_id, club_id, club_nombre, estado_progreso, fecha_completado, tiene_investidura, investidura_fecha, investidura_lugar, investidura_validado_por_nombre, notas, created_at, updated_at, clubes(id, nombre, tipos_club(id, nombre)), clases_progresivas(id, nombre)';
+
+export async function fetchMiembroClaseHistorial(miembroId) {
+  const { data, error } = await sb
+    .from('miembro_clase_historial')
+    .select(MIEMBRO_CLASE_HISTORIAL_SELECT)
+    .eq('miembro_id', miembroId)
+    .order('nombre', { ascending: true });
+
+  if (!error) return { data: data || [], error: null };
+
+  const msg = error?.message || '';
+  if (msg.includes('miembro_clase_historial') && (msg.includes('does not exist') || msg.includes('Could not find'))) {
+    return { data: [], error: null };
+  }
+
+  return { data: [], error };
+}
+
+export function buildMiembroClaseHistorialPayload({
+  nombre,
+  claseProgresivaId = null,
+  clubId = null,
+  clubNombre = null,
+  estadoProgreso = null,
+  fechaCompletado = null,
+  tieneInvestidura = false,
+  investiduraFecha = null,
+  investiduraLugar = null,
+  investiduraValidadoPorNombre = null,
+  notas = null,
+}) {
+  const payload = {
+    nombre: nombre?.trim(),
+    clase_progresiva_id: claseProgresivaId || null,
+    club_id: clubId || null,
+    club_nombre: clubNombre?.trim() || null,
+    estado_progreso: estadoProgreso || null,
+    fecha_completado: fechaCompletado || null,
+    tiene_investidura: Boolean(tieneInvestidura),
+    investidura_fecha: investiduraFecha || null,
+    investidura_lugar: investiduraLugar?.trim() || null,
+    investidura_validado_por_nombre: investiduraValidadoPorNombre?.trim() || null,
+    notas: notas?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (!payload.estado_progreso) {
+    payload.fecha_completado = null;
+    payload.tiene_investidura = false;
+    payload.investidura_fecha = null;
+    payload.investidura_lugar = null;
+    payload.investidura_validado_por_nombre = null;
+  } else if (payload.estado_progreso !== 'investida') {
+    payload.tiene_investidura = false;
+    payload.investidura_fecha = null;
+    payload.investidura_lugar = null;
+    payload.investidura_validado_por_nombre = null;
+  }
+
+  return payload;
+}
+
+export async function createMiembroClaseHistorial(miembroId, fields) {
+  const payload = buildMiembroClaseHistorialPayload(fields);
+  return sb
+    .from('miembro_clase_historial')
+    .insert([{ miembro_id: miembroId, ...payload }])
+    .select(MIEMBRO_CLASE_HISTORIAL_SELECT)
+    .single();
+}
+
+export async function updateMiembroClaseHistorial(id, fields) {
+  const payload = buildMiembroClaseHistorialPayload(fields);
+  return sb
+    .from('miembro_clase_historial')
+    .update(payload)
+    .eq('id', id)
+    .select(MIEMBRO_CLASE_HISTORIAL_SELECT)
+    .single();
+}
+
+export async function deleteMiembroClaseHistorial(id) {
+  return sb.from('miembro_clase_historial').delete().eq('id', id);
 }

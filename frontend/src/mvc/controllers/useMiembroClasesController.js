@@ -31,6 +31,10 @@ export function useMiembroClasesController(miembroId) {
   const [selectedClaseId, setSelectedClaseId] = useState('');
   const [savingRequisitoKey, setSavingRequisitoKey] = useState(null);
   const [savingAssignmentId, setSavingAssignmentId] = useState(null);
+  const [historial, setHistorial] = useState([]);
+  const [catalogClases, setCatalogClases] = useState([]);
+  const [memberClubs, setMemberClubs] = useState([]);
+  const [savingHistorialId, setSavingHistorialId] = useState(null);
 
   const assignedIds = useMemo(
     () => new Set(assigned.map(row => getLinkClaseId(row)).filter(Boolean)),
@@ -52,11 +56,15 @@ export function useMiembroClasesController(miembroId) {
       { tipoIds, tipos, error: tiposError },
       { data: tiposClub },
       { data: allClases, error: clasesError },
+      { data: historialRows, error: historialError },
+      { data: clubs, error: clubsError },
     ] = await Promise.all([
       ClasesModel.fetchMiembroClases(miembroId),
       MiembrosModel.fetchMiembroClubTipoIds(miembroId),
       ClasesModel.fetchTiposClub(),
       ClasesModel.fetchClasesProgresivas({ showInactive: false }),
+      ClasesModel.fetchMiembroClaseHistorial(miembroId),
+      MiembrosModel.fetchMiembroClubsWithLogos(miembroId),
     ]);
 
     if (assignedError) {
@@ -74,11 +82,24 @@ export function useMiembroClasesController(miembroId) {
       setLoading(false);
       return;
     }
+    if (historialError) {
+      setError('Error loading class history: ' + historialError.message);
+      setLoading(false);
+      return;
+    }
+    if (clubsError) {
+      setError('Error loading member clubs: ' + clubsError.message);
+      setLoading(false);
+      return;
+    }
 
     const filtered = ClasesModel.filterClasesByTipos(allClases || [], tipoIds, tiposClub || []);
     setAssigned(assignedRows || []);
     setAvailable(filtered);
     setMemberTipos(tipos);
+    setHistorial(historialRows || []);
+    setCatalogClases(allClases || []);
+    setMemberClubs(clubs || []);
 
     const assignmentIds = (assignedRows || []).map(row => row.id).filter(Boolean);
     if (assignmentIds.length) {
@@ -186,6 +207,7 @@ export function useMiembroClasesController(miembroId) {
     setSavingAssignmentId(assignmentId);
 
     const { data, error: saveError } = await ClasesModel.updateMiembroClaseProgresiva(assignmentId, {
+      estadoProgreso: draft.estado_progreso,
       completado: draft.completado,
       fechaCompletado: draft.completado ? (draft.fecha_completado || null) : null,
       tieneInvestidura: draft.tiene_investidura,
@@ -211,6 +233,67 @@ export function useMiembroClasesController(miembroId) {
     return true;
   }, [canManage, user?.id, userData?.id]);
 
+  const saveHistorial = useCallback(async (rowId, draft) => {
+    if (!canManage) return false;
+    setError('');
+    setSavingHistorialId(rowId || 'new');
+
+    const fields = {
+      nombre: draft.nombre,
+      claseProgresivaId: draft.clase_progresiva_id || null,
+      clubId: draft.club_id || null,
+      clubNombre: draft.club_nombre,
+      estadoProgreso: draft.estado_progreso || null,
+      fechaCompletado: draft.fecha_completado || null,
+      tieneInvestidura: draft.estado_progreso === 'investida',
+      investiduraFecha: draft.investidura_fecha || null,
+      investiduraLugar: draft.investidura_lugar,
+      investiduraValidadoPorNombre: draft.investidura_validado_por_nombre,
+      notas: draft.notas,
+    };
+
+    const { data, error: saveError } = rowId
+      ? await ClasesModel.updateMiembroClaseHistorial(rowId, fields)
+      : await ClasesModel.createMiembroClaseHistorial(miembroId, fields);
+
+    setSavingHistorialId(null);
+
+    if (saveError) {
+      setError('Error saving class history: ' + saveError.message);
+      return false;
+    }
+
+    if (data) {
+      setHistorial(prev => {
+        if (rowId) {
+          return prev.map(row => (row.id === rowId ? data : row));
+        }
+        return [...prev, data].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+      });
+    } else {
+      load();
+    }
+
+    return true;
+  }, [canManage, miembroId]);
+
+  const deleteHistorial = useCallback(async (rowId) => {
+    if (!canManage || !rowId) return false;
+    setError('');
+    setSavingHistorialId(rowId);
+
+    const { error: deleteError } = await ClasesModel.deleteMiembroClaseHistorial(rowId);
+    setSavingHistorialId(null);
+
+    if (deleteError) {
+      setError('Error deleting class history: ' + deleteError.message);
+      return false;
+    }
+
+    setHistorial(prev => prev.filter(row => row.id !== rowId));
+    return true;
+  }, [canManage]);
+
   useEffect(() => {
     load();
   }, [miembroId]);
@@ -231,6 +314,12 @@ export function useMiembroClasesController(miembroId) {
     saveAssignmentProgress,
     savingRequisitoKey,
     savingAssignmentId,
+    historial,
+    catalogClases,
+    memberClubs,
+    saveHistorial,
+    deleteHistorial,
+    savingHistorialId,
     canManage,
     defaultValidatorName,
     getClaseFromLink,

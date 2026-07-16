@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
-
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function buildDraft(assignment, defaultValidatorName) {
-  return {
-    completado: assignment?.completado || false,
-    fecha_completado: assignment?.fecha_completado || '',
-    tiene_investidura: assignment?.tiene_investidura || false,
-    investidura_fecha: assignment?.investidura_fecha || '',
-    investidura_lugar: assignment?.investidura_lugar || '',
-    investidura_validado_por_nombre:
-      assignment?.investidura_validado_por_nombre || defaultValidatorName || '',
-  };
-}
+import {
+  MIEMBRO_CLASE_PROGRESO_ESTADOS,
+  applyMiembroClaseProgresoEstadoToDraft,
+  buildMiembroClaseProgressDraft,
+  isMiembroClaseProgressDraftValid,
+  miembroClaseProgresoEstadoLabel,
+} from '../constants/miembroClaseProgresoEstado';
+import MiembroClaseProgresoEstadoBadge from './MiembroClaseProgresoEstadoBadge';
 
 export default function MiembroClaseProgressModal({
   claseNombre,
@@ -26,13 +18,15 @@ export default function MiembroClaseProgressModal({
   onClose,
   onSave,
 }) {
-  const [draft, setDraft] = useState(() => buildDraft(assignment, defaultValidatorName));
+  const [draft, setDraft] = useState(() => buildMiembroClaseProgressDraft(assignment, defaultValidatorName));
 
   useEffect(() => {
-    setDraft(buildDraft(assignment, defaultValidatorName));
+    setDraft(buildMiembroClaseProgressDraft(assignment, defaultValidatorName));
   }, [assignment, defaultValidatorName]);
 
   const readOnly = !canManage;
+  const showCompletionDate = draft.estado_progreso === 'completada' || draft.estado_progreso === 'investida';
+  const showInvestidura = draft.estado_progreso === 'investida';
 
   return (
     <div
@@ -79,22 +73,16 @@ export default function MiembroClaseProgressModal({
           {readOnly ? (
             <>
               <div>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompleted')}: </span>
-                <strong style={{ color: draft.completado ? '#059669' : '#6b7280' }}>
-                  {draft.completado ? '✓' : t('requirementPending')}
-                </strong>
+                <span style={{ color: 'var(--color-text-muted)' }}>{t('memberClassStatus')}: </span>
+                <MiembroClaseProgresoEstadoBadge assignment={assignment} t={t} />
               </div>
-              {draft.completado && draft.fecha_completado && (
+              {showCompletionDate && draft.fecha_completado && (
                 <div>
                   <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}: </span>
                   <strong>{draft.fecha_completado}</strong>
                 </div>
               )}
-              <div>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('hadInvestidura')}: </span>
-                <strong>{draft.tiene_investidura ? t('yes') : t('no')}</strong>
-              </div>
-              {draft.tiene_investidura && (
+              {showInvestidura && (
                 <>
                   {draft.investidura_fecha && (
                     <div>
@@ -119,57 +107,43 @@ export default function MiembroClaseProgressModal({
             </>
           ) : (
             <>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={draft.completado}
+              <label style={{ display: 'grid', gap: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('memberClassStatus')}</span>
+                <select
+                  value={draft.estado_progreso}
                   disabled={saving}
-                  onChange={e => {
-                    const checked = e.target.checked;
-                    setDraft(prev => ({
-                      ...prev,
-                      completado: checked,
-                      fecha_completado: checked ? (prev.fecha_completado || todayIsoDate()) : '',
-                    }));
-                  }}
-                />
-                <span>{t('classCompleted')}</span>
-              </label>
-              <label style={{ display: 'grid', gap: '4px' }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}</span>
-                <input
-                  type="date"
-                  value={draft.fecha_completado}
-                  disabled={saving || !draft.completado}
-                  onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
-                />
+                  onChange={e => setDraft(prev => applyMiembroClaseProgresoEstadoToDraft(
+                    prev,
+                    e.target.value,
+                    defaultValidatorName,
+                  ))}
+                  className="form-input"
+                  style={{ margin: 0, fontSize: '13px' }}
+                >
+                  {MIEMBRO_CLASE_PROGRESO_ESTADOS.map(estado => (
+                    <option key={estado} value={estado}>
+                      {miembroClaseProgresoEstadoLabel(estado, t)}
+                    </option>
+                  ))}
+                </select>
               </label>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: 0 }} />
+              {showCompletionDate && (
+                <label style={{ display: 'grid', gap: '4px' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}</span>
+                  <input
+                    type="date"
+                    value={draft.fecha_completado}
+                    disabled={saving}
+                    onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                  />
+                </label>
+              )}
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={draft.tiene_investidura}
-                  disabled={saving}
-                  onChange={e => {
-                    const checked = e.target.checked;
-                    setDraft(prev => ({
-                      ...prev,
-                      tiene_investidura: checked,
-                      investidura_fecha: checked ? (prev.investidura_fecha || todayIsoDate()) : '',
-                      investidura_lugar: checked ? prev.investidura_lugar : '',
-                      investidura_validado_por_nombre: checked
-                        ? (prev.investidura_validado_por_nombre || defaultValidatorName)
-                        : '',
-                    }));
-                  }}
-                />
-                <span>{t('hadInvestidura')}</span>
-              </label>
-              {draft.tiene_investidura && (
+              {showInvestidura && (
                 <>
+                  <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: 0 }} />
                   <label style={{ display: 'grid', gap: '4px' }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraDate')}</span>
                     <input
@@ -229,11 +203,7 @@ export default function MiembroClaseProgressModal({
               </button>
               <button
                 type="button"
-                disabled={
-                  saving
-                  || (draft.completado && !draft.fecha_completado)
-                  || (draft.tiene_investidura && !draft.investidura_fecha)
-                }
+                disabled={saving || !isMiembroClaseProgressDraftValid(draft)}
                 onClick={() => onSave(draft)}
                 style={{
                   padding: '8px 14px',

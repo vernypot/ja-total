@@ -7,7 +7,7 @@ import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions"
 import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
 import NavLinkItem from "./NavLinkItem";
 
-const BRAND_MARK = '/teofila-mark.svg';
+import { BRAND_MARK } from '../constants/brand';
 
 export default function Sidebar({ drawerOpen = false, isMobile = false, inert = false, onCloseDrawer }) {
   const { user, userData } = useContext(AuthContext);
@@ -45,9 +45,6 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
           <h3 className="sidebar-brand-name">{t('appName')}</h3>
         </Link>
         <div className="sidebar-header-actions">
-          <span className={`role-badge role-${isPortalOnly ? 'member' : userRole}`}>
-            {isPortalOnly ? t('roleMember') : userRole}
-          </span>
           {isMobile && drawerOpen && (
             <button
               type="button"

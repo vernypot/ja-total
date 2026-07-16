@@ -8,6 +8,7 @@ import { filterBySearch } from '../../utils/listSearch';
 import * as MiembrosModel from '../models/miembros.model';
 import * as IglesiasModel from '../models/iglesias.model';
 import * as ClubesModel from '../models/clubes.model';
+import * as CargosModel from '../models/cargos.model';
 import {
   downloadMemberTemplate,
   parseMemberSpreadsheet,
@@ -34,6 +35,8 @@ export function useMiembrosController() {
   const [data, setData] = useState([]);
   const [clubsData, setClubsData] = useState([]);
   const [showInactive, setShowInactive] = useState(false);
+  const [hideBoardMembers, setHideBoardMembers] = useState(false);
+  const [boardMemberIds, setBoardMemberIds] = useState([]);
   const [activeIglesiaData, setActiveIglesiaData] = useState(null);
 
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -46,18 +49,27 @@ export function useMiembrosController() {
   const [assigningKey, setAssigningKey] = useState(null);
   const [assignmentError, setAssignmentError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMemberIds, setSelectedMemberIds] = useState([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkActionMessage, setBulkActionMessage] = useState('');
+  const [bulkActionError, setBulkActionError] = useState('');
+  const [bulkClubId, setBulkClubId] = useState('');
 
-  const filteredData = useMemo(
-    () => filterBySearch(data, searchQuery, m => [
+  const filteredData = useMemo(() => {
+    const searched = filterBySearch(data, searchQuery, m => [
       m.nombre,
       m.apellido1,
       m.apellido2,
       m.documento,
       m.celular,
       m.email,
-    ]),
-    [data, searchQuery]
-  );
+    ]);
+
+    if (!hideBoardMembers || boardMemberIds.length === 0) return searched;
+
+    const hideSet = new Set(boardMemberIds);
+    return searched.filter(m => !hideSet.has(m.id));
+  }, [data, searchQuery, hideBoardMembers, boardMemberIds]);
 
   async function load() {
     if (!effectiveIglesiaId) {
@@ -76,6 +88,25 @@ export function useMiembrosController() {
       return;
     }
     setData(rows || []);
+  }
+
+  async function loadBoardMemberIds() {
+    if (!effectiveIglesiaId || !clubsData.length) {
+      setBoardMemberIds([]);
+      return;
+    }
+
+    const { memberIds, error } = await CargosModel.fetchDirectivaMemberIds(clubsData, {
+      clubFilter: clubId || undefined,
+    });
+
+    if (error) {
+      console.error('Error loading board members:', error);
+      setBoardMemberIds([]);
+      return;
+    }
+
+    setBoardMemberIds(memberIds || []);
   }
 
   async function loadIglesias() {
@@ -104,6 +135,132 @@ export function useMiembrosController() {
     } else {
       setClubsData([]);
     }
+  }
+
+  function clearMemberSelection() {
+    setSelectedMemberIds([]);
+  }
+
+  function toggleMemberSelection(memberId) {
+    setSelectedMemberIds(prev => (
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    ));
+  }
+
+  function selectAllMembers() {
+    setSelectedMemberIds(filteredData.map(m => m.id));
+  }
+
+  async function bulkSetEstado(estado, t) {
+    if (!canManage || selectedMemberIds.length === 0) return;
+
+    const successKey = estado === 'activo' ? 'bulkActionActivatedSuccess' : 'bulkActionDeactivatedSuccess';
+    const confirmKey = estado === 'activo' ? 'bulkConfirmActivate' : 'bulkConfirmDeactivate';
+    const confirmed = window.confirm(
+      t(confirmKey).replace('{count}', String(selectedMemberIds.length))
+    );
+    if (!confirmed) return;
+
+    setBulkUpdating(true);
+    setBulkActionMessage('');
+    setBulkActionError('');
+
+    const errors = [];
+    for (const id of selectedMemberIds) {
+      const { error } = await MiembrosModel.updateMiembroEstado(id, estado);
+      if (error) errors.push(error.message);
+    }
+
+    setBulkUpdating(false);
+
+    if (errors.length > 0) {
+      setBulkActionError(t('bulkActionError'));
+      return;
+    }
+
+    setBulkActionMessage(t(successKey).replace('{count}', String(selectedMemberIds.length)));
+    clearMemberSelection();
+    load();
+  }
+
+  async function bulkAssignClub(t) {
+    if (!canManage || selectedMemberIds.length === 0 || !bulkClubId) return;
+
+    const club = clubsData.find(c => c.id === bulkClubId);
+    const clubName = club?.nombre || '';
+    const confirmed = window.confirm(
+      t('bulkConfirmAssignClub')
+        .replace('{count}', String(selectedMemberIds.length))
+        .replace('{club}', clubName)
+    );
+    if (!confirmed) return;
+
+    setBulkUpdating(true);
+    setBulkActionMessage('');
+    setBulkActionError('');
+
+    const errors = [];
+    for (const id of selectedMemberIds) {
+      const { error } = await MiembrosModel.assignMiembroToClub(id, bulkClubId);
+      if (error) errors.push(error.message);
+    }
+
+    setBulkUpdating(false);
+
+    if (errors.length > 0) {
+      setBulkActionError(t('bulkActionError'));
+      return;
+    }
+
+    setBulkActionMessage(
+      t('bulkActionAssignClubSuccess')
+        .replace('{count}', String(selectedMemberIds.length))
+        .replace('{club}', clubName)
+    );
+    clearMemberSelection();
+    load();
+  }
+
+  async function bulkUnassignClub(t) {
+    if (!canManage || selectedMemberIds.length === 0 || !bulkClubId) return;
+
+    const club = clubsData.find(c => c.id === bulkClubId);
+    const clubName = club?.nombre || '';
+    const confirmed = window.confirm(
+      t('bulkConfirmUnassignClub')
+        .replace('{count}', String(selectedMemberIds.length))
+        .replace('{club}', clubName)
+    );
+    if (!confirmed) return;
+
+    setBulkUpdating(true);
+    setBulkActionMessage('');
+    setBulkActionError('');
+
+    const errors = [];
+    for (const id of selectedMemberIds) {
+      const member = data.find(m => m.id === id);
+      if (!member?.clubIds?.includes(bulkClubId)) continue;
+      const { error } = await MiembrosModel.unassignMiembroFromClub(id, bulkClubId);
+      if (error) errors.push(error.message);
+    }
+
+    setBulkUpdating(false);
+
+    if (errors.length > 0) {
+      setBulkActionError(t('bulkActionError'));
+      return;
+    }
+
+    setBulkActionMessage(
+      t('bulkActionUnassignClubSuccess')
+        .replace('{count}', String(selectedMemberIds.length))
+        .replace('{club}', clubName)
+    );
+    clearMemberSelection();
+    load();
   }
 
   async function toggleEstado(miembro) {
@@ -256,6 +413,15 @@ export function useMiembrosController() {
 
   useEffect(() => { load(); }, [clubId, showInactive, effectiveIglesiaId]);
   useEffect(() => { loadIglesias(); loadClubs(); }, [effectiveIglesiaId, clubId]);
+  useEffect(() => { loadBoardMemberIds(); }, [clubsData, clubId, effectiveIglesiaId]);
+  useEffect(() => {
+    setSelectedMemberIds(prev => prev.filter(id => filteredData.some(m => m.id === id)));
+  }, [filteredData]);
+  useEffect(() => {
+    if (clubId) {
+      setBulkClubId(clubId);
+    }
+  }, [clubId]);
   useEffect(() => {
     if (clubId && clubsData.length > 0) {
       const club = clubsData.find(c => c.id === clubId);
@@ -272,6 +438,8 @@ export function useMiembrosController() {
     clubsData,
     showInactive,
     setShowInactive,
+    hideBoardMembers,
+    setHideBoardMembers,
     activeIglesiaData,
     iglesiaScopeReady: canSwitchIglesia || (hasIglesiaAssignment && assignedIglesiaActive),
     clubId,
@@ -298,5 +466,18 @@ export function useMiembrosController() {
     bulkError,
     isValidating,
     isImporting,
+    selectedMemberIds,
+    toggleMemberSelection,
+    selectAllMembers,
+    clearMemberSelection,
+    bulkUpdating,
+    bulkActionMessage,
+    bulkActionError,
+    bulkClubId,
+    setBulkClubId,
+    bulkActivate: t => bulkSetEstado('activo', t),
+    bulkDeactivate: t => bulkSetEstado('inactivo', t),
+    bulkAssignClub,
+    bulkUnassignClub,
   };
 }

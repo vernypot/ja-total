@@ -4,7 +4,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/login.css';
 
-const BRAND_MARK = '/teofila-mark.svg';
+import { BRAND_MARK } from '../../constants/brand';
 
 export default function LoginView({
   email,

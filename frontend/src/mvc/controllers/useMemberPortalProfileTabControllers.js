@@ -369,6 +369,7 @@ export function useMemberPortalClasesController() {
   const [requisitosByClase, setRequisitosByClase] = useState({});
   const [completionsByAssignment, setCompletionsByAssignment] = useState({});
   const [memberTipos, setMemberTipos] = useState([]);
+  const [historial, setHistorial] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -388,6 +389,7 @@ export function useMemberPortalClasesController() {
       setRequisitosByClase({});
       setCompletionsByAssignment({});
       setMemberTipos([]);
+      setHistorial([]);
       setLoading(false);
       return;
     }
@@ -396,6 +398,7 @@ export function useMemberPortalClasesController() {
     setRequisitosByClase(buildRequisitosMap(payload?.requisitos, 'clase_id'));
     setCompletionsByAssignment(ClasesModel.mapCompletionsByAssignment(payload?.completions || []));
     setMemberTipos(payload?.memberTipos || []);
+    setHistorial(payload?.historial || []);
     setLoading(false);
   }
 
@@ -423,6 +426,12 @@ export function useMemberPortalClasesController() {
     defaultValidatorName: '',
     getClaseFromLink: row => row.clases_progresivas || null,
     getLinkClaseId: row => row.clase_progresiva_id || row.clase_id || row.clases_progresivas?.id,
+    historial,
+    catalogClases: [],
+    memberClubs: [],
+    saveHistorial: async () => false,
+    deleteHistorial: async () => false,
+    savingHistorialId: null,
   };
 }
 
