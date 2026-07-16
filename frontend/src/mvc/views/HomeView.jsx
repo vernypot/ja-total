@@ -2,7 +2,110 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import { PageHelpLink } from '../../components/PageHelp';
+import AdminPendingApprovalsPanel from '../../components/AdminPendingApprovalsPanel';
 import '../../styles/home.css';
+
+function HomeNotifications({
+  t,
+  canManage,
+  loading,
+  notificationCount,
+  pendingApprovals,
+  eventAttendanceAlerts,
+  reviewingSolicitudId,
+  reviewSolicitud,
+  memberName,
+  formatRequestedDate,
+  formatEventDate,
+  formatEventTime,
+  eventDisplayName,
+  getClubName,
+  goToMemberClasses,
+  goToEventos,
+}) {
+  if (!canManage || loading) return null;
+
+  const hasVisibleApprovals = pendingApprovals.length > 0;
+  const hasVisibleEventAlerts = eventAttendanceAlerts.length > 0;
+  const hasVisibleNotifications = hasVisibleApprovals || hasVisibleEventAlerts;
+
+  if (!hasVisibleNotifications) return null;
+
+  return (
+    <div className="home-notifications">
+      {hasVisibleNotifications && notificationCount > 0 && (
+        <section className="portal-home-hero portal-home-hero--action" aria-label={t('homeActionRequired')}>
+          <div className="portal-home-hero-content">
+            <span className="portal-home-hero-badge">{notificationCount}</span>
+            <div>
+              <h2>{t('homeActionRequired')}</h2>
+              <p>{t('homeActionRequiredHint')}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hasVisibleApprovals && (
+        <AdminPendingApprovalsPanel
+          solicitudes={pendingApprovals}
+          reviewingSolicitudId={reviewingSolicitudId}
+          onReview={reviewSolicitud}
+          memberName={memberName}
+          formatRequestedDate={formatRequestedDate}
+          goToMemberClasses={goToMemberClasses}
+          t={t}
+        />
+      )}
+
+      {hasVisibleEventAlerts && (
+        <section className="portal-home-section portal-home-section--priority">
+          <div className="portal-home-section-head">
+            <h2>📋 {t('homeMeetingAttendance')}</h2>
+            <button type="button" className="portal-home-section-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={goToEventos}>
+              {t('viewAll')}
+            </button>
+          </div>
+          <div className="portal-home-card-list">
+            {eventAttendanceAlerts.map(({ evento, pendingCount, pendingMembers }) => {
+              const day = evento.fecha?.slice(8, 10) || '--';
+              const memberPreview = pendingMembers.map(memberName).join(', ');
+              return (
+                <article key={evento.id} className="portal-home-event-card">
+                  <div className="home-event-badge">
+                    <span>{day}</span>
+                  </div>
+                  <div className="home-item-main">
+                    <strong>{eventDisplayName(evento) || t('eventUntitled')}</strong>
+                    <span>{getClubName(evento)}{evento.lugar ? ` · ${evento.lugar}` : ''}</span>
+                    <span>{formatEventDate(evento.fecha)} · {formatEventTime(evento.hora)}</span>
+                    <span className="portal-home-event-status">
+                      {t('homePendingConfirmationsCount').replace('{count}', String(pendingCount))}
+                    </span>
+                    {memberPreview && (
+                      <span className="home-notification-members">
+                        {t('homePendingConfirmationsMembers').replace('{names}', memberPreview)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="portal-home-card-actions">
+                    <button
+                      type="button"
+                      className="portal-home-section-link"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      onClick={goToEventos}
+                    >
+                      {t('homeManageEvents')}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
 
 function HomePanels({
   t,
@@ -163,6 +266,13 @@ export default function HomeView(props) {
     selectIglesia,
     canManage,
     goToNoticiasAdmin,
+    pendingApprovals,
+    eventAttendanceAlerts,
+    notificationCount,
+    reviewingSolicitudId,
+    reviewSolicitud,
+    formatRequestedDate,
+    goToMemberClasses,
     ...panelProps
   } = props;
 
@@ -248,12 +358,32 @@ export default function HomeView(props) {
       )}
 
       {effectiveIglesiaId && (
-        <HomePanels
-          t={t}
-          canManage={canManage}
-          goToNoticiasAdmin={goToNoticiasAdmin}
-          {...panelProps}
-        />
+        <>
+          <HomeNotifications
+            t={t}
+            canManage={canManage}
+            loading={panelProps.loading}
+            notificationCount={notificationCount}
+            pendingApprovals={pendingApprovals}
+            eventAttendanceAlerts={eventAttendanceAlerts}
+            reviewingSolicitudId={reviewingSolicitudId}
+            reviewSolicitud={reviewSolicitud}
+            memberName={panelProps.memberName}
+            formatRequestedDate={formatRequestedDate}
+            formatEventDate={panelProps.formatEventDate}
+            formatEventTime={panelProps.formatEventTime}
+            eventDisplayName={panelProps.eventDisplayName}
+            getClubName={panelProps.getClubName}
+            goToMemberClasses={panelProps.goToMemberClasses}
+            goToEventos={panelProps.goToEventos}
+          />
+          <HomePanels
+            t={t}
+            canManage={canManage}
+            goToNoticiasAdmin={goToNoticiasAdmin}
+            {...panelProps}
+          />
+        </>
       )}
     </div>
   );
