@@ -1,6 +1,9 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { PageHelpLink } from '../../components/PageHelp';
+import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
+import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import '../../styles/eventAttendance.css';
 
 function StatCard({ label, value, tone = 'neutral' }) {
   const tones = {
@@ -101,6 +104,10 @@ export default function MiembroAsistenciaView({
   getTipoEventoNombre,
   isEventInFuture,
   memberAttendedEvent,
+  getEventChurchTimezone,
+  canMemberConfirmEvent,
+  updateConfirmation,
+  savingConfirmationId = null,
 }) {
   const { t } = useLanguage();
 
@@ -157,14 +164,18 @@ export default function MiembroAsistenciaView({
                 const confirmacion = getConfirmacionFromRow(row);
                 const checkedInAt = getCheckedInAtFromRow(row);
                 const needsConfirmation = eventRequiresConfirmation(evento);
-                const isFuture = isEventInFuture(evento);
-                const attended = memberAttendedEvent(asistencia);
+                const timezone = getEventChurchTimezone?.(evento);
+                const isFuture = timezone
+                  ? isEventInFuture(evento, new Date(), timezone)
+                  : isEventInFuture(evento);
+                const canConfirm = canMemberConfirmEvent?.(row);
+                const attended = memberAttendedEvent(row);
                 const onTime = asistencia === 'a_tiempo';
                 const tipoNombre = getTipoEventoNombre(evento);
                 const clubName = evento?.clubes?.nombre;
 
                 return (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={row.id || row.evento_id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '12px', verticalAlign: 'top' }}>
                       <div style={{ fontWeight: 600 }}>{evento?.nombre || t('eventUntitled')}</div>
                       <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
@@ -202,7 +213,22 @@ export default function MiembroAsistenciaView({
                       )}
                     </td>
                     <td style={{ padding: '12px', verticalAlign: 'top' }}>
-                      {needsConfirmation ? (
+                      {canConfirm && updateConfirmation ? (
+                        <MemberEventConfirmBlock
+                          row={row}
+                          updateConfirmation={updateConfirmation}
+                          savingConfirmationId={savingConfirmationId}
+                          t={t}
+                        />
+                      ) : confirmacion !== 'pendiente' ? (
+                        <MemberEventConfirmationStatus
+                          row={row}
+                          updateConfirmation={updateConfirmation}
+                          savingConfirmationId={savingConfirmationId}
+                          t={t}
+                          variant="inline"
+                        />
+                      ) : needsConfirmation ? (
                         <ConfirmationBadge estado={confirmacion} t={t} />
                       ) : (
                         <span style={{ color: '#9ca3af' }}>—</span>

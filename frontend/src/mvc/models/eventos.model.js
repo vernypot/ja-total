@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import { memberDisplayName as resolveMemberDisplayName, MIEMBRO_NAME_FIELDS } from '../../utils/memberDisplayName';
 import {
   compareEventsByLocalDateTime,
   computeCheckinAttendanceEstado,
@@ -11,6 +12,7 @@ import {
   isEventInFuture,
   isEventInPast,
   isEventToday,
+  isEventOpenForMemberConfirmation,
   toLocalDateKey,
 } from '../../utils/eventTimezone';
 
@@ -26,6 +28,7 @@ export {
   isEventInFuture,
   isEventInPast,
   isEventToday,
+  isEventOpenForMemberConfirmation,
   toLocalDateKey,
 };
 
@@ -49,10 +52,10 @@ const EVENTO_SELECTS = [
 
 const EVENTO_MIEMBRO_SELECTS = [
   `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-   miembros ( id, nombre, apellido1, apellido2, estado ),
+   miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
    evento_asistencia ( id, estado, updated_at, checked_in_at )`,
   `id, evento_id, miembro_id,
-   miembros ( id, nombre, apellido1, apellido2, estado ),
+   miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
    evento_asistencia ( id, estado, updated_at, checked_in_at )`,
 ];
 
@@ -107,6 +110,20 @@ export async function fetchEventosByClubInRange(clubId, startDate, endDate) {
 }
 
 export async function fetchMiembroEventos(miembroId) {
+  const { data, error } = await sb.rpc('fetch_miembro_event_listing', {
+    p_miembro_id: miembroId,
+  });
+
+  if (!error) {
+    const rows = typeof data === 'string' ? JSON.parse(data) : (data || []);
+    return { data: Array.isArray(rows) ? rows : [], error: null };
+  }
+
+  const msg = error?.message || '';
+  if (!msg.includes('fetch_miembro_event_listing') && !msg.includes('does not exist')) {
+    return { data: [], error };
+  }
+
   const selects = [
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
      eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
@@ -544,13 +561,13 @@ export function shouldCorrectLateCheckin(attendance, evento, checkinAt) {
 }
 
 export function getCheckedInAtFromRow(row) {
-  const nested = row?.evento_asistencia;
+  const nested = row?.evento_asistencia ?? row?.eventos?.evento_asistencia;
   if (Array.isArray(nested)) return nested[0]?.checked_in_at || null;
   return nested?.checked_in_at || null;
 }
 
 export function getAsistenciaFromRow(row) {
-  const nested = row?.evento_asistencia;
+  const nested = row?.evento_asistencia ?? row?.eventos?.evento_asistencia;
   if (Array.isArray(nested)) return nested[0]?.estado || null;
   return nested?.estado || null;
 }
@@ -560,7 +577,58 @@ export function getConfirmacionFromRow(row) {
 }
 
 export function eventRequiresConfirmation(evento) {
-  return evento?.requiere_confirmacion !== false;
+  if (!evento) return false;
+  return evento.requiere_confirmacion !== false;
+}
+
+export function getEventoMiembroRowId(row) {
+  return row?.id ?? row?.evento_miembro_id ?? null;
+}
+
+export function getEventoIdFromRow(row) {
+  return getEventoFromRow(row)?.id ?? row?.evento_id ?? null;
+}
+
+export function memberConfirmationSaveKey(row) {
+  return getEventoMiembroRowId(row) || getEventoIdFromRow(row) || null;
+}
+
+export function canMemberConfirmEvent(row, now = new Date()) {
+  if (getConfirmacionFromRow(row) !== 'pendiente') return false;
+
+  const evento = getEventoFromRow(row);
+  if (!evento) return false;
+  if (evento.estado && evento.estado !== 'activo') return false;
+
+  const timeZone = getEventChurchTimezone(evento);
+  if (!isEventOpenForMemberConfirmation(evento, now, timeZone)) return false;
+
+  const assignmentId = getEventoMiembroRowId(row);
+  const eventoId = getEventoIdFromRow(row);
+  if (!assignmentId && !eventoId) return false;
+
+  return true;
+}
+
+export function memberEventConfirmationResponded(row) {
+  return getConfirmacionFromRow(row) !== 'pendiente';
+}
+
+export function canMemberCancelEventConfirmation(row, now = new Date()) {
+  if (!memberEventConfirmationResponded(row)) return false;
+
+  const evento = getEventoFromRow(row);
+  if (!evento) return false;
+  if (evento.estado && evento.estado !== 'activo') return false;
+
+  const timeZone = getEventChurchTimezone(evento);
+  if (!isEventOpenForMemberConfirmation(evento, now, timeZone)) return false;
+
+  const assignmentId = getEventoMiembroRowId(row);
+  const eventoId = getEventoIdFromRow(row);
+  if (!assignmentId && !eventoId) return false;
+
+  return true;
 }
 
 export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4, timeZone = EVENT_TIMEZONE) {
@@ -603,8 +671,7 @@ export function getEventoFromRow(row) {
 }
 
 export function memberDisplayName(m) {
-  if (!m) return '';
-  return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
+  return resolveMemberDisplayName(m);
 }
 
 export function getTipoEventoNombre(evento) {

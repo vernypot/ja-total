@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import MiembroClaseRequisitosList from '../../components/MiembroClaseRequisitosList';
+import MiembroClaseAprobacionSolicitudesPanel from '../../components/MiembroClaseAprobacionSolicitudesPanel';
 import MiembroClaseProgressModal from '../../components/MiembroClaseProgressModal';
 import MiembroClaseHistorialModal from '../../components/MiembroClaseHistorialModal';
 import MiembroClaseProgresoEstadoBadge from '../../components/MiembroClaseProgresoEstadoBadge';
@@ -81,11 +83,100 @@ function historialClubLabel(row) {
   return '';
 }
 
+function ClaseApprovalRequestModal({
+  claseNombre,
+  comment,
+  onCommentChange,
+  submitting,
+  t,
+  onClose,
+  onConfirm,
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+        padding: '16px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          padding: '20px',
+          backgroundColor: 'white',
+          borderRadius: '10px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: '#111827' }}>
+          {t('requestClassApprovalConfirmTitle')}
+        </h3>
+        <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#4b5563', lineHeight: 1.5 }}>
+          {t('requestClassApprovalConfirmMessage')}
+        </p>
+        <p style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+          {claseNombre}
+        </p>
+        <label style={{ display: 'grid', gap: '4px', marginBottom: '18px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t('approvalRequestComment')}</span>
+          <textarea
+            value={comment}
+            disabled={submitting}
+            rows={3}
+            placeholder={t('approvalRequestCommentPlaceholder')}
+            onChange={e => onCommentChange(e.target.value)}
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb', resize: 'vertical', fontSize: '13px' }}
+          />
+        </label>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onClose}
+            style={{ padding: '8px 14px', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onConfirm}
+            style={{
+              padding: '8px 14px',
+              backgroundColor: '#4338ca',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: submitting ? 'wait' : 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            {submitting ? t('submittingApprovalRequest') : t('requestClassApprovalConfirmSubmit')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MiembroClasesView({
   assigned,
   unassigned,
   requisitosByClase,
+  seccionesByClase = {},
   completionsByAssignment,
+  solicitudesByAssignment = {},
   memberTipos,
   error,
   loading,
@@ -95,6 +186,9 @@ export default function MiembroClasesView({
   unassignClase,
   saveRequisitoCompletion,
   saveAssignmentProgress,
+  requestRequisitoApproval,
+  requestClaseApproval,
+  requestingKey = null,
   savingRequisitoKey,
   savingAssignmentId,
   canManage = false,
@@ -107,17 +201,46 @@ export default function MiembroClasesView({
   saveHistorial,
   deleteHistorial,
   savingHistorialId = null,
+  solicitudes = [],
+  reviewSolicitud,
+  reviewingSolicitudId = null,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
   const [progressModalRow, setProgressModalRow] = useState(null);
   const [historialModalRow, setHistorialModalRow] = useState(undefined);
   const [expandedRequisitos, setExpandedRequisitos] = useState({});
+  const [classApprovalModalRow, setClassApprovalModalRow] = useState(null);
+  const [classApprovalModalComment, setClassApprovalModalComment] = useState('');
 
   function toggleRequisitos(assignmentId) {
     setExpandedRequisitos(prev => ({
       ...prev,
       [assignmentId]: !prev[assignmentId],
     }));
+  }
+
+  function confirmDeactivateClass(linkId, claseNombre) {
+    askConfirm({
+      title: t('confirmDeactivateClassTitle'),
+      message: t('confirmDeactivateClassMessage'),
+      highlight: claseNombre,
+      confirmLabel: t('deactivateClass'),
+      onConfirm: async () => { await unassignClase(linkId); },
+    });
+  }
+
+  function confirmDeleteHistorialRow(rowId, className) {
+    askConfirm({
+      title: t('confirmDeleteHistorialClassTitle'),
+      message: t('deleteHistorialClassConfirm'),
+      highlight: className,
+      confirmLabel: t('delete'),
+      onConfirm: async () => { await deleteHistorial(rowId); },
+    });
   }
 
   if (loading) {
@@ -162,6 +285,15 @@ export default function MiembroClasesView({
       </div>
       )}
 
+      {canManage && reviewSolicitud && (
+        <MiembroClaseAprobacionSolicitudesPanel
+          solicitudes={solicitudes}
+          reviewingSolicitudId={reviewingSolicitudId}
+          onReview={reviewSolicitud}
+          t={t}
+        />
+      )}
+
       <h4>{t('assignedClasses')}</h4>
       {assigned.length === 0 ? (
         <p className="text-muted">{t('noAssignedClasses')}</p>
@@ -173,7 +305,11 @@ export default function MiembroClasesView({
             const estadoProgreso = resolveMiembroClaseProgresoEstado(row);
             const classCompleted = estadoProgreso === 'completada' || estadoProgreso === 'investida';
             const requisitos = requisitosByClase[claseId] || [];
-            const requisitosExpanded = expandedRequisitos[row.id] ?? false;
+            const secciones = seccionesByClase[claseId] || [];
+            const assignmentSolicitudes = solicitudesByAssignment[row.id]?.requisitos || {};
+            const claseSolicitud = solicitudesByAssignment[row.id]?.clase || null;
+            const clasePendingReview = claseSolicitud?.estado === 'pendiente';
+            const requisitosExpanded = expandedRequisitos[row.id] ?? !canManage;
             return (
               <div key={row.id} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
@@ -209,6 +345,48 @@ export default function MiembroClasesView({
                       </div>
                     )}
                     <InvestiduraSummary row={row} t={t} />
+                    {!canManage && !classCompleted && (
+                      <div style={{ marginTop: '8px' }}>
+                        {clasePendingReview ? (
+                          <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 600 }}>
+                            {t('approvalRequestPending')}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!requestClaseApproval}
+                            onClick={() => {
+                              setClassApprovalModalComment('');
+                              setClassApprovalModalRow(row);
+                            }}
+                            style={{
+                              marginTop: '4px',
+                              padding: '6px 12px',
+                              backgroundColor: '#4338ca',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span aria-hidden="true">✉️</span>
+                            {t('requestClassApproval')}
+                          </button>
+                        )}
+                        {claseSolicitud?.estado === 'rechazado' && (
+                          <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#991b1b' }}>
+                            {t('approvalRequestRejected')}
+                            {claseSolicitud.comentario_lider ? `: ${claseSolicitud.comentario_lider}` : ''}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {(canManage || requisitos.length > 0) && (
                     <button
                       type="button"
                       onClick={() => toggleRequisitos(row.id)}
@@ -230,10 +408,13 @@ export default function MiembroClasesView({
                         <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}> ({requisitos.length})</span>
                       )}
                     </button>
+                    )}
                     {requisitosExpanded && (
                       <MiembroClaseRequisitosList
                         requisitos={requisitos}
+                        secciones={secciones}
                         completions={completionsByAssignment[row.id] || {}}
+                        solicitudes={assignmentSolicitudes}
                         canManage={canManage}
                         savingRequisitoId={
                           savingRequisitoKey?.startsWith(`${row.id}:`)
@@ -243,6 +424,12 @@ export default function MiembroClasesView({
                         onSaveRequisito={(claseRequisitoId, draft) =>
                           saveRequisitoCompletion(row.id, claseRequisitoId, draft)
                         }
+                        onRequestRequisitoApproval={
+                          requestRequisitoApproval
+                            ? (claseRequisitoId, comentario) =>
+                                requestRequisitoApproval(row.id, claseRequisitoId, comentario)
+                            : null
+                        }
                         defaultValidatorName={defaultValidatorName}
                         t={t}
                       />
@@ -251,7 +438,7 @@ export default function MiembroClasesView({
                   {canManage && (
                   <button
                     type="button"
-                    onClick={() => unassignClase(row.id)}
+                    onClick={() => confirmDeactivateClass(row.id, clase?.nombre || t('notAvailable'))}
                     style={{ padding: '6px 12px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
                   >
                     ✕ {t('deactivateClass')}
@@ -276,6 +463,32 @@ export default function MiembroClasesView({
           onSave={async draft => {
             const ok = await saveAssignmentProgress(progressModalRow.id, draft);
             if (ok) setProgressModalRow(null);
+          }}
+        />
+      )}
+
+      {classApprovalModalRow && (
+        <ClaseApprovalRequestModal
+          claseNombre={getClaseFromLink(classApprovalModalRow)?.nombre || t('notAvailable')}
+          comment={classApprovalModalComment}
+          onCommentChange={setClassApprovalModalComment}
+          submitting={requestingKey === `${classApprovalModalRow.id}:clase`}
+          t={t}
+          onClose={() => {
+            if (requestingKey === `${classApprovalModalRow.id}:clase`) return;
+            setClassApprovalModalRow(null);
+            setClassApprovalModalComment('');
+          }}
+          onConfirm={async () => {
+            if (!requestClaseApproval) return;
+            const ok = await requestClaseApproval(
+              classApprovalModalRow.id,
+              classApprovalModalComment.trim() || null
+            );
+            if (ok) {
+              setClassApprovalModalRow(null);
+              setClassApprovalModalComment('');
+            }
           }}
         />
       )}
@@ -361,11 +574,7 @@ export default function MiembroClasesView({
                   {canManage && (
                     <button
                       type="button"
-                      onClick={async () => {
-                        if (window.confirm(t('deleteHistorialClassConfirm'))) {
-                          await deleteHistorial(row.id);
-                        }
-                      }}
+                      onClick={() => confirmDeleteHistorialRow(row.id, row.nombre || t('notAvailable'))}
                       disabled={savingHistorialId === row.id}
                       style={{
                         padding: '6px 12px',
@@ -405,6 +614,7 @@ export default function MiembroClasesView({
           }}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

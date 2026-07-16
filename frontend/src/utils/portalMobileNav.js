@@ -57,7 +57,6 @@ const PORTAL_PROFILE_TAB_LABELS = {
   clases: 'tabClasses',
   eventos: 'tabEvents',
   asistencia: 'tabAttendance',
-  carnet: 'tabCarnet',
 };
 
 export function getPortalPageTitle(pathname, t) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import * as MemberPortalModel from '../mvc/models/memberPortal.model';
 
 export default function MemberPortalPinAdmin({
@@ -10,6 +11,10 @@ export default function MemberPortalPinAdmin({
   onTokenRegenerated,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
   const [hasPin, setHasPin] = useState(false);
   const [portalActivated, setPortalActivated] = useState(false);
   const [pin, setPin] = useState('');
@@ -68,43 +73,53 @@ export default function MemberPortalPinAdmin({
   }
 
   async function resetPin() {
-    if (!window.confirm(t('portalPinResetConfirm'))) return;
+    askConfirm({
+      title: t('portalPinResetConfirmTitle'),
+      message: t('portalPinResetConfirm'),
+      confirmLabel: t('portalPinReset'),
+      onConfirm: async () => {
+        setError('');
+        setNotice('');
+        setResetting(true);
 
-    setError('');
-    setNotice('');
-    setResetting(true);
+        const { error: resetError } = await MemberPortalModel.resetPortalPin(miembroId);
+        setResetting(false);
 
-    const { error: resetError } = await MemberPortalModel.resetPortalPin(miembroId);
-    setResetting(false);
+        if (resetError) {
+          setError(resetError.message);
+          return;
+        }
 
-    if (resetError) {
-      setError(resetError.message);
-      return;
-    }
-
-    setPin('');
-    setHasPin(false);
-    setPortalActivated(false);
-    setNotice(t('portalPinResetDone'));
+        setPin('');
+        setHasPin(false);
+        setPortalActivated(false);
+        setNotice(t('portalPinResetDone'));
+      },
+    });
   }
 
   async function regenerateQr() {
-    if (!window.confirm(t('portalQrRegenerateConfirm'))) return;
+    askConfirm({
+      title: t('portalQrRegenerateConfirmTitle'),
+      message: t('portalQrRegenerateConfirm'),
+      confirmLabel: t('portalQrRegenerate'),
+      onConfirm: async () => {
+        setError('');
+        setNotice('');
+        setRegenerating(true);
 
-    setError('');
-    setNotice('');
-    setRegenerating(true);
+        const { data: newToken, error: regenError } = await MemberPortalModel.regenerateProfileToken(miembroId);
+        setRegenerating(false);
 
-    const { data: newToken, error: regenError } = await MemberPortalModel.regenerateProfileToken(miembroId);
-    setRegenerating(false);
+        if (regenError) {
+          setError(regenError.message);
+          return;
+        }
 
-    if (regenError) {
-      setError(regenError.message);
-      return;
-    }
-
-    setNotice(t('portalQrRegenerated'));
-    onTokenRegenerated?.(newToken || '');
+        setNotice(t('portalQrRegenerated'));
+        onTokenRegenerated?.(newToken || '');
+      },
+    });
   }
 
   if (!canManage) return null;
@@ -194,6 +209,7 @@ export default function MemberPortalPinAdmin({
           )}
         </>
       )}
+      {confirmDialog}
     </div>
   );
 }

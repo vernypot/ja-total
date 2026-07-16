@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import { resolveMiembroClaseProgresoEstado } from '../../constants/miembroClaseProgresoEstado';
 import * as EventosModel from './eventos.model';
 
 function isMissingColumnError(error, column) {
@@ -16,10 +17,19 @@ function chunkArray(items, size = 150) {
   return chunks;
 }
 
+function assignmentMatchesEstado(row, estadoProgreso) {
+  if (!estadoProgreso) return true;
+  return resolveMiembroClaseProgresoEstado(row) === estadoProgreso;
+}
+
 export async function fetchAssignmentsForClase(claseId) {
   if (!claseId) return { data: [], error: null };
 
   const attempts = [
+    { col: 'clase_progresiva_id', select: 'id, miembro_id, clase_progresiva_id, estado, estado_progreso, completado, tiene_investidura' },
+    { col: 'clase_id', select: 'id, miembro_id, clase_id, estado, estado_progreso, completado, tiene_investidura' },
+    { col: 'clase_progresiva_id', select: 'id, miembro_id, clase_progresiva_id, estado, completado, tiene_investidura' },
+    { col: 'clase_id', select: 'id, miembro_id, clase_id, estado, completado, tiene_investidura' },
     { col: 'clase_progresiva_id', select: 'id, miembro_id, clase_progresiva_id, estado' },
     { col: 'clase_id', select: 'id, miembro_id, clase_id, estado' },
     { col: 'clase_progresiva_id', select: 'id, miembro_id, clase_progresiva_id' },
@@ -54,6 +64,13 @@ export async function fetchAssignmentsForClase(claseId) {
     if (isMissingColumnError(withEstado.error, col) || isMissingColumnError(withEstado.error, 'estado')) {
       continue;
     }
+    if (
+      isMissingColumnError(withEstado.error, 'estado_progreso')
+      || isMissingColumnError(withEstado.error, 'completado')
+      || isMissingColumnError(withEstado.error, 'tiene_investidura')
+    ) {
+      continue;
+    }
   }
 
   const wildcard = await sb
@@ -72,23 +89,26 @@ export async function fetchAssignmentsForClase(claseId) {
   return { data: [], error: lastError };
 }
 
-export async function fetchMemberIdsAssignedToClase(claseId) {
+export async function fetchMemberIdsAssignedToClase(claseId, { estadoProgreso = '' } = {}) {
   const { data, error } = await fetchAssignmentsForClase(claseId);
   if (error) return { memberIds: [], error };
 
-  const memberIds = [...new Set((data || []).map(row => row.miembro_id).filter(Boolean))];
+  const rows = (data || []).filter(row => assignmentMatchesEstado(row, estadoProgreso));
+  const memberIds = [...new Set(rows.map(row => row.miembro_id).filter(Boolean))];
   return { memberIds, error: null };
 }
 
-export async function fetchMemberIdsWithCompletedRequisito(claseId, requisitoId) {
+export async function fetchMemberIdsWithCompletedRequisito(claseId, requisitoId, { estadoProgreso = '' } = {}) {
   if (!claseId || !requisitoId) return { memberIds: [], error: null };
 
   const { data: assignments, error: assignmentError } = await fetchAssignmentsForClase(claseId);
   if (assignmentError) return { memberIds: [], error: assignmentError };
-  if (!assignments?.length) return { memberIds: [], error: null };
+
+  const scopedAssignments = (assignments || []).filter(row => assignmentMatchesEstado(row, estadoProgreso));
+  if (!scopedAssignments.length) return { memberIds: [], error: null };
 
   const assignmentById = {};
-  for (const row of assignments) {
+  for (const row of scopedAssignments) {
     if (row.id && row.miembro_id) assignmentById[row.id] = row.miembro_id;
   }
 
@@ -206,6 +226,7 @@ export function hasActiveMemberFilters(filters = {}) {
   return Boolean(
     filters.claseId
     || filters.requisitoId
+    || (filters.claseId && filters.claseEstadoProgreso)
     || filters.especialidadId
     || filters.eventoId
     || filters.minAge !== '' && filters.minAge != null
@@ -215,6 +236,7 @@ export function hasActiveMemberFilters(filters = {}) {
 
 export const EMPTY_MEMBER_FILTERS = {
   claseId: '',
+  claseEstadoProgreso: '',
   requisitoId: '',
   minAge: '',
   maxAge: '',

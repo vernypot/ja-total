@@ -36,6 +36,23 @@ const actionBtnStyle = (completed) => ({
   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
 });
 
+const memberRequisitoBtnStyle = (variant) => ({
+  padding: '4px 10px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  backgroundColor: variant === 'completed' ? '#ecfdf5' : variant === 'pending' ? '#fffbeb' : '#4338ca',
+  color: variant === 'completed' ? '#059669' : variant === 'pending' ? '#b45309' : '#ffffff',
+  border: `1px solid ${variant === 'completed' ? '#a7f3d0' : variant === 'pending' ? '#fcd34d' : '#3730a3'}`,
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '11px',
+  fontWeight: 600,
+  flexShrink: 0,
+  lineHeight: 1.3,
+  whiteSpace: 'nowrap',
+});
+
 function RequisitoTextSection({ req, draft, setDraft, canManage, saving, t }) {
   const catalogAlt = req.texto_opcional?.trim();
   const hasCustomText = draft.usar_texto_alternativo || draft.texto_reemplazo?.trim();
@@ -96,17 +113,32 @@ function RequisitoCompletionModal({
   canManage,
   saving,
   defaultValidatorName,
+  solicitud = null,
+  onRequestApproval,
   t,
   onClose,
   onSave,
 }) {
   const [draft, setDraft] = useState(() => buildDraft(completion, defaultValidatorName));
+  const [requestComment, setRequestComment] = useState('');
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     setDraft(buildDraft(completion, defaultValidatorName));
   }, [completion, defaultValidatorName]);
 
   const readOnly = !canManage;
+  const pendingReview = solicitud?.estado === 'pendiente';
+  const rejected = solicitud?.estado === 'rechazado';
+  const canRequest = readOnly && !draft.completado && !pendingReview && onRequestApproval;
+
+  async function handleRequestApproval() {
+    if (!onRequestApproval) return;
+    setRequesting(true);
+    const ok = await onRequestApproval(requestComment.trim() || null);
+    setRequesting(false);
+    if (ok) onClose();
+  }
 
   return (
     <div
@@ -181,6 +213,35 @@ function RequisitoCompletionModal({
                   <p style={{ margin: 0, color: '#374151', whiteSpace: 'pre-wrap' }}>{draft.comentarios}</p>
                 </div>
               )}
+              {pendingReview && (
+                <div style={{ padding: '10px', backgroundColor: '#fffbeb', borderRadius: '6px', border: '1px solid #fcd34d', fontSize: '12px', color: '#92400e' }}>
+                  {t('approvalRequestPending')}
+                  {solicitud.comentario_miembro && (
+                    <p style={{ margin: '6px 0 0', color: '#78350f' }}>{solicitud.comentario_miembro}</p>
+                  )}
+                </div>
+              )}
+              {rejected && (
+                <div style={{ padding: '10px', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fecaca', fontSize: '12px', color: '#991b1b' }}>
+                  {t('approvalRequestRejected')}
+                  {solicitud.comentario_lider && (
+                    <p style={{ margin: '6px 0 0' }}>{solicitud.comentario_lider}</p>
+                  )}
+                </div>
+              )}
+              {canRequest && (
+                <label style={{ display: 'grid', gap: '4px' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t('approvalRequestComment')}</span>
+                  <textarea
+                    value={requestComment}
+                    disabled={requesting}
+                    rows={2}
+                    placeholder={t('approvalRequestCommentPlaceholder')}
+                    onChange={e => setRequestComment(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb', resize: 'vertical', fontSize: '12px' }}
+                  />
+                </label>
+              )}
             </>
           ) : (
             <>
@@ -245,7 +306,30 @@ function RequisitoCompletionModal({
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
+          {!canManage && canRequest && (
+            <button
+              type="button"
+              disabled={requesting}
+              onClick={handleRequestApproval}
+              style={{
+                padding: '8px 14px',
+                backgroundColor: '#4338ca',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: requesting ? 'wait' : 'pointer',
+                fontSize: '13px',
+                marginRight: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span aria-hidden="true">✉️</span>
+              {requesting ? t('submittingApprovalRequest') : t('requestApproval')}
+            </button>
+          )}
           {!canManage && (
             <button
               type="button"
@@ -292,14 +376,41 @@ function RequisitoCompletionModal({
 function RequisitoRow({
   req,
   completion,
+  solicitud,
   saving,
+  canManage,
   onOpen,
   t,
 }) {
   const completed = completion?.completado;
+  const pendingReview = solicitud?.estado === 'pendiente';
   const usingAlt = completion?.usar_texto_alternativo;
   const displayText = getRequisitoDisplayText(req, completion);
   const title = completed ? t('requirementCompleted') : t('requirementDetails');
+
+  let buttonLabel;
+  let buttonIcon;
+  let ariaLabel;
+
+  if (canManage) {
+    buttonLabel = null;
+    buttonIcon = '⋯';
+    ariaLabel = title;
+  } else if (completed) {
+    buttonIcon = '👁';
+    buttonLabel = t('viewRequirement');
+    ariaLabel = t('viewRequirement');
+  } else if (pendingReview) {
+    buttonIcon = '⏳';
+    buttonLabel = t('approvalRequestPendingShort');
+    ariaLabel = t('approvalRequestPending');
+  } else {
+    buttonIcon = '✉️';
+    buttonLabel = t('requestApproval');
+    ariaLabel = t('requestApproval');
+  }
+
+  const memberVariant = completed ? 'completed' : pendingReview ? 'pending' : 'request';
 
   return (
     <li style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
@@ -317,6 +428,11 @@ function RequisitoRow({
         )}
         {req.numero != null && <strong style={{ fontStyle: 'normal' }}>{req.numero}. </strong>}
         {displayText}
+        {pendingReview && (
+          <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: 600, color: '#b45309', fontStyle: 'normal' }}>
+            ({t('approvalRequestPendingShort')})
+          </span>
+        )}
         {usingAlt && (
           <span
             title={t('requirementAlternativeText')}
@@ -333,13 +449,20 @@ function RequisitoRow({
       </span>
       <button
         type="button"
-        title={title}
-        aria-label={title}
+        title={ariaLabel}
+        aria-label={ariaLabel}
         disabled={saving}
         onClick={() => onOpen(req)}
-        style={actionBtnStyle(completed)}
+        style={canManage ? actionBtnStyle(completed) : memberRequisitoBtnStyle(memberVariant)}
       >
-        ⋯
+        {canManage ? (
+          buttonIcon
+        ) : (
+          <>
+            <span aria-hidden="true">{buttonIcon}</span>
+            <span>{buttonLabel}</span>
+          </>
+        )}
       </button>
     </li>
   );
@@ -349,9 +472,11 @@ export default function MiembroClaseRequisitosList({
   requisitos = [],
   secciones = [],
   completions = {},
+  solicitudes = {},
   canManage = false,
   savingRequisitoId = null,
   onSaveRequisito,
+  onRequestRequisitoApproval,
   defaultValidatorName = '',
   t,
   compact = true,
@@ -410,7 +535,9 @@ export default function MiembroClaseRequisitosList({
                     key={req.id}
                     req={req}
                     completion={completions[req.id]}
+                    solicitud={solicitudes[req.id]}
                     saving={savingRequisitoId === req.id}
+                    canManage={canManage}
                     onOpen={setModalReq}
                     t={t}
                   />
@@ -427,7 +554,9 @@ export default function MiembroClaseRequisitosList({
                 key={req.id}
                 req={req}
                 completion={completions[req.id]}
+                solicitud={solicitudes[req.id]}
                 saving={savingRequisitoId === req.id}
+                canManage={canManage}
                 onOpen={setModalReq}
                 t={t}
               />
@@ -440,9 +569,15 @@ export default function MiembroClaseRequisitosList({
         <RequisitoCompletionModal
           req={modalReq}
           completion={completions[modalReq.id]}
+          solicitud={solicitudes[modalReq.id]}
           canManage={canManage}
           saving={savingRequisitoId === modalReq.id}
           defaultValidatorName={defaultValidatorName}
+          onRequestApproval={
+            onRequestRequisitoApproval
+              ? comentario => onRequestRequisitoApproval(modalReq.id, comentario)
+              : null
+          }
           t={t}
           onClose={() => setModalReq(null)}
           onSave={handleSave}

@@ -1,8 +1,8 @@
 import { sb } from '../../services/supabase';
+import { memberDisplayName, MIEMBRO_NAME_FIELDS } from '../../utils/memberDisplayName';
 
 export function memberFullName(m) {
-  if (!m) return '';
-  return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
+  return memberDisplayName(m);
 }
 
 function startOfDay(date) {
@@ -59,7 +59,7 @@ export async function fetchUpcomingBirthdaysByIglesia(iglesiaId, { days = 30 } =
   const clubIds = clubs.map(c => c.id);
   const { data: rows, error } = await sb
     .from('miembro_club')
-    .select('miembros(id,nombre,apellido1,apellido2,fecha_nacimiento,estado,foto_url)')
+    .select(`miembros(id,${MIEMBRO_NAME_FIELDS},fecha_nacimiento,estado,foto_url)`)
     .in('club_id', clubIds);
 
   if (error) return { data: [], error };
@@ -81,6 +81,8 @@ export async function fetchUpcomingBirthdaysByIglesia(iglesiaId, { days = 30 } =
         nombre: m.nombre,
         apellido1: m.apellido1,
         apellido2: m.apellido2,
+        nombre_opcional: m.nombre_opcional,
+        apellido_opcional: m.apellido_opcional,
         fecha_nacimiento: m.fecha_nacimiento,
         foto_url: m.foto_url,
         daysUntil,

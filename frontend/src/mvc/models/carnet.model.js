@@ -1,8 +1,9 @@
 import { sb } from '../../services/supabase';
+import { memberDisplayName, memberLegalFullName, MIEMBRO_NAME_FIELDS } from '../../utils/memberDisplayName';
 
+/** Legal full name for printed carnets, medical forms, and other documents. */
 export function memberFullName(m) {
-  if (!m) return '';
-  return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
+  return memberLegalFullName(m);
 }
 
 export function formatBloodType(tipoSangre, factorRh) {
@@ -73,7 +74,7 @@ export async function getOrCreateProfileToken(miembroId) {
 export async function fetchActiveClubCarnetMembers(clubId) {
   const { data: rows, error } = await sb
     .from('miembro_club')
-    .select('miembros(id, nombre, apellido1, apellido2, estado, foto_url, miembro_datos_medicos(tipo_sangre, factor_rh))')
+    .select(`miembros(id, ${MIEMBRO_NAME_FIELDS}, estado, foto_url, miembro_datos_medicos(tipo_sangre, factor_rh))`)
     .eq('club_id', clubId);
 
   if (error) return { data: [], error };
@@ -89,6 +90,8 @@ export async function fetchActiveClubCarnetMembers(clubId) {
         nombre: m.nombre,
         apellido1: m.apellido1,
         apellido2: m.apellido2,
+        nombre_opcional: m.nombre_opcional,
+        apellido_opcional: m.apellido_opcional,
         estado: m.estado,
         foto_url: m.foto_url,
         medical: medical || null,
@@ -136,7 +139,7 @@ export function buildEventCheckinSessionUrl(eventoId, { started = false } = {}) 
 
 export function memberNameFromTokenRow(rows) {
   const row = Array.isArray(rows) ? rows[0] : rows;
-  return memberFullName(row);
+  return memberDisplayName(row);
 }
 
 export function parseTokenFromQrPayload(raw) {

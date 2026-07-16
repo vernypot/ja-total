@@ -14,7 +14,7 @@ export function EventActionButton({ children, onClick, tone = 'primary', disable
   );
 }
 
-function EventStatusToggleButton({ estado, selected, label, onClick, className = '' }) {
+function EventStatusToggleButton({ estado, selected, label, onClick, className = '', disabled = false }) {
   return (
     <button
       type="button"
@@ -25,13 +25,30 @@ function EventStatusToggleButton({ estado, selected, label, onClick, className =
       ].filter(Boolean).join(' ')}
       onClick={onClick}
       aria-pressed={selected}
+      disabled={disabled}
     >
       {label}
     </button>
   );
 }
 
-export function ConfirmationControls({ eventoMiembroId, eventoId, current, canManage, onSet, t }) {
+function invokeSet(confirmBeforeSet, estado, proceed) {
+  if (confirmBeforeSet) {
+    confirmBeforeSet(estado, proceed);
+    return;
+  }
+  proceed();
+}
+
+export function ConfirmationControls({
+  eventoMiembroId,
+  eventoId,
+  current,
+  canManage,
+  onSet,
+  confirmBeforeSet,
+  t,
+}) {
   if (!canManage) {
     return <ConfirmationBadge estado={current} t={t} />;
   }
@@ -45,14 +62,89 @@ export function ConfirmationControls({ eventoMiembroId, eventoId, current, canMa
           selected={current === estado}
           label={confirmationLabel(estado, t)}
           className={`event-status-toggle--${estado}`}
-          onClick={() => onSet(eventoMiembroId, estado, eventoId)}
+          onClick={() => invokeSet(
+            confirmBeforeSet,
+            estado,
+            () => onSet(eventoMiembroId, estado, eventoId)
+          )}
         />
       ))}
     </div>
   );
 }
 
-export function AttendanceControls({ eventoMiembroId, eventoId, current, canManage, onSet, t }) {
+export function MemberConfirmationControls({
+  current,
+  saving = false,
+  onSet,
+  onDecline,
+  prominent = false,
+  t,
+}) {
+  const handleDecline = () => {
+    if (onDecline) {
+      onDecline();
+      return;
+    }
+    onSet('rechazado');
+  };
+
+  if (prominent) {
+    return (
+      <div className="member-event-confirm-actions">
+        <button
+          type="button"
+          className="member-event-confirm-btn member-event-confirm-btn--confirm"
+          disabled={saving}
+          aria-pressed={current === 'confirmado'}
+          onClick={() => onSet('confirmado')}
+        >
+          {saving && current !== 'confirmado' ? t('saving') : t('memberConfirmAttendance')}
+        </button>
+        <button
+          type="button"
+          className="member-event-confirm-btn member-event-confirm-btn--decline"
+          disabled={saving}
+          aria-pressed={current === 'rechazado'}
+          onClick={handleDecline}
+        >
+          {t('memberDeclineAttendance')}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="event-status-toggle-group">
+      <EventStatusToggleButton
+        estado="confirmado"
+        selected={current === 'confirmado'}
+        label={confirmationLabel('confirmado', t)}
+        className="event-status-toggle--confirmado"
+        disabled={saving}
+        onClick={() => onSet('confirmado')}
+      />
+      <EventStatusToggleButton
+        estado="rechazado"
+        selected={current === 'rechazado'}
+        label={confirmationLabel('rechazado', t)}
+        className="event-status-toggle--rechazado"
+        disabled={saving}
+        onClick={handleDecline}
+      />
+    </div>
+  );
+}
+
+export function AttendanceControls({
+  eventoMiembroId,
+  eventoId,
+  current,
+  canManage,
+  onSet,
+  confirmBeforeSet,
+  t,
+}) {
   if (!canManage) {
     return <AttendanceBadge estado={current} t={t} />;
   }
@@ -66,7 +158,11 @@ export function AttendanceControls({ eventoMiembroId, eventoId, current, canMana
           selected={current === estado}
           label={attendanceLabel(estado, t)}
           className={`event-status-toggle--${estado === 'a_tiempo' ? 'confirmado' : estado}`}
-          onClick={() => onSet(eventoMiembroId, estado, eventoId)}
+          onClick={() => invokeSet(
+            confirmBeforeSet,
+            estado,
+            () => onSet(eventoMiembroId, estado, eventoId)
+          )}
         />
       ))}
     </div>

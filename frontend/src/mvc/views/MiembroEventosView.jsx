@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
+import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
+import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import * as EventosModel from '../../mvc/models/eventos.model';
 import {
   AttendanceBadge,
   AttendanceControls,
@@ -22,6 +26,11 @@ function MemberEventCard({
   memberAttendedEvent,
   eventRequiresConfirmation,
   getTipoEventoNombre,
+  isEventInFuture,
+  getEventChurchTimezone,
+  savingConfirmationId = null,
+  confirmBeforeConfirmationSet,
+  confirmBeforeAttendanceSet,
 }) {
   const evento = getEventoFromRow(row);
   const asistencia = getAsistenciaFromRow(row);
@@ -31,9 +40,13 @@ function MemberEventCard({
   const tipoNombre = getTipoEventoNombre(evento);
   const needsConfirmation = eventRequiresConfirmation(evento);
   const attended = memberAttendedEvent(row);
+  const canMemberConfirm = !canManage && EventosModel.canMemberConfirmEvent(row);
+  const memberResponded = !canManage && EventosModel.memberEventConfirmationResponded(row);
+  const isFuture = evento && isEventInFuture(evento, new Date(), getEventChurchTimezone(evento));
+  const showMemberAttendance = canManage || !isFuture;
 
   return (
-    <div className={`list-item${attended ? ' member-event-attended' : ''}`}>
+    <div className={`list-item${attended ? ' member-event-attended' : ''}${canMemberConfirm ? ' list-item--needs-confirm' : ''}`}>
       <div className="event-attendance-row">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -62,42 +75,75 @@ function MemberEventCard({
           )}
         </div>
 
+        {canManage && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
           {needsConfirmation && (
             <div>
               <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
-              {canManage ? (
-                <ConfirmationControls
-                  eventoMiembroId={row.id}
-                  eventoId={evento?.id}
-                  current={confirmacion}
-                  canManage={canManage}
-                  onSet={(eventoMiembroId, estado) => updateConfirmation(eventoMiembroId, estado)}
-                  t={t}
-                />
-              ) : (
-                <ConfirmationBadge estado={confirmacion} t={t} />
-              )}
+              <ConfirmationControls
+                eventoMiembroId={row.id}
+                eventoId={evento?.id}
+                current={confirmacion}
+                canManage={canManage}
+                onSet={(eventoMiembroId, estado) => updateConfirmation(eventoMiembroId, estado)}
+                confirmBeforeSet={confirmBeforeConfirmationSet}
+                t={t}
+              />
             </div>
           )}
 
           <div>
             <div className="event-attendance-row-label">{t('attendanceList')}</div>
-            {canManage ? (
-              <AttendanceControls
-                eventoMiembroId={row.id}
-                eventoId={evento?.id}
-                current={asistencia}
-                canManage={canManage}
-                onSet={(eventoMiembroId, estado) => updateAttendance(eventoMiembroId, estado)}
-                t={t}
-              />
-            ) : (
-              <AttendanceBadge estado={asistencia} t={t} />
-            )}
+            <AttendanceControls
+              eventoMiembroId={row.id}
+              eventoId={evento?.id}
+              current={asistencia}
+              canManage={canManage}
+              onSet={(eventoMiembroId, estado) => updateAttendance(eventoMiembroId, estado)}
+              confirmBeforeSet={confirmBeforeAttendanceSet}
+              t={t}
+            />
           </div>
         </div>
+        )}
+
+        {!canManage && !canMemberConfirm && !memberResponded && needsConfirmation && (
+          <div className="member-event-status-only">
+            <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
+            <ConfirmationBadge estado={confirmacion} t={t} />
+          </div>
+        )}
       </div>
+
+      {!canManage && canMemberConfirm && (
+        <div className="member-event-confirm-banner">
+          <div className="member-event-confirm-banner__head">
+            <span className="member-event-confirm-banner__label">{t('memberEventConfirmPrompt')}</span>
+          </div>
+          <MemberEventConfirmBlock
+            row={row}
+            updateConfirmation={updateConfirmation}
+            savingConfirmationId={savingConfirmationId}
+            t={t}
+          />
+        </div>
+      )}
+
+      {!canManage && memberResponded && isFuture && (
+        <MemberEventConfirmationStatus
+          row={row}
+          updateConfirmation={updateConfirmation}
+          savingConfirmationId={savingConfirmationId}
+          t={t}
+        />
+      )}
+
+      {!canManage && showMemberAttendance && (
+        <div className="member-event-attendance-summary">
+          <div className="event-attendance-row-label">{t('attendanceList')}</div>
+          <AttendanceBadge estado={asistencia} t={t} />
+        </div>
+      )}
     </div>
   );
 }
@@ -120,8 +166,70 @@ export default function MiembroEventosView({
   memberAttendedEvent,
   eventRequiresConfirmation,
   getTipoEventoNombre,
+  isEventInFuture,
+  getEventChurchTimezone,
+  savingConfirmationId = null,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
+
+  function buildConfirmBeforeConfirmation(eventName) {
+    return (estado, proceed) => {
+      if (estado !== 'rechazado') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmRejectConfirmationTitle'),
+        message: t('confirmRejectConfirmationMessage'),
+        highlight: eventName,
+        confirmLabel: t('approvalRequestReject'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function buildConfirmBeforeAttendance(eventName) {
+    return (estado, proceed) => {
+      if (estado !== 'ausente') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmMarkAbsentTitle'),
+        message: t('confirmMarkAbsentMessage'),
+        highlight: eventName,
+        confirmLabel: t('attendanceAbsent'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function cardPropsForRow(row) {
+    const evento = getEventoFromRow(row);
+    const eventName = evento?.nombre || t('eventUntitled');
+    return {
+      t,
+      canManage,
+      updateAttendance,
+      updateConfirmation,
+      getEventoFromRow,
+      getAsistenciaFromRow,
+      getCheckedInAtFromRow,
+      getConfirmacionFromRow,
+      memberAttendedEvent,
+      eventRequiresConfirmation,
+      getTipoEventoNombre,
+      isEventInFuture,
+      getEventChurchTimezone,
+      savingConfirmationId,
+      confirmBeforeConfirmationSet: canManage ? buildConfirmBeforeConfirmation(eventName) : undefined,
+      confirmBeforeAttendanceSet: canManage ? buildConfirmBeforeAttendance(eventName) : undefined,
+    };
+  }
 
   const attendedRows = useMemo(
     () => allRows.filter(memberAttendedEvent),
@@ -136,20 +244,6 @@ export default function MiembroEventosView({
   if (loading) {
     return <p>{t('loadingEvents')}</p>;
   }
-
-  const cardProps = {
-    t,
-    canManage,
-    updateAttendance,
-    updateConfirmation,
-    getEventoFromRow,
-    getAsistenciaFromRow,
-    getCheckedInAtFromRow,
-    getConfirmacionFromRow,
-    memberAttendedEvent,
-    eventRequiresConfirmation,
-    getTipoEventoNombre,
-  };
 
   return (
     <div>
@@ -189,7 +283,7 @@ export default function MiembroEventosView({
               <h4 className="member-events-section-title">{t('memberEventsAttendedSection')}</h4>
               <div style={{ display: 'grid', gap: '12px' }}>
                 {attendedRows.map(row => (
-                  <MemberEventCard key={`attended-${row.id}`} row={row} {...cardProps} />
+                  <MemberEventCard key={`attended-${row.id || row.evento_id}`} row={row} {...cardPropsForRow(row)} />
                 ))}
               </div>
             </section>
@@ -200,7 +294,7 @@ export default function MiembroEventosView({
           ) : attendanceFilter === 'attended' ? (
             <div style={{ display: 'grid', gap: '12px' }}>
               {attendedRows.map(row => (
-                <MemberEventCard key={row.id} row={row} {...cardProps} />
+                <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
               ))}
             </div>
           ) : (
@@ -210,7 +304,7 @@ export default function MiembroEventosView({
                   <h4 className="member-events-section-title">{t('memberEventsOtherSection')}</h4>
                   <div style={{ display: 'grid', gap: '12px' }}>
                     {otherRows.map(row => (
-                      <MemberEventCard key={row.id} row={row} {...cardProps} />
+                      <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
                     ))}
                   </div>
                 </section>
@@ -222,6 +316,7 @@ export default function MiembroEventosView({
           )}
         </>
       )}
+      {confirmDialog}
     </div>
   );
 }

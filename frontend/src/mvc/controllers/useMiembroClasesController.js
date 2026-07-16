@@ -35,6 +35,8 @@ export function useMiembroClasesController(miembroId) {
   const [catalogClases, setCatalogClases] = useState([]);
   const [memberClubs, setMemberClubs] = useState([]);
   const [savingHistorialId, setSavingHistorialId] = useState(null);
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [reviewingSolicitudId, setReviewingSolicitudId] = useState(null);
 
   const assignedIds = useMemo(
     () => new Set(assigned.map(row => getLinkClaseId(row)).filter(Boolean)),
@@ -58,6 +60,7 @@ export function useMiembroClasesController(miembroId) {
       { data: allClases, error: clasesError },
       { data: historialRows, error: historialError },
       { data: clubs, error: clubsError },
+      { data: solicitudRows, error: solicitudesError },
     ] = await Promise.all([
       ClasesModel.fetchMiembroClases(miembroId),
       MiembrosModel.fetchMiembroClubTipoIds(miembroId),
@@ -65,6 +68,7 @@ export function useMiembroClasesController(miembroId) {
       ClasesModel.fetchClasesProgresivas({ showInactive: false }),
       ClasesModel.fetchMiembroClaseHistorial(miembroId),
       MiembrosModel.fetchMiembroClubsWithLogos(miembroId),
+      canManage ? ClasesModel.fetchMiembroClaseAprobacionSolicitudes(miembroId) : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (assignedError) {
@@ -92,6 +96,11 @@ export function useMiembroClasesController(miembroId) {
       setLoading(false);
       return;
     }
+    if (solicitudesError) {
+      setError('Error loading approval requests: ' + solicitudesError.message);
+      setLoading(false);
+      return;
+    }
 
     const filtered = ClasesModel.filterClasesByTipos(allClases || [], tipoIds, tiposClub || []);
     setAssigned(assignedRows || []);
@@ -100,6 +109,7 @@ export function useMiembroClasesController(miembroId) {
     setHistorial(historialRows || []);
     setCatalogClases(allClases || []);
     setMemberClubs(clubs || []);
+    setSolicitudes(solicitudRows || []);
 
     const assignmentIds = (assignedRows || []).map(row => row.id).filter(Boolean);
     if (assignmentIds.length) {
@@ -294,6 +304,30 @@ export function useMiembroClasesController(miembroId) {
     return true;
   }, [canManage]);
 
+  const reviewSolicitud = useCallback(async (solicitudId, aprobar, comentarioLider = null) => {
+    if (!canManage || !solicitudId) return false;
+    setError('');
+    setReviewingSolicitudId(solicitudId);
+
+    const { error: reviewError } = await ClasesModel.reviewMiembroClaseAprobacionSolicitud({
+      solicitudId,
+      aprobar,
+      comentarioLider,
+      revisorUsuarioId: userData?.id || user?.id || null,
+      revisorNombre: defaultValidatorName || null,
+    });
+
+    setReviewingSolicitudId(null);
+
+    if (reviewError) {
+      setError('Error reviewing approval request: ' + reviewError.message);
+      return false;
+    }
+
+    await load();
+    return true;
+  }, [canManage, defaultValidatorName, user?.id, userData?.id]);
+
   useEffect(() => {
     load();
   }, [miembroId]);
@@ -320,6 +354,9 @@ export function useMiembroClasesController(miembroId) {
     saveHistorial,
     deleteHistorial,
     savingHistorialId,
+    solicitudes,
+    reviewSolicitud,
+    reviewingSolicitudId,
     canManage,
     defaultValidatorName,
     getClaseFromLink,

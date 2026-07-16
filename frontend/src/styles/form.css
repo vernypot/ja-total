@@ -445,6 +445,13 @@
   line-height: 1.4;
 }
 
+.member-filters__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 12px;
+}
+
 .member-filters__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

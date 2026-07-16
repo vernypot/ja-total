@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import { memberDisplayName as resolveMemberDisplayName, MIEMBRO_NAME_FIELDS } from '../../utils/memberDisplayName';
 import { fetchTiposClub } from './clases.model';
 
 function isRlsError(error) {
@@ -78,8 +79,7 @@ export function buildCargoSortIndex(cargos) {
 }
 
 export function memberDisplayName(m) {
-  if (!m) return '';
-  return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
+  return resolveMemberDisplayName(m);
 }
 
 function normalizeEntityId(value) {
@@ -372,8 +372,8 @@ export async function fetchClubDirectiva(clubId) {
   const scopedCatalog = filterCargosByTipo(catalog || [], club.tipo_id ? [club.tipo_id] : []);
 
   const selects = [
-    'id, miembro_id, cargo_id, club_id, fecha_inicio, en_curso, estado, cargos(id, nombre, orden, parent_id, tipo_id, estado), miembros(id, nombre, apellido1, apellido2, estado)',
-    'id, miembro_id, cargo_id, club_id, fecha_inicio, en_curso, estado, cargos(id, nombre, orden, parent_id), miembros(id, nombre, apellido1, apellido2, estado)',
+    `id, miembro_id, cargo_id, club_id, fecha_inicio, en_curso, estado, cargos(id, nombre, orden, parent_id, tipo_id, estado), miembros(id, ${MIEMBRO_NAME_FIELDS}, estado)`,
+    `id, miembro_id, cargo_id, club_id, fecha_inicio, en_curso, estado, cargos(id, nombre, orden, parent_id), miembros(id, ${MIEMBRO_NAME_FIELDS}, estado)`,
   ];
 
   let rawRows = [];

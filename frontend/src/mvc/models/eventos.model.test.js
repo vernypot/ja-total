@@ -4,7 +4,126 @@ vi.mock('../../services/supabase', () => ({
   sb: {},
 }));
 
-import { getAsistenciaFromRow, memberAttendedEvent, wasMemberCheckedInToEvent, computeCheckinAttendanceEstado, shouldCorrectLateCheckin } from './eventos.model';
+import {
+  canMemberConfirmEvent,
+  canMemberCancelEventConfirmation,
+  computeCheckinAttendanceEstado,
+  eventRequiresConfirmation,
+  getAsistenciaFromRow,
+  getEventoIdFromRow,
+  getEventoMiembroRowId,
+  memberAttendedEvent,
+  shouldCorrectLateCheckin,
+  wasMemberCheckedInToEvent,
+} from './eventos.model';
+import { patchPortalEventRowConfirmation } from './memberPortal.model';
+
+describe('canMemberConfirmEvent', () => {
+  const futureDate = '2099-12-31';
+  const baseEvento = {
+    id: 'evt-1',
+    fecha: futureDate,
+    hora: '19:00:00',
+    estado: 'activo',
+    requiere_confirmacion: true,
+    clubes: { iglesias: { timezone: 'America/Bogota' } },
+  };
+
+  it('allows confirmation for assigned future invite events', () => {
+    expect(canMemberConfirmEvent({
+      id: 'em-1',
+      eventos: baseEvento,
+    })).toBe(true);
+  });
+
+  it('allows RSVP for general club events without an assignment row', () => {
+    expect(canMemberConfirmEvent({
+      id: null,
+      evento_id: 'evt-1',
+      confirmacion_estado: 'pendiente',
+      eventos: { ...baseEvento, requiere_confirmacion: false },
+    })).toBe(true);
+  });
+
+  it('allows confirmation on the event date when no start time is set', () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayKey = `${yyyy}-${mm}-${dd}`;
+
+    expect(canMemberConfirmEvent({
+      id: 'em-2',
+      eventos: {
+        ...baseEvento,
+        fecha: todayKey,
+        hora: null,
+      },
+    }, today)).toBe(true);
+  });
+
+  it('blocks past events', () => {
+    expect(canMemberConfirmEvent({
+      id: 'em-3',
+      eventos: {
+        ...baseEvento,
+        fecha: '2020-01-01',
+        hora: '10:00:00',
+      },
+    })).toBe(false);
+  });
+
+  it('does not prompt again after the member responds', () => {
+    expect(canMemberConfirmEvent({
+      id: 'em-4',
+      confirmacion_estado: 'confirmado',
+      eventos: baseEvento,
+    })).toBe(false);
+
+    expect(canMemberConfirmEvent({
+      id: 'em-5',
+      confirmacion_estado: 'rechazado',
+      eventos: baseEvento,
+    })).toBe(false);
+  });
+
+  it('allows canceling a prior response before the event', () => {
+    const respondedRow = {
+      id: 'em-6',
+      confirmacion_estado: 'confirmado',
+      eventos: baseEvento,
+    };
+
+    expect(canMemberCancelEventConfirmation(respondedRow)).toBe(true);
+    expect(canMemberConfirmEvent(respondedRow)).toBe(false);
+  });
+
+  it('resolves ids from alternate row shapes', () => {
+    expect(getEventoMiembroRowId({ evento_miembro_id: 'em-alt' })).toBe('em-alt');
+    expect(getEventoIdFromRow({ evento_id: 'evt-alt', eventos: baseEvento })).toBe('evt-1');
+    expect(eventRequiresConfirmation({ requiere_confirmacion: false })).toBe(false);
+  });
+});
+
+describe('patchPortalEventRowConfirmation', () => {
+  it('updates matching rows by assignment or event id', () => {
+    const rows = [{
+      id: null,
+      evento_id: 'evt-1',
+      confirmacion_estado: 'pendiente',
+      eventos: { id: 'evt-1', nombre: 'Meeting' },
+    }];
+
+    const patched = patchPortalEventRowConfirmation(rows, {
+      eventoId: 'evt-1',
+      confirmacionEstado: 'confirmado',
+      savedRow: { id: 'em-new', evento_id: 'evt-1', confirmacion_estado: 'confirmado' },
+    });
+
+    expect(patched[0].id).toBe('em-new');
+    expect(patched[0].confirmacion_estado).toBe('confirmado');
+  });
+});
 
 describe('memberAttendedEvent', () => {
   it('returns true for on-time and late attendance', () => {

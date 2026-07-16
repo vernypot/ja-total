@@ -345,7 +345,6 @@ export function useEventosController() {
 
   async function cancelEvent(eventoId) {
     if (!canManage) return;
-    if (!window.confirm(t('cancelEventConfirm'))) return;
     setError('');
 
     const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'cancelado');
@@ -360,7 +359,6 @@ export function useEventosController() {
 
   async function deactivateEvent(eventoId) {
     if (!canManage) return;
-    if (!window.confirm(t('deactivateEventConfirm'))) return;
     setError('');
 
     const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'inactivo');
@@ -473,7 +471,6 @@ export function useEventosController() {
 
   async function confirmAllPending(eventoId) {
     if (!canManage) return;
-    if (!window.confirm(t('confirmAllPendingConfirm'))) return;
 
     const rows = assignments[eventoId] || await loadAssignments(eventoId);
     const pending = rows.filter(row => EventosModel.getConfirmacionFromRow(row) === 'pendiente');
@@ -496,8 +493,6 @@ export function useEventosController() {
 
   async function setAllAttendance(eventoId, estado) {
     if (!canManage) return;
-    const confirmKey = estado === 'a_tiempo' ? 'markAllOnTimeConfirm' : 'markAllAbsentConfirm';
-    if (!window.confirm(t(confirmKey))) return;
 
     const rows = assignments[eventoId] || await loadAssignments(eventoId);
     if (!rows.length) return;

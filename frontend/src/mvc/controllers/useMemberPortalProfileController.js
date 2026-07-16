@@ -4,11 +4,14 @@ import { useMemberPortal } from '../../context/MemberPortalContext';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import * as MiembrosModel from '../models/miembros.model';
 import { calcularEdad } from './useDatosPersonalesController';
+import { memberDisplayName } from '../../utils/memberDisplayName';
 
 const PROFILE_FIELDS = [
   { key: 'nombre', labelKey: 'firstName' },
   { key: 'apellido1', labelKey: 'lastName1Short' },
   { key: 'apellido2', labelKey: 'lastName2Short' },
+  { key: 'nombre_opcional', labelKey: 'optionalName' },
+  { key: 'apellido_opcional', labelKey: 'optionalLastName' },
   { key: 'fecha_nacimiento', labelKey: 'birthDate' },
   { key: 'genero', labelKey: 'gender' },
   { key: 'documento', labelKey: 'document' },
@@ -30,10 +33,7 @@ export function useMemberPortalProfileController() {
     [profile?.foto_url]
   );
 
-  const fullName = useMemo(
-    () => [profile?.nombre, profile?.apellido1, profile?.apellido2].filter(Boolean).join(' '),
-    [profile]
-  );
+  const fullName = useMemo(() => memberDisplayName(profile), [profile]);
 
   async function load() {
     if (!session?.sessionToken) {

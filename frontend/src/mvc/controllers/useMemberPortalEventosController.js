@@ -10,21 +10,26 @@ export function useMemberPortalEventosController() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [attendanceFilter, setAttendanceFilter] = useState('all');
+  const [savingConfirmationId, setSavingConfirmationId] = useState(null);
 
-  async function load() {
+  async function load({ silent = false } = {}) {
     if (!session?.sessionToken) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError('');
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
 
     const { data, error: loadError } = await MemberPortalModel.fetchPortalEvents(session.sessionToken);
     if (loadError) {
-      setError(loadError.message);
-      setRows([]);
-      setLoading(false);
+      if (!silent) {
+        setError(loadError.message);
+        setRows([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -35,7 +40,42 @@ export function useMemberPortalEventosController() {
     });
 
     setRows(sorted);
-    setLoading(false);
+    if (!silent) setLoading(false);
+  }
+
+  async function updateConfirmation(eventoMiembroId, confirmacionEstado, eventoId = null) {
+    if (!session?.sessionToken) return;
+    if (!eventoMiembroId && !eventoId) return;
+    if (!['confirmado', 'rechazado', 'pendiente'].includes(confirmacionEstado)) return;
+
+    const saveKey = eventoMiembroId || eventoId;
+    setError('');
+    setSavingConfirmationId(saveKey);
+
+    const { data, error: saveError } = await MemberPortalModel.setPortalEventConfirmation(
+      session.sessionToken,
+      confirmacionEstado,
+      {
+        eventoMiembroId: eventoMiembroId || null,
+        eventoId: eventoMiembroId ? null : eventoId,
+      }
+    );
+
+    setSavingConfirmationId(null);
+
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    setRows(prev => MemberPortalModel.patchPortalEventRowConfirmation(prev, {
+      eventoMiembroId,
+      eventoId,
+      confirmacionEstado,
+      savedRow: data,
+    }));
+
+    await load({ silent: true });
   }
 
   const attendedCount = useMemo(
@@ -64,7 +104,8 @@ export function useMemberPortalEventosController() {
     loading,
     canManage: false,
     updateAttendance: () => {},
-    updateConfirmation: () => {},
+    updateConfirmation,
+    savingConfirmationId,
     getEventoFromRow: EventosModel.getEventoFromRow,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
@@ -72,5 +113,7 @@ export function useMemberPortalEventosController() {
     memberAttendedEvent: EventosModel.memberAttendedEvent,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
+    isEventInFuture: EventosModel.isEventInFuture,
+    getEventChurchTimezone: EventosModel.getEventChurchTimezone,
   };
 }

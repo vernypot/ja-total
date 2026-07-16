@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import ListSearchInput from '../../components/ListSearchInput';
 import FormField from '../../components/FormField';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -288,6 +289,83 @@ export default function EventosView({
   memberDisplayName,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
+
+  function buildConfirmBeforeConfirmation(eventName, memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'rechazado') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmRejectConfirmationTitle'),
+        message: t('confirmRejectConfirmationMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('approvalRequestReject'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function buildConfirmBeforeAttendance(eventName, memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'ausente') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmMarkAbsentTitle'),
+        message: t('confirmMarkAbsentMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('attendanceAbsent'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function confirmCancelEvent(evento) {
+    askConfirm({
+      title: t('confirmCancelEventTitle'),
+      message: t('cancelEventConfirm'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('cancelEvent'),
+      onConfirm: async () => { await cancelEvent(evento.id); },
+    });
+  }
+
+  function confirmDeactivateEvent(evento) {
+    askConfirm({
+      title: t('confirmDeactivateEventTitle'),
+      message: t('deactivateEventConfirm'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('deactivate'),
+      onConfirm: async () => { await deactivateEvent(evento.id); },
+    });
+  }
+
+  function confirmAllPendingForEvent(evento) {
+    askConfirm({
+      title: t('confirmAllPendingTitle'),
+      message: t('confirmAllPendingConfirm'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('confirmAllPending'),
+      onConfirm: async () => { await confirmAllPending(evento.id); },
+    });
+  }
+
+  function confirmSetAllAttendance(evento, estado) {
+    const isAbsent = estado === 'ausente';
+    askConfirm({
+      title: isAbsent ? t('confirmMarkAllAbsentTitle') : t('confirmMarkAllOnTimeTitle'),
+      message: t(isAbsent ? 'markAllAbsentConfirm' : 'markAllOnTimeConfirm'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: isAbsent ? t('markAllAbsent') : t('markAllOnTime'),
+      onConfirm: async () => { await setAllAttendance(evento.id, estado); },
+    });
+  }
 
   return (
     <div className="container">
@@ -485,10 +563,10 @@ export default function EventosView({
                               </EventActionButton>
                               {isActive && (
                                 <>
-                                  <EventActionButton tone="warning" onClick={() => cancelEvent(evento.id)}>
+                                  <EventActionButton tone="warning" onClick={() => confirmCancelEvent(evento)}>
                                     {t('cancelEvent')}
                                   </EventActionButton>
-                                  <EventActionButton tone="danger" onClick={() => deactivateEvent(evento.id)}>
+                                  <EventActionButton tone="danger" onClick={() => confirmDeactivateEvent(evento)}>
                                     {t('deactivate')}
                                   </EventActionButton>
                                 </>
@@ -602,7 +680,7 @@ export default function EventosView({
                               <EventActionButton
                                 tone="success"
                                 disabled={bulkUpdatingEventId === evento.id}
-                                onClick={() => confirmAllPending(evento.id)}
+                                onClick={() => confirmAllPendingForEvent(evento)}
                               >
                                 {t('confirmAllPending')}
                               </EventActionButton>
@@ -610,14 +688,14 @@ export default function EventosView({
                             <EventActionButton
                               tone="info"
                               disabled={bulkUpdatingEventId === evento.id}
-                              onClick={() => setAllAttendance(evento.id, 'a_tiempo')}
+                              onClick={() => confirmSetAllAttendance(evento, 'a_tiempo')}
                             >
                               {t('markAllOnTime')}
                             </EventActionButton>
                             <EventActionButton
                               tone="danger"
                               disabled={bulkUpdatingEventId === evento.id}
-                              onClick={() => setAllAttendance(evento.id, 'ausente')}
+                              onClick={() => confirmSetAllAttendance(evento, 'ausente')}
                             >
                               {t('markAllAbsent')}
                             </EventActionButton>
@@ -640,6 +718,8 @@ export default function EventosView({
                             {rows.map(row => {
                               const checkedInAt = getCheckedInAtFromRow(row);
                               const confirmacion = getConfirmacionFromRow(row);
+                              const memberName = memberDisplayName(row.miembros);
+                              const eventName = evento.nombre || t('eventUntitled');
                               return (
                               <div key={row.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                                 <div>
@@ -661,6 +741,7 @@ export default function EventosView({
                                         current={confirmacion}
                                         canManage={canManage}
                                         onSet={setConfirmation}
+                                        confirmBeforeSet={buildConfirmBeforeConfirmation(eventName, memberName)}
                                         t={t}
                                       />
                                     </div>
@@ -673,6 +754,7 @@ export default function EventosView({
                                       current={getAsistenciaFromRow(row)}
                                       canManage={canManage}
                                       onSet={setAttendance}
+                                      confirmBeforeSet={buildConfirmBeforeAttendance(eventName, memberName)}
                                       t={t}
                                     />
                                   </div>
@@ -690,6 +772,7 @@ export default function EventosView({
           )}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

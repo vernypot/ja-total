@@ -9,7 +9,6 @@ import MiembroCargosView from '../mvc/views/MiembroCargosView';
 import MiembroClasesView from '../mvc/views/MiembroClasesView';
 import MiembroEventosView from '../mvc/views/MiembroEventosView';
 import MiembroAsistenciaView from '../mvc/views/MiembroAsistenciaView';
-import MiembroCarnetView from '../mvc/views/MiembroCarnetView';
 import PortalProfileTabs from '../components/portal/PortalProfileTabs';
 
 import {
@@ -20,7 +19,6 @@ import {
   useMemberPortalCargosController,
   useMemberPortalClasesController,
   useMemberPortalAsistenciaController,
-  useMemberPortalCarnetController,
 } from '../mvc/controllers/useMemberPortalProfileTabControllers';
 import { useMemberPortalEventosController } from '../mvc/controllers/useMemberPortalEventosController';
 
@@ -33,7 +31,6 @@ const PROFILE_TABS = [
   { path: 'clases', labelKey: 'tabClasses' },
   { path: 'eventos', labelKey: 'tabEvents' },
   { path: 'asistencia', labelKey: 'tabAttendance' },
-  { path: 'carnet', labelKey: 'tabCarnet' },
 ];
 
 function PortalDatosPersonales() {
@@ -68,10 +65,6 @@ function PortalAsistencia() {
   return <MiembroAsistenciaView {...useMemberPortalAsistenciaController()} />;
 }
 
-function PortalCarnet() {
-  return <MiembroCarnetView {...useMemberPortalCarnetController()} />;
-}
-
 export default function MemberPortalProfile() {
   const { t } = useLanguage();
 
@@ -95,7 +88,7 @@ export default function MemberPortalProfile() {
           <Route path="clases" element={<PortalClases />} />
           <Route path="eventos" element={<PortalEventos />} />
           <Route path="asistencia" element={<PortalAsistencia />} />
-          <Route path="carnet" element={<PortalCarnet />} />
+          <Route path="carnet" element={<Navigate to="datos" replace />} />
         </Routes>
       </div>
     </div>
