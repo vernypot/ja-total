@@ -55,9 +55,15 @@ export default function ClaseRequisitoTagsPool({
   onDragStart,
   onDragEnd,
   missingSchema = false,
+  variant = 'inline',
 }) {
+  const poolClassName = [
+    'clase-requisito-tags-pool',
+    variant === 'sidebar' ? 'clase-requisito-tags-pool--sidebar' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="clase-requisito-tags-pool">
+    <div className={poolClassName}>
       <h4 className="clase-requisito-tags-pool__title">{t('classReqTagPoolTitle')}</h4>
       <p className="clase-requisito-tags-pool__hint">{t('classReqTagPoolHint')}</p>
 

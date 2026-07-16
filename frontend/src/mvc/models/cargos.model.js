@@ -128,6 +128,79 @@ export function countDirectivaMembers(rows, { clubId, memberIds = [], tipoId } =
   return new Set(filtered.map(row => row.miembro_id).filter(Boolean)).size;
 }
 
+export async function fetchDirectivaMemberIds(clubs = [], { clubFilter } = {}) {
+  const targetClubs = clubFilter
+    ? (clubs || []).filter(c => c.id === clubFilter)
+    : (clubs || []);
+  const clubIds = targetClubs.map(c => c.id).filter(Boolean);
+  if (!clubIds.length) return { memberIds: [], error: null };
+
+  const { data: memberLinks, error: membersError } = await sb
+    .from('miembro_club')
+    .select('club_id, miembro_id')
+    .in('club_id', clubIds);
+
+  if (membersError) return { memberIds: [], error: membersError };
+
+  const membersByClub = Object.fromEntries(clubIds.map(id => [id, new Set()]));
+  for (const row of memberLinks || []) {
+    membersByClub[row.club_id]?.add(row.miembro_id);
+  }
+
+  const cargoSelect = 'miembro_id, club_id, cargo_id, en_curso, estado, cargos(id, tipo_id, estado)';
+
+  const { data: byClub, error: byClubError } = await sb
+    .from('miembro_cargos')
+    .select(cargoSelect)
+    .in('club_id', clubIds)
+    .eq('en_curso', true)
+    .eq('estado', 'activo');
+
+  if (byClubError) {
+    if (/miembro_cargos|does not exist|Could not find/i.test(byClubError.message || '')) {
+      return { memberIds: [], error: null };
+    }
+    return { memberIds: [], error: byClubError };
+  }
+
+  const allMemberIds = [...new Set(clubIds.flatMap(id => [...(membersByClub[id] || [])]))];
+  const byMember = [];
+
+  if (allMemberIds.length) {
+    for (const chunk of chunkArray(allMemberIds, 200)) {
+      const { data, error } = await sb
+        .from('miembro_cargos')
+        .select(cargoSelect)
+        .is('club_id', null)
+        .in('miembro_id', chunk)
+        .eq('en_curso', true)
+        .eq('estado', 'activo');
+
+      if (error) {
+        if (/miembro_cargos|does not exist|Could not find/i.test(error.message || '')) break;
+        return { memberIds: [], error };
+      }
+      byMember.push(...(data || []));
+    }
+  }
+
+  const cargoRows = [...(byClub || []), ...byMember];
+  const boardIds = new Set();
+
+  for (const club of targetClubs) {
+    const filtered = filterDirectivaRows(cargoRows, {
+      clubId: club.id,
+      memberIds: [...(membersByClub[club.id] || [])],
+      tipoId: club.tipo_id,
+    });
+    for (const row of filtered) {
+      if (row.miembro_id) boardIds.add(row.miembro_id);
+    }
+  }
+
+  return { memberIds: [...boardIds], error: null };
+}
+
 export async function fetchClubListingStats(clubs = []) {
   const clubIds = clubs.map(c => c.id).filter(Boolean);
   const buildEmpty = () => Object.fromEntries(

@@ -4,6 +4,7 @@ import {
   nextRequisitoNumero,
 } from '../mvc/models/clases.model';
 import ClaseRequisitoTagsPool, { ClaseRequisitoTagChip, DRAG_MIME } from './ClaseRequisitoTagsPool';
+import ConfirmDialog from './ConfirmDialog';
 import '../styles/clase-requisito-tags.css';
 
 const UNGROUPED_SECTION_KEY = '__ungrouped__';
@@ -296,6 +297,8 @@ export default function ClaseRequisitosEditor({
   deleteTagFromPool,
 }) {
   const [collapsedSections, setCollapsedSections] = useState({});
+  const [tagToDelete, setTagToDelete] = useState(null);
+  const [deletingTag, setDeletingTag] = useState(false);
 
   const { grouped, ungrouped } = groupRequisitosBySeccion(requisitos, secciones, {
     includeEmptySections: true,
@@ -321,6 +324,14 @@ export default function ClaseRequisitosEditor({
     onDropTag: (requisitoId, tagId) => assignTagFromPool?.(claseId, requisitoId, tagId),
   };
 
+  async function handleConfirmDeleteTag() {
+    if (!tagToDelete || deletingTag) return;
+    setDeletingTag(true);
+    const ok = await deleteTagFromPool?.(claseId, tagToDelete.id);
+    setDeletingTag(false);
+    if (ok) setTagToDelete(null);
+  }
+
   function renderRequisitoRow(req) {
     return (
       <RequisitoRow
@@ -345,20 +356,9 @@ export default function ClaseRequisitosEditor({
   }
 
   return (
-    <div style={{ display: 'grid', gap: '14px', marginTop: '8px' }}>
-      <ClaseRequisitoTagsPool
-        tags={tags}
-        t={t}
-        newTagName={newPoolTagName}
-        onNewTagNameChange={setNewPoolTagName}
-        onCreateTag={() => createPoolTag?.(claseId)}
-        onDeleteTag={tag => deleteTagFromPool?.(claseId, tag.id)}
-        draggingTagId={draggingTagId}
-        onDragStart={tag => setDraggingTagId?.(tag.id)}
-        onDragEnd={() => setDraggingTagId?.(null)}
-        missingSchema={tagsMissingSchema}
-      />
-
+    <>
+      <div className="clase-requisitos-editor">
+        <div className="clase-requisitos-editor__main">
       {grouped.length === 0 && ungrouped.length === 0 && (
         <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('noRequirements')}</p>
       )}
@@ -626,6 +626,37 @@ export default function ClaseRequisitosEditor({
           ➕ {t('addSection')}
         </button>
       </div>
-    </div>
+        </div>
+
+        <aside className="clase-requisitos-editor__tags-sidebar" aria-label={t('classReqTagPoolTitle')}>
+          <ClaseRequisitoTagsPool
+            tags={tags}
+            t={t}
+            variant="sidebar"
+            newTagName={newPoolTagName}
+            onNewTagNameChange={setNewPoolTagName}
+            onCreateTag={() => createPoolTag?.(claseId)}
+            onDeleteTag={tag => setTagToDelete(tag)}
+            draggingTagId={draggingTagId}
+            onDragStart={tag => setDraggingTagId?.(tag.id)}
+            onDragEnd={() => setDraggingTagId?.(null)}
+            missingSchema={tagsMissingSchema}
+          />
+        </aside>
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(tagToDelete)}
+        title={t('classReqTagDeleteConfirmTitle')}
+        message={t('classReqTagDeleteConfirmMessage')}
+        highlight={tagToDelete?.nombre}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        confirming={deletingTag}
+        confirmingLabel={t('saving')}
+        onConfirm={handleConfirmDeleteTag}
+        onCancel={() => !deletingTag && setTagToDelete(null)}
+      />
+    </>
   );
 }

@@ -19,6 +19,7 @@ DECLARE
   v_result JSON;
   v_class_link_col TEXT;
   v_has_completion_cols BOOLEAN;
+  v_has_estado_progreso BOOLEAN;
 BEGIN
   v_miembro_id := public.member_portal_verify_session(p_session_token);
 
@@ -210,6 +211,15 @@ BEGIN
       )
       INTO v_has_completion_cols;
 
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'miembro_clase_progresiva'
+          AND column_name = 'estado_progreso'
+      )
+      INTO v_has_estado_progreso;
+
       EXECUTE format($sql$
         SELECT json_build_object(
           'assigned', coalesce((
@@ -226,6 +236,7 @@ BEGIN
                 'investidura_fecha', %5$s,
                 'investidura_lugar', %6$s,
                 'investidura_validado_por_nombre', %7$s,
+                'estado_progreso', %8$s,
                 'clases_progresivas', json_build_object(
                   'id', cp.id,
                   'nombre', cp.nombre,
@@ -241,7 +252,7 @@ BEGIN
               FROM public.miembro_clase_progresiva mcp
               JOIN public.clases_progresivas cp ON cp.id = mcp.%1$I
               LEFT JOIN public.tipos_club tc ON tc.id = cp.tipo_id
-              WHERE mcp.miembro_id = %8$L
+              WHERE mcp.miembro_id = %9$L
             ) rows
           ), '[]'::json),
           'requisitos', coalesce((
@@ -259,7 +270,7 @@ BEGIN
             WHERE cr.clase_id IN (
               SELECT mcp.%1$I
               FROM public.miembro_clase_progresiva mcp
-              WHERE mcp.miembro_id = %8$L
+              WHERE mcp.miembro_id = %9$L
             )
           ), '[]'::json),
           'completions', coalesce((
@@ -279,7 +290,7 @@ BEGIN
             WHERE mcr.miembro_clase_progresiva_id IN (
               SELECT mcp.id
               FROM public.miembro_clase_progresiva mcp
-              WHERE mcp.miembro_id = %8$L
+              WHERE mcp.miembro_id = %9$L
             )
           ), '[]'::json),
           'memberTipos', coalesce((
@@ -290,10 +301,53 @@ BEGIN
               FROM public.miembro_club mc
               JOIN public.clubes c ON c.id = mc.club_id
               JOIN public.tipos_club tc ON tc.id = c.tipo_id
-              WHERE mc.miembro_id = %8$L
+              WHERE mc.miembro_id = %9$L
                 AND c.estado = 'activo'
             ) tipos
-          ), '[]'::json)
+          ), '[]'::json),
+          'historial', CASE
+            WHEN EXISTS (
+              SELECT 1
+              FROM information_schema.tables
+              WHERE table_schema = 'public'
+                AND table_name = 'miembro_clase_historial'
+            ) THEN coalesce((
+              SELECT json_agg(row_data ORDER BY row_data->>'nombre')
+              FROM (
+                SELECT json_build_object(
+                  'id', h.id,
+                  'miembro_id', h.miembro_id,
+                  'nombre', h.nombre,
+                  'clase_progresiva_id', h.clase_progresiva_id,
+                  'club_id', h.club_id,
+                  'club_nombre', h.club_nombre,
+                  'estado_progreso', h.estado_progreso,
+                  'fecha_completado', h.fecha_completado,
+                  'tiene_investidura', coalesce(h.tiene_investidura, false),
+                  'investidura_fecha', h.investidura_fecha,
+                  'investidura_lugar', h.investidura_lugar,
+                  'investidura_validado_por_nombre', h.investidura_validado_por_nombre,
+                  'notas', h.notas,
+                  'clubes', CASE
+                    WHEN c.id IS NOT NULL THEN json_build_object(
+                      'id', c.id,
+                      'nombre', c.nombre,
+                      'tipos_club', CASE
+                        WHEN tc.id IS NOT NULL THEN json_build_object('nombre', tc.nombre)
+                        ELSE NULL
+                      END
+                    )
+                    ELSE NULL
+                  END
+                ) AS row_data
+                FROM public.miembro_clase_historial h
+                LEFT JOIN public.clubes c ON c.id = h.club_id
+                LEFT JOIN public.tipos_club tc ON tc.id = c.tipo_id
+                WHERE h.miembro_id = %9$L
+              ) historial_rows
+            ), '[]'::json)
+            ELSE '[]'::json
+          END
         )
       $sql$,
         v_class_link_col,
@@ -303,6 +357,12 @@ BEGIN
         CASE WHEN v_has_completion_cols THEN 'mcp.investidura_fecha' ELSE 'NULL' END,
         CASE WHEN v_has_completion_cols THEN 'mcp.investidura_lugar' ELSE 'NULL' END,
         CASE WHEN v_has_completion_cols THEN 'mcp.investidura_validado_por_nombre' ELSE 'NULL' END,
+        CASE
+          WHEN v_has_estado_progreso THEN 'coalesce(mcp.estado_progreso, ''sin_iniciar'')'
+          WHEN v_has_completion_cols THEN
+            'CASE WHEN coalesce(mcp.tiene_investidura, false) THEN ''investida'' WHEN coalesce(mcp.completado, false) THEN ''completada'' ELSE ''sin_iniciar'' END'
+          ELSE '''sin_iniciar'''
+        END,
         v_miembro_id
       )
       INTO v_result;

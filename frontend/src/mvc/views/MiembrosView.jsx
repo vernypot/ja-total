@@ -24,115 +24,118 @@ function MemberListItem({
   toggleClubAssignment,
   toggleEstado,
   navigateToMiembro,
+  selected,
+  onToggleSelect,
   t,
 }) {
-  const [clubsExpanded, setClubsExpanded] = useState(false);
-  const [pinExpanded, setPinExpanded] = useState(false);
+  const [actionsExpanded, setActionsExpanded] = useState(false);
   const nombreCompleto = [member.nombre, member.apellido1, member.apellido2].filter(Boolean).join(' ');
   const assignedCount = clubsData.filter(club => member.clubIds.includes(club.id)).length;
-  const showClubToggle = clubsData.length > 0;
+  const showClubAssignments = clubsData.length > 0;
+  const showActionsToggle = canManage || showClubAssignments;
 
   return (
-    <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', transition: 'all 0.2s' }} className="hover-shadow">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-        <div>
-          <strong>{nombreCompleto}</strong>
-          <span className={`badge badge-${member.estado}`} style={{ marginLeft: '10px' }}>{estadoLabel(member.estado, t)}</span>
+    <div className={`member-list-item hover-shadow${selected ? ' member-list-item--selected' : ''}`}>
+      <div className={`member-list-item__main${canManage ? '' : ' member-list-item__main--no-select'}`}>
+        {canManage && (
+          <input
+            type="checkbox"
+            className="member-list-item__checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            aria-label={t('selectMember')}
+          />
+        )}
+        <div className="member-list-item__identity">
+          <span className="member-list-item__name" title={nombreCompleto}>{nombreCompleto}</span>
+          <span className={`badge badge-${member.estado} member-list-item__badge`}>
+            {estadoLabel(member.estado, t)}
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="member-list-item__actions">
           <button type="button" onClick={() => navigateToMiembro(member.id)} className="btn btn-sm btn-edit">
             📋 {t('details')}
           </button>
-          {canManage && (
+          {showActionsToggle && (
             <button
               type="button"
-              onClick={() => toggleEstado(member)}
-              className={`btn btn-sm ${member.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
-            >
-              {member.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
-            </button>
-          )}
-          {canManage && (
-            <button
-              type="button"
-              onClick={() => setPinExpanded(prev => !prev)}
-              aria-expanded={pinExpanded}
+              onClick={() => setActionsExpanded(prev => !prev)}
+              aria-expanded={actionsExpanded}
               className="btn btn-sm"
               style={{
-                backgroundColor: pinExpanded ? '#dbeafe' : '#eff6ff',
-                color: '#1d4ed8',
-                border: '1px solid #93c5fd',
-              }}
-            >
-              {pinExpanded ? '▲' : '▼'} {t('portalPinAdminTitle')}
-            </button>
-          )}
-          {showClubToggle && (
-            <button
-              type="button"
-              onClick={() => setClubsExpanded(prev => !prev)}
-              aria-expanded={clubsExpanded}
-              className="btn btn-sm"
-              style={{
-                backgroundColor: clubsExpanded ? '#e5e7eb' : '#f9fafb',
+                backgroundColor: actionsExpanded ? '#e5e7eb' : '#f9fafb',
                 color: '#374151',
                 border: '1px solid #d1d5db',
               }}
             >
-              {clubsExpanded ? '▲' : '▼'} {t('memberClubs')} ({assignedCount}/{clubsData.length})
+              {actionsExpanded ? '▲' : '▼'} {t('actions')}
             </button>
           )}
         </div>
       </div>
 
-      {canManage && pinExpanded && (
-        <div style={{ marginTop: '12px' }}>
-          <MemberPortalPinAdmin miembroId={member.id} canManage={canManage} compact />
-        </div>
-      )}
+      {actionsExpanded && (
+        <div className="member-list-item__panel">
+          {canManage && (
+            <div>
+              <button
+                type="button"
+                onClick={() => toggleEstado(member)}
+                className={`btn btn-sm ${member.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}
+              >
+                {member.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
+              </button>
+            </div>
+          )}
 
-      {showClubToggle && clubsExpanded && (
-        <div
-          style={{
-            marginTop: '12px',
-            padding: '10px',
-            border: '1px solid #f3f4f6',
-            borderRadius: '6px',
-            backgroundColor: '#fafafa',
-          }}
-        >
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
-            {clubsData.map(club => {
-              const isAssigned = member.clubIds.includes(club.id);
-              const isAssigning = assigningKey === `${member.id}-${club.id}`;
+          {canManage && (
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', marginBottom: '8px' }}>
+                {t('portalPinAdminTitle')}
+              </div>
+              <MemberPortalPinAdmin miembroId={member.id} canManage={canManage} compact />
+            </div>
+          )}
 
-              return (
-                <label
-                  key={club.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.875rem',
-                    cursor: canManage && !isAssigning ? 'pointer' : 'default',
-                    opacity: isAssigning ? 0.6 : 1,
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: isAssigned ? '#eff6ff' : '#fff',
-                    border: isAssigned ? '1px solid #93c5fd' : '1px solid #e5e7eb',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isAssigned}
-                    disabled={!canManage || isAssigning}
-                    onChange={e => toggleClubAssignment(member, club.id, e.target.checked)}
-                  />
-                  <span>{clubDisplayName(club)}</span>
-                </label>
-              );
-            })}
-          </div>
+          {showClubAssignments && (
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>
+                {t('memberClubs')} ({assignedCount}/{clubsData.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
+                {clubsData.map(club => {
+                  const isAssigned = member.clubIds.includes(club.id);
+                  const isAssigning = assigningKey === `${member.id}-${club.id}`;
+
+                  return (
+                    <label
+                      key={club.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.875rem',
+                        cursor: canManage && !isAssigning ? 'pointer' : 'default',
+                        opacity: isAssigning ? 0.6 : 1,
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: isAssigned ? '#eff6ff' : '#fff',
+                        border: isAssigned ? '1px solid #93c5fd' : '1px solid #e5e7eb',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAssigned}
+                        disabled={!canManage || isAssigning}
+                        onChange={e => toggleClubAssignment(member, club.id, e.target.checked)}
+                      />
+                      <span>{clubDisplayName(club)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -146,6 +149,8 @@ export default function MiembrosView({
   clubsData,
   showInactive,
   setShowInactive,
+  hideBoardMembers,
+  setHideBoardMembers,
   activeIglesiaData,
   iglesiaScopeReady = true,
   clubId,
@@ -172,11 +177,27 @@ export default function MiembrosView({
   bulkError,
   isValidating,
   isImporting,
+  selectedMemberIds = [],
+  toggleMemberSelection,
+  selectAllMembers,
+  clearMemberSelection,
+  bulkUpdating = false,
+  bulkActionMessage,
+  bulkActionError,
+  bulkClubId = '',
+  setBulkClubId,
+  bulkActivate,
+  bulkDeactivate,
+  bulkAssignClub,
+  bulkUnassignClub,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
   const selectedClub = clubId ? clubsData.find(c => c.id === clubId) : null;
   const canImport = validationResults && validationResults.invalidCount === 0 && validationResults.validCount > 0;
+  const selectedCount = selectedMemberIds.length;
+  const allSelected = data.length > 0 && selectedCount === data.length;
+  const bulkClub = bulkClubId ? clubsData.find(c => c.id === bulkClubId) : null;
 
   return (
     <div className="container">
@@ -372,9 +393,23 @@ export default function MiembrosView({
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
+            <label className="filter-checkbox-label">
+              <input
+                type="checkbox"
+                className="filter-checkbox"
+                checked={showInactive}
+                onChange={e => setShowInactive(e.target.checked)}
+              />
               {t('showInactive')}
+            </label>
+            <label className="filter-checkbox-label">
+              <input
+                type="checkbox"
+                className="filter-checkbox"
+                checked={hideBoardMembers}
+                onChange={e => setHideBoardMembers(e.target.checked)}
+              />
+              {t('hideBoardMembers')}
             </label>
             {clubsData.length > 0 && (
               <select value={clubId || ''} onChange={e => filterByClub(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '14px' }}>
@@ -390,13 +425,119 @@ export default function MiembrosView({
         </div>
 
         {assignmentError && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{assignmentError}</div>}
+        {bulkActionError && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{bulkActionError}</div>}
+        {bulkActionMessage && <div className="alert alert-success" style={{ marginBottom: '15px' }}>{bulkActionMessage}</div>}
+
+        {canManage && data.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
+              marginBottom: '16px',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: selectedCount > 0 ? '#eff6ff' : '#f9fafb',
+              border: `1px solid ${selectedCount > 0 ? '#93c5fd' : '#e5e7eb'}`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px' }}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => (allSelected ? clearMemberSelection() : selectAllMembers())}
+                  disabled={bulkUpdating}
+                />
+                {t('membersSelectedCount')
+                  .replace('{selected}', String(selectedCount))
+                  .replace('{total}', String(data.length))}
+              </label>
+              {selectedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearMemberSelection}
+                  disabled={bulkUpdating}
+                  className="form-link-btn"
+                >
+                  {t('clearSelection')}
+                </button>
+              )}
+            </div>
+
+            {selectedCount > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => bulkActivate(t)}
+                  disabled={bulkUpdating}
+                  className="btn btn-sm btn-success"
+                >
+                  ✓ {t('bulkActivate')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bulkDeactivate(t)}
+                  disabled={bulkUpdating}
+                  className="btn btn-sm btn-danger"
+                >
+                  ❌ {t('bulkDeactivate')}
+                </button>
+                {clubsData.length > 0 && (
+                  <>
+                    <select
+                      value={bulkClubId}
+                      onChange={e => setBulkClubId(e.target.value)}
+                      disabled={bulkUpdating}
+                      style={{ padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '13px' }}
+                    >
+                      <option value="">{t('bulkSelectClub')}</option>
+                      {clubsData.map(c => (
+                        <option key={c.id} value={c.id}>{clubDisplayName(c)}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => bulkAssignClub(t)}
+                      disabled={bulkUpdating || !bulkClubId}
+                      className="btn btn-sm"
+                      style={{ backgroundColor: '#2563eb', color: 'white', border: 'none' }}
+                    >
+                      ➕ {t('bulkAssignClub')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => bulkUnassignClub(t)}
+                      disabled={bulkUpdating || !bulkClubId}
+                      className="btn btn-sm"
+                      style={{ backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}
+                    >
+                      ✕ {t('bulkUnassignClub')}
+                    </button>
+                  </>
+                )}
+                {bulkUpdating && (
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('saving')}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {canManage && selectedCount > 0 && bulkClub && (
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+            {t('bulkClubActionHint').replace('{club}', clubDisplayName(bulkClub))}
+          </p>
+        )}
 
         {data.length === 0 ? (
           <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
             {isSearching ? t('noSearchResults') : t('noMembers')}
           </p>
         ) : (
-          <div style={{ display: 'grid', gap: '12px' }}>
+          <div className="member-list-grid">
             {data.map(m => (
               <MemberListItem
                 key={m.id}
@@ -407,6 +548,8 @@ export default function MiembrosView({
                 toggleClubAssignment={toggleClubAssignment}
                 toggleEstado={toggleEstado}
                 navigateToMiembro={navigateToMiembro}
+                selected={selectedMemberIds.includes(m.id)}
+                onToggleSelect={() => toggleMemberSelection(m.id)}
                 t={t}
               />
             ))}

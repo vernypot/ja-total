@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import MiembroClaseRequisitosList from '../../components/MiembroClaseRequisitosList';
 import MiembroClaseProgressModal from '../../components/MiembroClaseProgressModal';
+import MiembroClaseHistorialModal from '../../components/MiembroClaseHistorialModal';
+import MiembroClaseProgresoEstadoBadge from '../../components/MiembroClaseProgresoEstadoBadge';
+import {
+  resolveMiembroClaseProgresoEstado,
+  resolveHistorialEstado,
+  miembroClaseProgresoEstadoLabel,
+  miembroClaseProgresoEstadoStyle,
+} from '../../constants/miembroClaseProgresoEstado';
+import { clubDisplayName } from '../../utils/club';
 import { PageHelpLink } from '../../components/PageHelp';
 
 const classActionBtnStyle = (completed) => ({
@@ -35,6 +44,43 @@ function InvestiduraSummary({ row, t }) {
   );
 }
 
+function HistorialEstadoBadge({ row, t }) {
+  const estado = resolveHistorialEstado(row);
+  if (!estado) {
+    return (
+      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+        {t('memberClassStatusUnspecified')}
+      </span>
+    );
+  }
+  const style = miembroClaseProgresoEstadoStyle(estado);
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: '999px',
+        fontSize: '11px',
+        fontWeight: 700,
+        lineHeight: 1.3,
+        backgroundColor: style.background,
+        color: style.color,
+        border: `1px solid ${style.border}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {miembroClaseProgresoEstadoLabel(estado, t)}
+    </span>
+  );
+}
+
+function historialClubLabel(row) {
+  if (row.clubes) return clubDisplayName(row.clubes);
+  if (row.club_nombre) return row.club_nombre;
+  return '';
+}
+
 export default function MiembroClasesView({
   assigned,
   unassigned,
@@ -55,9 +101,16 @@ export default function MiembroClasesView({
   defaultValidatorName = '',
   getClaseFromLink,
   getLinkClaseId,
+  historial = [],
+  catalogClases = [],
+  memberClubs = [],
+  saveHistorial,
+  deleteHistorial,
+  savingHistorialId = null,
 }) {
   const { t } = useLanguage();
   const [progressModalRow, setProgressModalRow] = useState(null);
+  const [historialModalRow, setHistorialModalRow] = useState(undefined);
   const [expandedRequisitos, setExpandedRequisitos] = useState({});
 
   function toggleRequisitos(assignmentId) {
@@ -117,7 +170,8 @@ export default function MiembroClasesView({
           {assigned.map(row => {
             const clase = getClaseFromLink(row);
             const claseId = getLinkClaseId(row);
-            const classCompleted = row.completado;
+            const estadoProgreso = resolveMiembroClaseProgresoEstado(row);
+            const classCompleted = estadoProgreso === 'completada' || estadoProgreso === 'investida';
             const requisitos = requisitosByClase[claseId] || [];
             const requisitosExpanded = expandedRequisitos[row.id] ?? false;
             return (
@@ -125,9 +179,6 @@ export default function MiembroClasesView({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {classCompleted && (
-                        <span style={{ color: '#059669', fontWeight: 700 }} aria-hidden="true">✓</span>
-                      )}
                       <strong
                         style={{
                           fontStyle: classCompleted ? 'italic' : 'normal',
@@ -136,6 +187,7 @@ export default function MiembroClasesView({
                       >
                         {clase?.nombre || t('notAvailable')}
                       </strong>
+                      <MiembroClaseProgresoEstadoBadge assignment={row} t={t} compact />
                       {classCompleted && row.fecha_completado && (
                         <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                           ({row.fecha_completado})
@@ -224,6 +276,132 @@ export default function MiembroClasesView({
           onSave={async draft => {
             const ok = await saveAssignmentProgress(progressModalRow.id, draft);
             if (ok) setProgressModalRow(null);
+          }}
+        />
+      )}
+
+      <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '28px 0 20px' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+        <div>
+          <h4 style={{ margin: 0 }}>{t('historialClasses')}</h4>
+          <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+            {t('historialClassesHint')}
+          </p>
+        </div>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setHistorialModalRow(null)}
+            style={{
+              padding: '8px 14px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              flexShrink: 0,
+            }}
+          >
+            ➕ {t('addHistorialClass')}
+          </button>
+        )}
+      </div>
+
+      {historial.length === 0 ? (
+        <p className="text-muted">{t('noHistorialClasses')}</p>
+      ) : (
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {historial.map(row => {
+            const clubLabel = historialClubLabel(row);
+            const estado = resolveHistorialEstado(row);
+            const completed = estado === 'completada' || estado === 'investida';
+            return (
+              <div key={row.id} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong
+                        style={{
+                          fontStyle: completed ? 'italic' : 'normal',
+                          color: completed ? '#059669' : '#111827',
+                        }}
+                      >
+                        {row.nombre}
+                      </strong>
+                      <HistorialEstadoBadge row={row} t={t} />
+                      {completed && row.fecha_completado && (
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                          ({row.fecha_completado})
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        title={t('editHistorialClass')}
+                        aria-label={t('editHistorialClass')}
+                        onClick={() => setHistorialModalRow(row)}
+                        style={classActionBtnStyle(completed)}
+                      >
+                        ⋯
+                      </button>
+                    </div>
+                    {clubLabel && (
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                        {t('historialClub')}: {clubLabel}
+                      </div>
+                    )}
+                    <InvestiduraSummary row={row} t={t} />
+                    {row.notas && (
+                      <div style={{ fontSize: '12px', color: '#4b5563', marginTop: '6px' }}>
+                        {row.notas}
+                      </div>
+                    )}
+                  </div>
+                  {canManage && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (window.confirm(t('deleteHistorialClassConfirm'))) {
+                          await deleteHistorial(row.id);
+                        }
+                      }}
+                      disabled={savingHistorialId === row.id}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: savingHistorialId === row.id ? 'wait' : 'pointer',
+                        fontSize: '12px',
+                        flexShrink: 0,
+                        opacity: savingHistorialId === row.id ? 0.7 : 1,
+                      }}
+                    >
+                      ✕ {t('delete')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {historialModalRow !== undefined && (
+        <MiembroClaseHistorialModal
+          row={historialModalRow}
+          catalogClases={catalogClases}
+          memberClubs={memberClubs}
+          canManage={canManage}
+          saving={savingHistorialId === (historialModalRow?.id || 'new')}
+          defaultValidatorName={defaultValidatorName}
+          t={t}
+          onClose={() => setHistorialModalRow(undefined)}
+          onSave={async draft => {
+            const ok = await saveHistorial(historialModalRow?.id || null, draft);
+            if (ok) setHistorialModalRow(undefined);
           }}
         />
       )}
