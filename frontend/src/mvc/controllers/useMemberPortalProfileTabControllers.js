@@ -16,6 +16,8 @@ const EMPTY_PERSONAL_FORM = {
   nombre: '',
   apellido1: '',
   apellido2: '',
+  nombre_opcional: '',
+  apellido_opcional: '',
   fecha_nacimiento: '',
   genero: '',
   documento: '',
@@ -31,6 +33,8 @@ function profileToForm(data) {
     nombre: data.nombre || '',
     apellido1: data.apellido1 || '',
     apellido2: data.apellido2 || '',
+    nombre_opcional: data.nombre_opcional || '',
+    apellido_opcional: data.apellido_opcional || '',
     fecha_nacimiento: data.fecha_nacimiento || '',
     genero: data.genero || '',
     documento: data.documento || '',
@@ -367,11 +371,14 @@ export function useMemberPortalClasesController() {
   const { session } = useMemberPortal();
   const [assigned, setAssigned] = useState([]);
   const [requisitosByClase, setRequisitosByClase] = useState({});
+  const [seccionesByClase, setSeccionesByClase] = useState({});
   const [completionsByAssignment, setCompletionsByAssignment] = useState({});
+  const [solicitudesByAssignment, setSolicitudesByAssignment] = useState({});
   const [memberTipos, setMemberTipos] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [requestingKey, setRequestingKey] = useState(null);
 
   async function load() {
     if (!session?.sessionToken) {
@@ -387,19 +394,69 @@ export function useMemberPortalClasesController() {
       setError(tabError.message);
       setAssigned([]);
       setRequisitosByClase({});
+      setSeccionesByClase({});
       setCompletionsByAssignment({});
+      setSolicitudesByAssignment({});
       setMemberTipos([]);
       setHistorial([]);
       setLoading(false);
       return;
     }
 
+    const requisitos = ClasesModel.enrichRequisitoRows(payload?.requisitos);
     setAssigned(payload?.assigned || []);
-    setRequisitosByClase(buildRequisitosMap(payload?.requisitos, 'clase_id'));
+    setRequisitosByClase(buildRequisitosMap(requisitos, 'clase_id'));
+    setSeccionesByClase(ClasesModel.mapSeccionesByClase(payload?.secciones));
     setCompletionsByAssignment(ClasesModel.mapCompletionsByAssignment(payload?.completions || []));
+    setSolicitudesByAssignment(ClasesModel.mapSolicitudesByAssignment(payload?.solicitudes || []));
     setMemberTipos(payload?.memberTipos || []);
     setHistorial(payload?.historial || []);
     setLoading(false);
+  }
+
+  async function requestRequisitoApproval(assignmentId, claseRequisitoId, comentario) {
+    if (!session?.sessionToken || !assignmentId || !claseRequisitoId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:${claseRequisitoId}`);
+
+    const { error: requestError } = await MemberPortalModel.requestPortalRequisitoApproval(
+      session.sessionToken,
+      assignmentId,
+      claseRequisitoId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError(requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
+  }
+
+  async function requestClaseApproval(assignmentId, comentario) {
+    if (!session?.sessionToken || !assignmentId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:clase`);
+
+    const { error: requestError } = await MemberPortalModel.requestPortalClaseApproval(
+      session.sessionToken,
+      assignmentId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError(requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
   }
 
   useEffect(() => {
@@ -410,7 +467,9 @@ export function useMemberPortalClasesController() {
     assigned,
     unassigned: [],
     requisitosByClase,
+    seccionesByClase,
     completionsByAssignment,
+    solicitudesByAssignment,
     memberTipos,
     error,
     loading,
@@ -420,6 +479,9 @@ export function useMemberPortalClasesController() {
     unassignClase: () => {},
     saveRequisitoCompletion: async () => false,
     saveAssignmentProgress: async () => false,
+    requestRequisitoApproval,
+    requestClaseApproval,
+    requestingKey,
     savingRequisitoKey: null,
     savingAssignmentId: null,
     canManage: false,
@@ -440,6 +502,7 @@ export function useMemberPortalAsistenciaController() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [savingConfirmationId, setSavingConfirmationId] = useState(null);
 
   const attendanceHelpers = {
     getEventoFromRow: EventosModel.getEventoFromRow,
@@ -448,20 +511,24 @@ export function useMemberPortalAsistenciaController() {
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
   };
 
-  async function load() {
+  async function load({ silent = false } = {}) {
     if (!session?.sessionToken) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError('');
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
 
     const { data, error: loadError } = await MemberPortalModel.fetchPortalEvents(session.sessionToken);
     if (loadError) {
-      setError(loadError.message);
-      setRows([]);
-      setLoading(false);
+      if (!silent) {
+        setError(loadError.message);
+        setRows([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -472,7 +539,42 @@ export function useMemberPortalAsistenciaController() {
     });
 
     setRows(sorted);
-    setLoading(false);
+    if (!silent) setLoading(false);
+  }
+
+  async function updateConfirmation(eventoMiembroId, confirmacionEstado, eventoId = null) {
+    if (!session?.sessionToken) return;
+    if (!eventoMiembroId && !eventoId) return;
+    if (!['confirmado', 'rechazado', 'pendiente'].includes(confirmacionEstado)) return;
+
+    const saveKey = eventoMiembroId || eventoId;
+    setError('');
+    setSavingConfirmationId(saveKey);
+
+    const { data, error: saveError } = await MemberPortalModel.setPortalEventConfirmation(
+      session.sessionToken,
+      confirmacionEstado,
+      {
+        eventoMiembroId: eventoMiembroId || null,
+        eventoId: eventoMiembroId ? null : eventoId,
+      }
+    );
+
+    setSavingConfirmationId(null);
+
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    setRows(prev => MemberPortalModel.patchPortalEventRowConfirmation(prev, {
+      eventoMiembroId,
+      eventoId,
+      confirmacionEstado,
+      savedRow: data,
+    }));
+
+    await load({ silent: true });
   }
 
   const stats = useMemo(
@@ -498,6 +600,10 @@ export function useMemberPortalAsistenciaController() {
     isEventInFuture: EventosModel.isEventInFuture,
     isEventInPast: EventosModel.isEventInPast,
     memberAttendedEvent: EventosModel.memberAttendedEvent,
+    getEventChurchTimezone: EventosModel.getEventChurchTimezone,
+    canMemberConfirmEvent: EventosModel.canMemberConfirmEvent,
+    updateConfirmation,
+    savingConfirmationId,
   };
 }
 

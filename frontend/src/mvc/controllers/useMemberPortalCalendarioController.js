@@ -39,6 +39,8 @@ export function useMemberPortalCalendarioController() {
   const [notice, setNotice] = useState('');
   const [selectedDateKey, setSelectedDateKey] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [memberEventByEventId, setMemberEventByEventId] = useState({});
+  const [savingConfirmationId, setSavingConfirmationId] = useState(null);
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || null,
@@ -126,6 +128,61 @@ export function useMemberPortalCalendarioController() {
     if (!clubRows.length) {
       setLoading(false);
     }
+  }
+
+  async function loadMemberEvents() {
+    if (!session?.sessionToken) {
+      setMemberEventByEventId({});
+      return;
+    }
+
+    const { data, error: loadError } = await MemberPortalModel.fetchPortalEvents(session.sessionToken);
+    if (loadError) {
+      setMemberEventByEventId({});
+      return;
+    }
+
+    const map = {};
+    for (const row of data || []) {
+      const eventoId = row.evento_id || row.eventos?.id;
+      if (eventoId) map[eventoId] = row;
+    }
+    setMemberEventByEventId(map);
+  }
+
+  async function updateConfirmation(eventoMiembroId, confirmacionEstado, eventoId = null) {
+    if (!session?.sessionToken) return;
+    if (!eventoMiembroId && !eventoId) return;
+    if (!['confirmado', 'rechazado', 'pendiente'].includes(confirmacionEstado)) return;
+
+    const saveKey = eventoMiembroId || eventoId;
+    setError('');
+    setSavingConfirmationId(saveKey);
+
+    const { data, error: saveError } = await MemberPortalModel.setPortalEventConfirmation(
+      session.sessionToken,
+      confirmacionEstado,
+      {
+        eventoMiembroId: eventoMiembroId || null,
+        eventoId: eventoMiembroId ? null : eventoId,
+      }
+    );
+
+    setSavingConfirmationId(null);
+
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    setMemberEventByEventId(prev => MemberPortalModel.patchPortalEventMapConfirmation(prev, {
+      eventoMiembroId,
+      eventoId,
+      confirmacionEstado,
+      savedRow: data,
+    }));
+
+    await loadMemberEvents();
   }
 
   async function loadEvents() {
@@ -235,6 +292,7 @@ export function useMemberPortalCalendarioController() {
 
   useEffect(() => {
     loadClubs();
+    loadMemberEvents();
   }, [session?.sessionToken]);
 
   useEffect(() => {
@@ -279,11 +337,15 @@ export function useMemberPortalCalendarioController() {
     selectedDayEvents,
     selectedEvent,
     selectedEventAssignments: [],
+    memberEventRow: selectedEvent ? memberEventByEventId[selectedEvent.id] || null : null,
     loadingEventDetail: false,
     selectDate,
     selectEvent,
     closeEventDetail,
-    openEventInEventsPage: () => {},
+    openEventInEventsPage: () => navigate('/dashboard/eventos'),
+    updateConfirmation,
+    savingConfirmationId,
+    canMemberConfirmEvent: EventosModel.canMemberConfirmEvent,
     isEventInFuture: (evento) => EventosModel.isEventInFuture(evento, new Date(), clubTimezone),
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,

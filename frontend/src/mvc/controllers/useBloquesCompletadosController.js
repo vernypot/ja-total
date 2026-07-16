@@ -94,6 +94,8 @@ export function useBloquesCompletadosController() {
       m.nombre,
       m.apellido1,
       m.apellido2,
+      m.nombre_opcional,
+      m.apellido_opcional,
       m.documento,
       m.celular,
       m.email,
@@ -280,7 +282,8 @@ export function useBloquesCompletadosController() {
     return `${requisitoLabel(req)} (${claseName})`;
   }
 
-  async function applyRequisitosToMember(assignmentId, requisitoIds, fechaCompletado) {
+  async function applyRequisitosToMember(assignmentId, requisitoIds, fechaCompletado, validadoPorNombre) {
+    const validatorName = validadoPorNombre?.trim() || defaultValidatorName || null;
     await ClasesModel.initMiembroClaseRequisitos(assignmentId);
     for (const requisitoId of requisitoIds) {
       const { error } = await ClasesModel.upsertMiembroClaseRequisito({
@@ -289,7 +292,7 @@ export function useBloquesCompletadosController() {
         completado: true,
         fechaCompletado,
         validadoPorUsuarioId: userData?.id || user?.id || null,
-        validadoPorNombre: defaultValidatorName || null,
+        validadoPorNombre: validatorName,
       });
       if (error) throw error;
     }
@@ -352,14 +355,14 @@ export function useBloquesCompletadosController() {
     setPendingApply(null);
   }
 
-  async function confirmApplyBlock() {
+  async function confirmApplyBlock(validatedByNombre) {
     if (!canManage || !pendingApply?.block) return;
     const { block, assignmentByMemberId = {} } = pendingApply;
-    await executeApplyBlock(block, assignmentByMemberId);
+    await executeApplyBlock(block, assignmentByMemberId, validatedByNombre);
     setPendingApply(null);
   }
 
-  async function executeApplyBlock(block, assignmentByMemberId = {}) {
+  async function executeApplyBlock(block, assignmentByMemberId = {}, validatedByNombre = null) {
     setApplyingBlockId(block.id);
     setApplyError('');
     setApplyMessage('');
@@ -418,7 +421,7 @@ export function useBloquesCompletadosController() {
             });
             if (progressError) throw progressError;
           } else if (block.actionType === 'requisito') {
-            await applyRequisitosToMember(assignmentId, [block.requisitoId], fechaCompletado);
+            await applyRequisitosToMember(assignmentId, [block.requisitoId], fechaCompletado, validatedByNombre);
           } else if (block.actionType === 'seccion') {
             const reqs = (requisitosByClase[block.claseId] || []).filter(
               r => (r.seccion_id || r.clase_requisito_secciones?.id) === block.seccionId,
@@ -428,6 +431,7 @@ export function useBloquesCompletadosController() {
               assignmentId,
               reqs.map(r => r.id),
               fechaCompletado,
+              validatedByNombre,
             );
           }
         }
@@ -496,6 +500,7 @@ export function useBloquesCompletadosController() {
     actionTypes: ACTION_TYPES,
     sectionTitle,
     requisitoLabel,
+    defaultValidatorName,
     t,
   };
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
+import { memberDisplayName } from '../../utils/memberDisplayName';
 import ListSearchInput from '../../components/ListSearchInput';
 import MemberFiltersPanel from '../../components/MemberFiltersPanel';
 import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
@@ -30,7 +31,7 @@ function MemberListItem({
   t,
 }) {
   const [actionsExpanded, setActionsExpanded] = useState(false);
-  const nombreCompleto = [member.nombre, member.apellido1, member.apellido2].filter(Boolean).join(' ');
+  const nombreCompleto = memberDisplayName(member);
   const assignedClubIds = new Set((member.clubIds || []).map(id => String(id)));
   const assignedCount = clubsData.filter(club => assignedClubIds.has(String(club.id))).length;
   const showClubAssignments = clubsData.length > 0;
@@ -356,7 +357,7 @@ export default function MiembrosView({
                       <tr key={row.rowNumber} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: row.valid ? '#f0fdf4' : '#fef2f2' }}>
                         <td style={{ padding: '10px' }}>{row.rowNumber}</td>
                         <td style={{ padding: '10px' }}>
-                          {[row.member.nombre, row.member.apellido1, row.member.apellido2].filter(Boolean).join(' ')}
+                          {memberDisplayName(row.member)}
                           {row.member.contact && (
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {t('contactName')}: {row.member.contact.nombre}
@@ -405,24 +406,6 @@ export default function MiembrosView({
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-            <label className="filter-checkbox-label">
-              <input
-                type="checkbox"
-                className="filter-checkbox"
-                checked={showInactive}
-                onChange={e => setShowInactive(e.target.checked)}
-              />
-              {t('showInactive')}
-            </label>
-            <label className="filter-checkbox-label">
-              <input
-                type="checkbox"
-                className="filter-checkbox"
-                checked={hideBoardMembers}
-                onChange={e => setHideBoardMembers(e.target.checked)}
-              />
-              {t('hideBoardMembers')}
-            </label>
             {clubsData.length > 0 && (
               <select value={clubId || ''} onChange={e => filterByClub(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '14px' }}>
                 <option value="">{t('allClubs')}</option>
@@ -446,6 +429,10 @@ export default function MiembrosView({
           eventos={filterEventos}
           loading={filterLoading}
           activeCount={activeFilterCount}
+          showInactive={showInactive}
+          onShowInactiveChange={setShowInactive}
+          hideBoardMembers={hideBoardMembers}
+          onHideBoardMembersChange={setHideBoardMembers}
         />
 
         {filterError && (

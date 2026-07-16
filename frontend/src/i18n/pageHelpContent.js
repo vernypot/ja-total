@@ -7,7 +7,7 @@ const PAGE_HELP = {
         'Select your church if prompted (superadmins and users with access to multiple churches).',
         'Review news published for your church.',
         'Check upcoming member birthdays and scheduled events.',
-        'Use the sidebar to open members, clubs, events, and other modules.',
+        'Use the sidebar to open members, clubs, events, bulk actions, and other modules.',
       ],
       tips: [
         'If panels are empty, confirm the correct church is selected in the top bar.',
@@ -21,7 +21,7 @@ const PAGE_HELP = {
         'Seleccione su iglesia si se le solicita (superadministradores y usuarios con acceso a varias iglesias).',
         'Revise las noticias publicadas para su iglesia.',
         'Consulte cumpleaños próximos y eventos programados.',
-        'Use el menú lateral para abrir miembros, clubes, eventos y otros módulos.',
+        'Use el menú lateral para abrir miembros, clubes, eventos, acciones masivas y otros módulos.',
       ],
       tips: [
         'Si los paneles están vacíos, confirme que la iglesia correcta está seleccionada en la barra superior.',
@@ -33,42 +33,111 @@ const PAGE_HELP = {
   members: {
     en: {
       title: 'Members',
-      overview: 'Manage club members for the active church. Search, create records, assign members to clubs, and import many members from a spreadsheet.',
+      overview: 'Manage club members for the active church. Search, filter, create records, assign members to clubs, run bulk actions on selections, and import many members from a spreadsheet.',
       steps: [
         'Confirm the church (and optional club filter) shown under the page title.',
-        'Use search to find members by name.',
-        'Click a row to open the member profile with tabs for personal data, medical info, contacts, classes, and more.',
+        'Use search to find members by name, document, or contact info.',
+        'Open the Filters section to show inactive members, hide board members, or apply advanced filters (class, requirement, age, honor, event attendance).',
+        'Select members with checkboxes to activate, deactivate, or assign/unassign a club in bulk.',
+        'Click Details on a row to open the member profile with tabs for personal data, medical info, contacts, classes, and more.',
         'Use “New member” to create a record, or “Bulk upload” to import from the Excel template.',
+        'For batch class, requirement, honor, or investiture updates, open Acciones masivas (Bulk actions) in the sidebar.',
       ],
       fields: [
-        { name: 'Search', description: 'Filters the list by first or last name.' },
-        { name: 'Show inactive', description: 'Includes members marked inactive in the list.' },
-        { name: 'Club assignment', description: 'Assign or remove the member from a club using the club buttons on each row.' },
+        { name: 'Search', description: 'Filters the list by name, document, phone, or email.' },
+        { name: 'Club filter', description: 'Limits the list to members assigned to one club, or shows all clubs.' },
+        { name: 'Show inactive', description: 'In the Filters section — includes members marked inactive.' },
+        { name: 'Hide board members', description: 'In the Filters section — hides members with an ongoing leadership position (cargo).' },
+        { name: 'Advanced filters', description: 'Combine progressive class, completed requirement, age range, assigned honor, and event attendance. All active filters must match.' },
+        { name: 'Bulk selection', description: 'Check members to activate, deactivate, assign to a club, or remove from a club.' },
+        { name: 'Club assignment (row)', description: 'Expand Actions on a row to assign or remove the member from individual clubs.' },
         { name: 'Bulk upload file', description: 'Excel (.xlsx) with columns matching the downloadable template. Select the target club, validate, then import.' },
       ],
       tips: [
         'Complete personal data and a photo before printing the member ID card.',
-        'Inactive members are hidden from most lists unless you enable “Show inactive”.',
+        'Requirement and section filters need a progressive class selected first.',
+        'Use Acciones masivas when many members need the same class assignment or requirement completion.',
       ],
     },
     es: {
       title: 'Miembros',
-      overview: 'Administre los miembros del club de la iglesia activa. Busque, cree registros, asigne miembros a clubes e importe muchos miembros desde una hoja de cálculo.',
+      overview: 'Administre los miembros del club de la iglesia activa. Busque, filtre, cree registros, asigne miembros a clubes, ejecute acciones masivas sobre selecciones e importe muchos miembros desde una hoja de cálculo.',
       steps: [
         'Confirme la iglesia (y el filtro de club opcional) que aparece bajo el título.',
-        'Use la búsqueda para encontrar miembros por nombre.',
-        'Haga clic en una fila para abrir el perfil con pestañas de datos personales, médicos, contactos, clases, etc.',
+        'Use la búsqueda para encontrar miembros por nombre, documento o contacto.',
+        'Abra la sección Filtros para mostrar inactivos, ocultar directiva o aplicar filtros avanzados (clase, requisito, edad, especialidad, asistencia a evento).',
+        'Seleccione miembros con casillas para activar, desactivar o asignar/retirar de un club en lote.',
+        'Haga clic en Detalles en una fila para abrir el perfil con pestañas de datos personales, médicos, contactos, clases, etc.',
         'Use “Nuevo miembro” para crear un registro o “Carga masiva” para importar desde la plantilla Excel.',
+        'Para actualizar clases, requisitos, especialidades o investidura en lote, abra Acciones masivas en el menú lateral.',
       ],
       fields: [
-        { name: 'Búsqueda', description: 'Filtra la lista por nombre o apellido.' },
-        { name: 'Mostrar inactivos', description: 'Incluye miembros marcados como inactivos en la lista.' },
-        { name: 'Asignación a club', description: 'Asigne o retire al miembro de un club con los botones de club en cada fila.' },
+        { name: 'Búsqueda', description: 'Filtra por nombre, documento, teléfono o correo.' },
+        { name: 'Filtro de club', description: 'Limita la lista a miembros de un club o muestra todos.' },
+        { name: 'Mostrar inactivos', description: 'En la sección Filtros — incluye miembros marcados como inactivos.' },
+        { name: 'Ocultar directiva', description: 'En la sección Filtros — oculta miembros con un cargo de liderazgo en curso.' },
+        { name: 'Filtros avanzados', description: 'Combine clase progresiva, requisito completado, rango de edad, especialidad asignada y asistencia a evento. Deben cumplirse todos los filtros activos.' },
+        { name: 'Selección masiva', description: 'Marque miembros para activar, desactivar, asignar a un club o retirar de un club.' },
+        { name: 'Asignación a club (fila)', description: 'Expanda Acciones en una fila para asignar o retirar al miembro de clubes individuales.' },
         { name: 'Archivo de carga masiva', description: 'Excel (.xlsx) con columnas según la plantilla descargable. Seleccione el club destino, valide e importe.' },
       ],
       tips: [
         'Complete los datos personales y una foto antes de imprimir el carnet.',
-        'Los miembros inactivos se ocultan en la mayoría de listas salvo que active “Mostrar inactivos”.',
+        'Los filtros de requisito requieren primero seleccionar una clase progresiva.',
+        'Use Acciones masivas cuando muchos miembros necesiten la misma asignación de clase o completado de requisitos.',
+      ],
+    },
+  },
+
+  bulkActions: {
+    en: {
+      title: 'Bulk actions',
+      overview: 'Apply the same update to many members at once using drag-and-drop action blocks. Available to admins from the sidebar under Acciones masivas.',
+      steps: [
+        'Search the member pool on the left to find who you need.',
+        'Click “Add block” to create one or more action blocks on the right.',
+        'Choose an action type and configure the progressive class, honor, requirement, or section as needed.',
+        'Drag members from the pool into a block (each member can only be in one block at a time).',
+        'Click “Apply to block” — a confirmation modal lists the action and affected members.',
+        'Confirm to run the update; successful members are cleared from the block automatically.',
+      ],
+      fields: [
+        { name: 'Assign progressive class', description: 'Adds the selected class to each member. Members who already have it are skipped.' },
+        { name: 'Complete requirement', description: 'Marks one requirement complete for every member in the block. The class must already be assigned on each member’s profile.' },
+        { name: 'Complete section', description: 'Marks all requirements in a section complete. The class must already be assigned.' },
+        { name: 'Assign honor', description: 'Assigns the selected honor (specialty) to each member.' },
+        { name: 'Record investiture', description: 'Records investiture for the selected progressive class. Creates the class assignment if missing.' },
+        { name: 'Member pool', description: 'Active members for the church (and active club scope when set). Drag chips into blocks.' },
+      ],
+      tips: [
+        'Completion date for requirements defaults to today; the logged-in user is recorded as validator when available.',
+        'If requirement or section apply fails, the error lists members missing the class assignment — assign the class on their profile first.',
+        'You can run several blocks in parallel with different actions before reloading the page.',
+      ],
+    },
+    es: {
+      title: 'Acciones masivas',
+      overview: 'Aplique la misma actualización a muchos miembros a la vez con bloques de acción de arrastrar y soltar. Disponible para administradores en el menú lateral como Acciones masivas.',
+      steps: [
+        'Busque en el pool de miembros a la izquierda quiénes necesita.',
+        'Haga clic en “Agregar bloque” para crear uno o más bloques de acción a la derecha.',
+        'Elija el tipo de acción y configure la clase progresiva, especialidad, requisito o sección según corresponda.',
+        'Arrastre miembros del pool hacia un bloque (cada miembro solo puede estar en un bloque a la vez).',
+        'Pulse “Aplicar al bloque” — un modal de confirmación lista la acción y los miembros afectados.',
+        'Confirme para ejecutar la actualización; los miembros exitosos se quitan del bloque automáticamente.',
+      ],
+      fields: [
+        { name: 'Asignar clase progresiva', description: 'Agrega la clase seleccionada a cada miembro. Se omiten quienes ya la tienen asignada.' },
+        { name: 'Completar requisito', description: 'Marca un requisito como completado para cada miembro del bloque. La clase debe estar ya asignada en el perfil de cada uno.' },
+        { name: 'Completar sección', description: 'Marca todos los requisitos de una sección como completados. La clase debe estar ya asignada.' },
+        { name: 'Asignar especialidad', description: 'Asigna la especialidad seleccionada a cada miembro.' },
+        { name: 'Registrar investidura', description: 'Registra investidura para la clase progresiva seleccionada. Crea la asignación de clase si falta.' },
+        { name: 'Pool de miembros', description: 'Miembros activos de la iglesia (y del club activo cuando aplica). Arrastre fichas hacia los bloques.' },
+      ],
+      tips: [
+        'La fecha de completado de requisitos es la de hoy; se registra el usuario en sesión como validador cuando está disponible.',
+        'Si falla completar requisito o sección, el error lista miembros sin la clase asignada — asigne la clase en su perfil primero.',
+        'Puede ejecutar varios bloques con acciones distintas antes de recargar la página.',
       ],
     },
   },
@@ -166,7 +235,8 @@ const PAGE_HELP = {
         'Click “New club” and fill in name, type, and optional logo.',
         'Open a club to see assigned members and details.',
         'Use “Board” (Directiva) to see current leadership positions sorted by role order.',
-        'Use the active club selector in the top bar to scope other pages (members, calendar, planning).',
+        'Use the active club selector in the top bar to scope other pages (members, calendar, planning, bulk actions).',
+        'Print all club carnets from Administration → Print club carnets.',
       ],
       fields: [
         { name: 'Name', description: 'Club name shown across the app (e.g. “Pathfinder Club Alpha”).' },
@@ -187,7 +257,8 @@ const PAGE_HELP = {
         'Haga clic en “Nuevo club” y complete nombre, tipo y logo opcional.',
         'Abra un club para ver miembros asignados y detalles.',
         'Use “Directiva” para ver los cargos en curso ordenados según la jerarquía definida.',
-        'Use el selector de club activo en la barra superior para acotar otras páginas (miembros, calendario, planificación).',
+        'Use el selector de club activo en la barra superior para acotar otras páginas (miembros, calendario, planificación, acciones masivas).',
+        'Imprima todos los carnets del club desde Administración → Imprimir carnets del club.',
       ],
       fields: [
         { name: 'Nombre', description: 'Nombre del club visible en la aplicación.' },
@@ -505,12 +576,12 @@ const PAGE_HELP = {
   progressiveClasses: {
     en: {
       title: 'Progressive classes',
-      overview: 'Define class curricula (Friend, Companion, etc.) with sections and numbered requirements. Used in period planning and member class progress.',
+      overview: 'Define class curricula (Friend, Companion, etc.) with sections and numbered requirements. Used in period planning, member class progress, member list filters, and bulk actions.',
       steps: [
         'Select or create a progressive class for a club type.',
         'Add sections (basic and advanced parts) with Roman numerals if needed.',
         'Add requirements with number, description, optional text, and expected sessions (0–10, default 3).',
-        'Assign the class to members from their profile → Classes tab.',
+        'Assign the class to members from their profile → Classes tab, or in bulk from Acciones masivas.',
       ],
       fields: [
         { name: 'Class name', description: 'Name of the progressive class level.' },
@@ -521,16 +592,17 @@ const PAGE_HELP = {
       ],
       tips: [
         'Expected sessions pre-fill the value when dragging requirements onto plan meetings.',
+        'Use Acciones masivas to assign a class or mark requirements complete for many members at once.',
       ],
     },
     es: {
       title: 'Clases progresivas',
-      overview: 'Defina currículos de clase (Amigo, Compañero, etc.) con secciones y requisitos numerados. Se usan en planificación de periodo y progreso del miembro.',
+      overview: 'Defina currículos de clase (Amigo, Compañero, etc.) con secciones y requisitos numerados. Se usan en planificación de periodo, progreso del miembro, filtros de la lista de miembros y acciones masivas.',
       steps: [
         'Seleccione o cree una clase progresiva para un tipo de club.',
         'Agregue secciones (partes básica y avanzada) con numerales romanos si aplica.',
         'Agregue requisitos con número, descripción, texto opcional y sesiones esperadas (0–10, predeterminado 3).',
-        'Asigne la clase a miembros desde su perfil → pestaña Clases.',
+        'Asigne la clase a miembros desde su perfil → pestaña Clases, o en lote desde Acciones masivas.',
       ],
       fields: [
         { name: 'Nombre de la clase', description: 'Nombre del nivel de clase progresiva.' },
@@ -541,6 +613,7 @@ const PAGE_HELP = {
       ],
       tips: [
         'Las sesiones esperadas prellenan el valor al arrastrar requisitos a reuniones del plan.',
+        'Use Acciones masivas para asignar una clase o marcar requisitos completos para muchos miembros a la vez.',
       ],
     },
   },
@@ -832,6 +905,7 @@ const PAGE_HELP = {
       ],
       fields: [
         { name: 'First / last names', description: 'Legal or preferred name as it should print on documents.' },
+        { name: 'Optional name / last name', description: 'When set, used in on-screen member listings only. Carnets and medical printouts always use the legal first name, first last name, and second last name.' },
         { name: 'Birth date', description: 'Used for birthday lists on the home page.' },
         { name: 'Document ID', description: 'National ID or member number if applicable.' },
         { name: 'Phone / cell', description: 'Contact numbers for leaders and emergencies.' },
@@ -848,6 +922,7 @@ const PAGE_HELP = {
       ],
       fields: [
         { name: 'Nombres / apellidos', description: 'Nombre legal o preferido para documentos.' },
+        { name: 'Nombre / apellido opcional', description: 'Si se indican, se usan solo en listas en pantalla. Carnets y fichas médicas impresas siempre usan el nombre legal completo.' },
         { name: 'Fecha de nacimiento', description: 'Usada en cumpleaños del inicio.' },
         { name: 'Documento', description: 'Identificación nacional o número de miembro si aplica.' },
         { name: 'Teléfono / celular', description: 'Contacto para líderes y emergencias.' },
@@ -929,7 +1004,7 @@ const PAGE_HELP = {
   memberSpecialties: {
     en: {
       title: 'Member honors',
-      overview: 'Assign honors from the catalog and track requirement completion for this member.',
+      overview: 'Assign honors from the catalog and track requirement completion for this member. Bulk honor assignment is available on Acciones masivas.',
       steps: [
         'Assign an honor from the available list for the member’s clubs.',
         'Open each requirement to mark complete and record who validated it.',
@@ -941,11 +1016,12 @@ const PAGE_HELP = {
       ],
       tips: [
         'The member must belong to a club before honors can be assigned.',
+        'Use Acciones masivas to assign the same honor to many members at once.',
       ],
     },
     es: {
       title: 'Especialidades del miembro',
-      overview: 'Asigne especialidades del catálogo y registre el cumplimiento de requisitos para este miembro.',
+      overview: 'Asigne especialidades del catálogo y registre el cumplimiento de requisitos para este miembro. La asignación masiva de especialidades está en Acciones masivas.',
       steps: [
         'Asigne una especialidad de la lista disponible según los clubes del miembro.',
         'Abra cada requisito para marcarlo completo y registrar quién lo validó.',
@@ -957,6 +1033,7 @@ const PAGE_HELP = {
       ],
       tips: [
         'El miembro debe pertenecer a un club antes de asignar especialidades.',
+        'Use Acciones masivas para asignar la misma especialidad a muchos miembros a la vez.',
       ],
     },
   },
@@ -1003,30 +1080,56 @@ const PAGE_HELP = {
   memberClasses: {
     en: {
       title: 'Member classes',
-      overview: 'Assign progressive classes and track each requirement’s completion for this member.',
+      overview: 'Assign progressive classes and track each requirement’s completion, overall progress status, investiture, and class history for this member.',
       steps: [
         'Assign a class level appropriate for the member’s club type.',
+        'Open the ⋯ menu on a class to update progress status, completion date, and investiture details.',
         'Expand requirements and mark them complete as the member finishes activities.',
+        'Review pending approval requests from the member portal — approve to mark requirements or class completion automatically.',
         'Use optional replacement text when a requirement is fulfilled differently.',
+        'Review or add past class records in the class history section.',
+        'For the same update on many members, use Acciones masivas (Bulk actions) in the sidebar.',
       ],
       fields: [
         { name: 'Class', description: 'Progressive class level (Friend, Companion, etc.).' },
+        { name: 'Progress status', description: 'Not started, in progress, incomplete, completed, or invested — shown as a badge on each assignment.' },
         { name: 'Requirement', description: 'Individual activity from the class curriculum.' },
-        { name: 'Validated by', description: 'Leader who confirmed completion.' },
+        { name: 'Investiture', description: 'Date, place, and validator when the member received investiture for this class.' },
+        { name: 'Class history', description: 'Past class records with club, status, and investiture notes.' },
+        { name: 'Validated by', description: 'Leader who confirmed requirement completion.' },
+        { name: 'Approval request', description: 'Member-submitted request to mark a requirement or whole class complete; appears at the top until reviewed.' },
+      ],
+      tips: [
+        'Members can request approval from their portal Classes tab; you approve or reject here.',
+        'Bulk requirement, section, class assignment, and investiture updates are available on Acciones masivas.',
+        'Deactivating a class assignment keeps history; re-assign from the dropdown when needed.',
       ],
     },
     es: {
       title: 'Clases del miembro',
-      overview: 'Asigne clases progresivas y registre el cumplimiento de cada requisito para este miembro.',
+      overview: 'Asigne clases progresivas y registre el cumplimiento de cada requisito, el estado de progreso, la investidura y el historial de clases de este miembro.',
       steps: [
         'Asigne un nivel de clase acorde al tipo de club del miembro.',
+        'Abra el menú ⋯ de una clase para actualizar estado de progreso, fecha de completado e investidura.',
         'Expanda requisitos y márquelos completos conforme avance el miembro.',
+        'Revise solicitudes de aprobación del portal del miembro — al aprobar se marcan requisitos o la clase automáticamente.',
         'Use texto alternativo cuando un requisito se cumpla de otra forma.',
+        'Revise o agregue registros pasados en la sección de historial de clases.',
+        'Para la misma actualización en muchos miembros, use Acciones masivas en el menú lateral.',
       ],
       fields: [
         { name: 'Clase', description: 'Nivel progresivo (Amigo, Compañero, etc.).' },
+        { name: 'Estado de progreso', description: 'Sin iniciar, en progreso, incompleta, completada o investida — se muestra como insignia en cada asignación.' },
         { name: 'Requisito', description: 'Actividad individual del currículo.' },
-        { name: 'Validado por', description: 'Líder que confirmó el cumplimiento.' },
+        { name: 'Investidura', description: 'Fecha, lugar y validador cuando el miembro recibió investidura para esta clase.' },
+        { name: 'Historial de clases', description: 'Registros pasados con club, estado y notas de investidura.' },
+        { name: 'Validado por', description: 'Líder que confirmó el cumplimiento del requisito.' },
+        { name: 'Solicitud de aprobación', description: 'Solicitud del miembro para marcar un requisito o la clase completa; aparece arriba hasta revisarla.' },
+      ],
+      tips: [
+        'Los miembros pueden solicitar aprobación desde Clases en su portal; usted aprueba o rechaza aquí.',
+        'Las actualizaciones masivas de requisitos, secciones, asignación de clase e investidura están en Acciones masivas.',
+        'Al desactivar una asignación de clase se conserva el historial; vuelva a asignar desde el selector cuando haga falta.',
       ],
     },
   },
@@ -1083,6 +1186,51 @@ const PAGE_HELP = {
       ],
       tips: [
         'El check-in QR y la lista manual alimentan este resumen.',
+      ],
+    },
+  },
+
+  clubCarnetsPrint: {
+    en: {
+      title: 'Print club ID cards',
+      overview: 'Generate print-ready member carnets for every active member in a club, laid out on US Letter pages (two cards per sheet, front and back).',
+      steps: [
+        'Open from Administration → Print club carnets, or select a club first.',
+        'Choose the club if more than one is available.',
+        'Wait for members and QR tokens to load.',
+        'Click Print all to open the browser print dialog.',
+        'Use the print hint to load card stock or plain paper as appropriate.',
+      ],
+      fields: [
+        { name: 'Club selector', description: 'Which club’s members will appear on the print batch.' },
+        { name: 'Member count', description: 'How many carnets are ready (members need saved personal data).' },
+        { name: 'Letter pages', description: 'Estimated sheets for the batch layout.' },
+      ],
+      tips: [
+        'Members without a photo still print but look best with a portrait on the Personal data tab.',
+        'QR codes use secure tokens for event check-in — re-print after club or photo changes.',
+        'Individual carnets are also available on each member’s Carnet tab.',
+      ],
+    },
+    es: {
+      title: 'Imprimir carnets del club',
+      overview: 'Genere carnets listos para imprimir de todos los miembros activos de un club, en páginas carta (dos carnets por hoja, frente y reverso).',
+      steps: [
+        'Ábralo desde Administración → Imprimir carnets del club, o seleccione un club primero.',
+        'Elija el club si hay más de uno disponible.',
+        'Espere a que carguen los miembros y los tokens QR.',
+        'Haga clic en Imprimir todos para abrir el diálogo de impresión del navegador.',
+        'Siga la indicación de impresión para usar cartulina o papel según corresponda.',
+      ],
+      fields: [
+        { name: 'Selector de club', description: 'De qué club se imprimirán los miembros.' },
+        { name: 'Cantidad de miembros', description: 'Cuántos carnets están listos (los miembros necesitan datos personales guardados).' },
+        { name: 'Páginas carta', description: 'Hojas estimadas para el lote de impresión.' },
+      ],
+      tips: [
+        'Los miembros sin foto igual se imprimen, pero se ven mejor con retrato en Datos personales.',
+        'Los códigos QR usan tokens seguros para check-in — vuelva a imprimir tras cambios de club o foto.',
+        'Los carnets individuales también están en la pestaña Carnet de cada miembro.',
       ],
     },
   },

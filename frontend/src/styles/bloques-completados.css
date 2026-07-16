@@ -230,6 +230,25 @@
   margin-bottom: 6px;
 }
 
+.bloques-apply-modal__field {
+  display: grid;
+  gap: 6px;
+}
+
+.bloques-apply-modal__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.bloques-apply-modal__field-hint {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
 .bloques-apply-modal__action {
   margin: 0;
   padding: 10px 12px;

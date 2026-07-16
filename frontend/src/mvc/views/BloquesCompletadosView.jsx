@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import ListSearchInput from '../../components/ListSearchInput';
 import BloquesCompletadosBoard from '../../components/BloquesCompletadosBoard';
 import BloquesCompletadosApplyModal from '../../components/BloquesCompletadosApplyModal';
+import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 import '../../styles/bloques-completados.css';
 
@@ -34,6 +35,7 @@ export default function BloquesCompletadosView({
   memberDisplayName,
   sectionTitle,
   requisitoLabel,
+  defaultValidatorName,
   actionTypes,
 }) {
   const { t } = useLanguage();
@@ -49,7 +51,7 @@ export default function BloquesCompletadosView({
   return (
     <div className="form-container">
       <div className="form-header">
-        <h1>{t('completedBlocks')}</h1>
+        <h1>{t('completedBlocks')} <PageHelpLink pageId="bulkActions" /></h1>
       </div>
 
       <p className="bloques-intro">{t('completedBlocksIntro')}</p>
@@ -110,6 +112,7 @@ export default function BloquesCompletadosView({
       <BloquesCompletadosApplyModal
         pending={pendingApply}
         applying={Boolean(applyingBlockId)}
+        defaultValidatorName={defaultValidatorName}
         onConfirm={confirmApplyBlock}
         onCancel={cancelApplyBlock}
         t={t}

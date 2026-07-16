@@ -127,7 +127,7 @@ function missingColumnFromError(error) {
   return match?.[1] || null;
 }
 
-function enrichRequisitoRows(rows) {
+export function enrichRequisitoRows(rows) {
   return (rows || []).map(row => ({
     ...row,
     numero: row.numero ?? null,
@@ -987,4 +987,69 @@ export async function updateMiembroClaseHistorial(id, fields) {
 
 export async function deleteMiembroClaseHistorial(id) {
   return sb.from('miembro_clase_historial').delete().eq('id', id);
+}
+
+export function mapSeccionesByClase(secciones = []) {
+  const map = {};
+  for (const seccion of secciones || []) {
+    const claseId = seccion.clase_id;
+    if (!claseId) continue;
+    if (!map[claseId]) map[claseId] = [];
+    map[claseId].push(seccion);
+  }
+  return map;
+}
+
+export function mapSolicitudesByAssignment(solicitudes = []) {
+  const map = {};
+  for (const row of solicitudes || []) {
+    const assignmentId = row.miembro_clase_progresiva_id;
+    if (!assignmentId) continue;
+    if (!map[assignmentId]) map[assignmentId] = { clase: null, requisitos: {} };
+    if (row.tipo === 'clase') {
+      map[assignmentId].clase = row;
+    } else if (row.clase_requisito_id) {
+      map[assignmentId].requisitos[row.clase_requisito_id] = row;
+    }
+  }
+  return map;
+}
+
+export function getSolicitudForRequisito(solicitudesMap, assignmentId, requisitoId) {
+  return solicitudesMap?.[assignmentId]?.requisitos?.[requisitoId] || null;
+}
+
+export function getSolicitudForClase(solicitudesMap, assignmentId) {
+  return solicitudesMap?.[assignmentId]?.clase || null;
+}
+
+export async function fetchMiembroClaseAprobacionSolicitudes(miembroId) {
+  const { data, error } = await sb.rpc('fetch_miembro_clase_aprobacion_solicitudes', {
+    p_miembro_id: miembroId,
+  });
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('fetch_miembro_clase_aprobacion_solicitudes') || msg.includes('does not exist')) {
+      return { data: [], error: null };
+    }
+    return { data: [], error };
+  }
+  const rows = typeof data === 'string' ? JSON.parse(data) : data;
+  return { data: rows || [], error: null };
+}
+
+export async function reviewMiembroClaseAprobacionSolicitud({
+  solicitudId,
+  aprobar,
+  comentarioLider = null,
+  revisorUsuarioId = null,
+  revisorNombre = null,
+}) {
+  return sb.rpc('review_miembro_clase_aprobacion_solicitud', {
+    p_solicitud_id: solicitudId,
+    p_aprobar: aprobar,
+    p_comentario_lider: comentarioLider,
+    p_revisor_usuario_id: revisorUsuarioId,
+    p_revisor_nombre: revisorNombre,
+  });
 }

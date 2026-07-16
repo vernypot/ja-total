@@ -150,6 +150,137 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   color: var(--color-text-primary);
 }
 
+.list-item--needs-confirm {
+  border-color: #fdba74;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15);
+}
+
+.member-event-confirm-banner {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.member-event-confirm-banner__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.member-event-confirm-banner__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.member-event-confirm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-event-confirm-btn {
+  flex: 1 1 140px;
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.member-event-confirm-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.member-event-confirm-btn--confirm {
+  background: #16a34a;
+  color: #fff;
+  border-color: #15803d;
+}
+
+.member-event-confirm-btn--confirm[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+.member-event-confirm-btn--decline {
+  background: #fff;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.member-event-confirm-btn--decline[aria-pressed='true'] {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.member-event-confirm-btn:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.member-event-confirm-banner--resolved {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.member-event-confirm-banner--resolved .member-event-confirm-banner__label {
+  color: #166534;
+}
+
+.member-event-confirm-cancel {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.member-event-confirm-cancel:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.member-event-confirm-status-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.member-event-confirm-status-home {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.member-event-status-only {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.member-event-attendance-summary {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
 .checkin-session-page {
   padding: 24px 0;
 }

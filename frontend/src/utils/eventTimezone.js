@@ -159,6 +159,28 @@ export function computeCheckinAttendanceEstado(checkinAt, evento, { graceMinutes
   return checkin.getTime() <= graceEnd.getTime() ? 'a_tiempo' : 'tarde';
 }
 
+export function eventHasScheduledTime(evento) {
+  if (!evento) return false;
+  const raw = evento.hora;
+  return raw != null && String(raw).trim() !== '';
+}
+
+/** Members can confirm through the event date when no start time is set. */
+export function isEventOpenForMemberConfirmation(evento, now = new Date(), timeZone = DEFAULT_CHURCH_TIMEZONE) {
+  const fecha = normalizeEventDate(evento?.fecha);
+  if (!fecha) return false;
+
+  const zone = normalizeChurchTimezone(timeZone || getEventChurchTimezone(evento));
+
+  if (!eventHasScheduledTime(evento)) {
+    return fecha >= getLocalTodayIso(now, zone);
+  }
+
+  const start = getEventStartInstant(evento, zone);
+  if (!start) return false;
+  return start > now;
+}
+
 export function isEventInFuture(evento, now = new Date(), timeZone = DEFAULT_CHURCH_TIMEZONE) {
   const start = getEventStartInstant(evento, timeZone);
   if (!start) return false;

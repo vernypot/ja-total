@@ -42,6 +42,8 @@ BEGIN
             'nombre', m.nombre,
             'apellido1', m.apellido1,
             'apellido2', m.apellido2,
+            'nombre_opcional', m.nombre_opcional,
+            'apellido_opcional', m.apellido_opcional,
             'fecha_nacimiento', m.fecha_nacimiento,
             'genero', m.genero,
             'documento', m.documento,
@@ -264,15 +266,63 @@ BEGIN
               'orden', cr.orden,
               'descripcion', cr.descripcion,
               'texto_opcional', cr.texto_opcional,
-              'sesiones_esperadas', cr.sesiones_esperadas
+              'sesiones_esperadas', cr.sesiones_esperadas,
+              'clase_requisito_secciones', CASE
+                WHEN crs.id IS NOT NULL THEN json_build_object(
+                  'id', crs.id,
+                  'parte', crs.parte,
+                  'numero_romano', crs.numero_romano,
+                  'nombre', crs.nombre,
+                  'orden', crs.orden
+                )
+                ELSE NULL
+              END
             ))
             FROM public.clase_requisitos cr
+            LEFT JOIN public.clase_requisito_secciones crs ON crs.id = cr.seccion_id
             WHERE cr.clase_id IN (
               SELECT mcp.%1$I
               FROM public.miembro_clase_progresiva mcp
               WHERE mcp.miembro_id = %9$L
             )
           ), '[]'::json),
+          'secciones', coalesce((
+            SELECT json_agg(json_build_object(
+              'id', crs.id,
+              'clase_id', crs.clase_id,
+              'parte', crs.parte,
+              'numero_romano', crs.numero_romano,
+              'nombre', crs.nombre,
+              'orden', crs.orden
+            ) ORDER BY crs.clase_id, crs.orden, crs.parte)
+            FROM public.clase_requisito_secciones crs
+            WHERE crs.clase_id IN (
+              SELECT mcp.%1$I
+              FROM public.miembro_clase_progresiva mcp
+              WHERE mcp.miembro_id = %9$L
+            )
+          ), '[]'::json),
+          'solicitudes', CASE
+            WHEN EXISTS (
+              SELECT 1 FROM information_schema.tables
+              WHERE table_schema = 'public' AND table_name = 'miembro_clase_aprobacion_solicitud'
+            ) THEN coalesce((
+              SELECT json_agg(json_build_object(
+                'id', s.id,
+                'miembro_clase_progresiva_id', s.miembro_clase_progresiva_id,
+                'clase_requisito_id', s.clase_requisito_id,
+                'tipo', s.tipo,
+                'estado', s.estado,
+                'comentario_miembro', s.comentario_miembro,
+                'comentario_lider', s.comentario_lider,
+                'solicitado_at', s.solicitado_at,
+                'revisado_at', s.revisado_at
+              ) ORDER BY s.solicitado_at DESC)
+              FROM public.miembro_clase_aprobacion_solicitud s
+              WHERE s.miembro_id = %9$L
+            ), '[]'::json)
+            ELSE '[]'::json
+          END,
           'completions', coalesce((
             SELECT json_agg(json_build_object(
               'id', mcr.id,
@@ -375,6 +425,8 @@ BEGIN
             'nombre', m.nombre,
             'apellido1', m.apellido1,
             'apellido2', m.apellido2,
+            'nombre_opcional', m.nombre_opcional,
+            'apellido_opcional', m.apellido_opcional,
             'fecha_nacimiento', m.fecha_nacimiento,
             'foto_url', m.foto_url
           )

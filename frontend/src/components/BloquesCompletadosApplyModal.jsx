@@ -1,13 +1,33 @@
+import { useEffect, useState } from 'react';
+
+function blockNeedsValidator(block) {
+  return block?.actionType === 'requisito' || block?.actionType === 'seccion';
+}
+
 export default function BloquesCompletadosApplyModal({
   pending,
   applying,
+  defaultValidatorName = '',
   onConfirm,
   onCancel,
   t,
 }) {
+  const [validatedBy, setValidatedBy] = useState('');
+
+  useEffect(() => {
+    if (pending) {
+      setValidatedBy(defaultValidatorName || '');
+    }
+  }, [pending, defaultValidatorName]);
+
   if (!pending) return null;
 
-  const { summary, members, count } = pending;
+  const { summary, members, count, block } = pending;
+  const needsValidator = blockNeedsValidator(block);
+
+  function handleConfirm() {
+    onConfirm(needsValidator ? validatedBy.trim() : undefined);
+  }
 
   return (
     <div
@@ -26,13 +46,35 @@ export default function BloquesCompletadosApplyModal({
         </h3>
 
         <p className="bloques-apply-modal__hint">
-          {t('completedBlocksApplyModalHint')}
+          {needsValidator
+            ? t('completedBlocksApplyModalRequisitoHint')
+            : t('completedBlocksApplyModalHint')}
         </p>
 
         <div className="bloques-apply-modal__section">
           <span className="bloques-apply-modal__label">{t('completedBlocksApplyModalAction')}</span>
           <p className="bloques-apply-modal__action">{summary}</p>
         </div>
+
+        {needsValidator && (
+          <div className="bloques-apply-modal__section">
+            <label className="bloques-apply-modal__field" htmlFor="bloques-validated-by">
+              <span className="bloques-apply-modal__label">{t('validatedBy')}</span>
+              <input
+                id="bloques-validated-by"
+                type="text"
+                value={validatedBy}
+                disabled={applying}
+                placeholder={t('validatedByPlaceholder')}
+                onChange={e => setValidatedBy(e.target.value)}
+                className="bloques-apply-modal__input"
+              />
+              <span className="bloques-apply-modal__field-hint">
+                {t('completedBlocksApplyModalValidatedByHint')}
+              </span>
+            </label>
+          </div>
+        )}
 
         <div className="bloques-apply-modal__section">
           <span className="bloques-apply-modal__label">
@@ -57,8 +99,8 @@ export default function BloquesCompletadosApplyModal({
           <button
             type="button"
             className="btn btn-sm btn-primary"
-            onClick={onConfirm}
-            disabled={applying}
+            onClick={handleConfirm}
+            disabled={applying || (needsValidator && !validatedBy.trim())}
           >
             {applying ? t('loading') : t('completedBlocksApplyModalConfirm')}
           </button>

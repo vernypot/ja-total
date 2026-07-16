@@ -3,7 +3,10 @@ import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { formatCalendarPeriodLabel, formatEventTime } from '../../utils/calendar';
 import { formatEventLocalDate } from '../../utils/eventTimezone';
 import { PageHelpLink } from '../../components/PageHelp';
+import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
+import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import '../../styles/calendario.css';
+import '../../styles/eventAttendance.css';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const VIEW_MODES = [
@@ -189,6 +192,7 @@ function DayActivitiesPanel({
 function EventDetailModal({
   event,
   assignments,
+  memberEventRow = null,
   loading,
   t,
   language,
@@ -201,6 +205,9 @@ function EventDetailModal({
   getConfirmacionFromRow,
   memberDisplayName,
   readOnly = false,
+  updateConfirmation,
+  savingConfirmationId = null,
+  canMemberConfirmEvent,
 }) {
   if (!event) return null;
 
@@ -312,7 +319,57 @@ function EventDetailModal({
             </p>
           )}
 
+          {readOnly && memberEventRow && canMemberConfirmEvent?.(memberEventRow) && updateConfirmation && (
+            <div style={{ marginTop: '16px' }}>
+              <h4 style={{ margin: '0 0 8px', fontSize: '14px' }}>{t('attendanceConfirmation')}</h4>
+              <MemberEventConfirmBlock
+                row={memberEventRow}
+                updateConfirmation={updateConfirmation}
+                savingConfirmationId={savingConfirmationId}
+                t={t}
+              />
+            </div>
+          )}
+
+          {readOnly && memberEventRow && !canMemberConfirmEvent?.(memberEventRow) && (
+            getConfirmacionFromRow(memberEventRow) !== 'pendiente' || needsConfirmation
+          ) && (
+            <div style={{ marginTop: '16px' }}>
+              {getConfirmacionFromRow(memberEventRow) !== 'pendiente' ? (
+                <MemberEventConfirmationStatus
+                  row={memberEventRow}
+                  updateConfirmation={updateConfirmation}
+                  savingConfirmationId={savingConfirmationId}
+                  t={t}
+                  showLabel={false}
+                />
+              ) : (
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                  {t('attendanceConfirmation')}: {confirmationLabel(getConfirmacionFromRow(memberEventRow), t)}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="calendario-event-detail-actions">
+            {readOnly && (
+              <button
+                type="button"
+                onClick={onManage}
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              >
+                {t('portalHomeViewAllEvents')}
+              </button>
+            )}
             {!readOnly && (
             <button
               type="button"
@@ -378,11 +435,15 @@ export default function CalendarioClubView({
   selectedDayEvents,
   selectedEvent,
   selectedEventAssignments,
+  memberEventRow = null,
   loadingEventDetail,
   selectDate,
   selectEvent,
   closeEventDetail,
   openEventInEventsPage,
+  updateConfirmation,
+  savingConfirmationId = null,
+  canMemberConfirmEvent,
   isEventInFuture,
   eventRequiresConfirmation,
   getTipoEventoNombre,
@@ -551,6 +612,7 @@ export default function CalendarioClubView({
         <EventDetailModal
           event={selectedEvent}
           assignments={selectedEventAssignments}
+          memberEventRow={memberEventRow}
           loading={loadingEventDetail}
           t={t}
           language={language}
@@ -563,6 +625,9 @@ export default function CalendarioClubView({
           getAsistenciaFromRow={getAsistenciaFromRow}
           getConfirmacionFromRow={getConfirmacionFromRow}
           memberDisplayName={memberDisplayName}
+          updateConfirmation={updateConfirmation}
+          savingConfirmationId={savingConfirmationId}
+          canMemberConfirmEvent={canMemberConfirmEvent}
         />
       )}
     </div>

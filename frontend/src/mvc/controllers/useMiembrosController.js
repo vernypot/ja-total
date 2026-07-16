@@ -84,6 +84,7 @@ export function useMiembrosController() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (memberFilters.claseId) count += 1;
+    if (memberFilters.claseId && memberFilters.claseEstadoProgreso) count += 1;
     if (memberFilters.requisitoId) count += 1;
     if (memberFilters.minAge !== '' && memberFilters.minAge != null) count += 1;
     if (memberFilters.maxAge !== '' && memberFilters.maxAge != null) count += 1;
@@ -97,6 +98,8 @@ export function useMiembrosController() {
       m.nombre,
       m.apellido1,
       m.apellido2,
+      m.nombre_opcional,
+      m.apellido_opcional,
       m.documento,
       m.celular,
       m.email,
@@ -578,15 +581,23 @@ export function useMiembrosController() {
       try {
         const sets = [];
 
+        const claseFilterOptions = {
+          estadoProgreso: memberFilters.claseEstadoProgreso || '',
+        };
+
         if (memberFilters.claseId && memberFilters.requisitoId) {
           const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsWithCompletedRequisito(
             memberFilters.claseId,
             memberFilters.requisitoId,
+            claseFilterOptions,
           );
           if (error) throw error;
           sets.push(new Set(memberIds));
         } else if (memberFilters.claseId) {
-          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsAssignedToClase(memberFilters.claseId);
+          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsAssignedToClase(
+            memberFilters.claseId,
+            claseFilterOptions,
+          );
           if (error) throw error;
           sets.push(new Set(memberIds));
         }

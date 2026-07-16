@@ -1,5 +1,8 @@
 import { sb } from '../../services/supabase';
 import * as ContactosModel from './contactos.model';
+import { MIEMBRO_NAME_FIELDS, memberDisplayName } from '../../utils/memberDisplayName';
+
+export { MIEMBRO_NAME_FIELDS };
 
 const MIEMBRO_FOTOS_BUCKET = 'miembro-fotos';
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -120,7 +123,7 @@ function todayISO() {
 }
 
 export async function fetchMiembrosByClub(clubId) {
-  let query = sb.from('miembro_club').select('miembros(id,nombre,apellido1,apellido2,estado)');
+  let query = sb.from('miembro_club').select(`miembros(id,${MIEMBRO_NAME_FIELDS},estado)`);
   if (clubId) query = query.eq('club_id', clubId);
   return query;
 }
@@ -138,13 +141,13 @@ export async function fetchMiembrosByIglesia(iglesiaId, { clubFilter, showInacti
 
   const { data: rows, error } = await sb
     .from('miembro_club')
-    .select('club_id, miembro_id, miembros(id,nombre,apellido1,apellido2,estado,fecha_nacimiento)')
+    .select(`club_id, miembro_id, miembros(id,${MIEMBRO_NAME_FIELDS},estado,fecha_nacimiento)`)
     .in('club_id', clubIds);
 
   if (error) {
     const fallback = await sb
       .from('miembro_club')
-      .select('club_id, miembro_id, miembros(id,nombre,apellido1,apellido2,estado)')
+      .select(`club_id, miembro_id, miembros(id,${MIEMBRO_NAME_FIELDS},estado)`)
       .in('club_id', clubIds);
 
     if (fallback.error) return { data: [], error: fallback.error };
@@ -170,6 +173,8 @@ function buildMembersFromClubRows(rows, { clubFilter, showInactive = false } = {
         nombre: m?.nombre || '',
         apellido1: m?.apellido1 || '',
         apellido2: m?.apellido2 || '',
+        nombre_opcional: m?.nombre_opcional || '',
+        apellido_opcional: m?.apellido_opcional || '',
         estado: m?.estado || 'activo',
         fecha_nacimiento: m?.fecha_nacimiento || null,
         clubIds: new Set(),
@@ -180,7 +185,7 @@ function buildMembersFromClubRows(rows, { clubFilter, showInactive = false } = {
 
   let members = Array.from(byMember.values())
     .map(m => ({ ...m, clubIds: Array.from(m.clubIds) }))
-    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+    .sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b), undefined, { sensitivity: 'base' }));
 
   if (clubFilter) {
     members = members.filter(m => m.clubIds.includes(clubFilter));
@@ -220,7 +225,7 @@ export async function unassignMiembroFromClub(miembroId, clubId) {
 export async function fetchMiembroById(id) {
   return sb
     .from('miembros')
-    .select('nombre,apellido1,apellido2,fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular')
+    .select(`${MIEMBRO_NAME_FIELDS},fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular`)
     .eq('id', id)
     .single();
 }

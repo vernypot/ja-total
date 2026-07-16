@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
 
 function RequirementsList({ requisitos, t }) {
@@ -32,6 +33,20 @@ export default function MiembroEspecialidadesView({
   getLinkEspecialidadId,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
+
+  function confirmUnassignSpecialty(linkId, specialtyName) {
+    askConfirm({
+      title: t('confirmUnassignSpecialtyTitle'),
+      message: t('confirmUnassignSpecialtyMessage'),
+      highlight: specialtyName,
+      confirmLabel: t('remove'),
+      onConfirm: async () => { await unassignEspecialidad(linkId); },
+    });
+  }
 
   if (loading) {
     return <p>{t('loadingData')}</p>;
@@ -120,7 +135,7 @@ export default function MiembroEspecialidadesView({
                   {canManage && (
                   <button
                     type="button"
-                    onClick={() => unassignEspecialidad(row.id)}
+                    onClick={() => confirmUnassignSpecialty(row.id, esp?.nombre || t('notAvailable'))}
                     style={{ padding: '6px 12px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
                   >
                     ✕ {t('remove')}
@@ -132,6 +147,7 @@ export default function MiembroEspecialidadesView({
           })}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

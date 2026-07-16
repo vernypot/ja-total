@@ -1,4 +1,8 @@
 import { useLanguage } from '../hooks/useLanguage';
+import {
+  MIEMBRO_CLASE_PROGRESO_ESTADOS,
+  miembroClaseProgresoEstadoLabel,
+} from '../constants/miembroClaseProgresoEstado';
 
 export default function MemberFiltersPanel({
   filters,
@@ -10,9 +14,14 @@ export default function MemberFiltersPanel({
   eventos = [],
   loading = false,
   activeCount = 0,
+  showInactive = false,
+  onShowInactiveChange,
+  hideBoardMembers = false,
+  onHideBoardMembersChange,
 }) {
   const { t } = useLanguage();
   const showRequisitoFilter = Boolean(filters.claseId);
+  const showClaseEstadoFilter = Boolean(filters.claseId);
 
   return (
     <div className="member-filters">
@@ -28,13 +37,38 @@ export default function MemberFiltersPanel({
         )}
       </div>
 
+      <div className="member-filters__options">
+        <label className="filter-checkbox-label">
+          <input
+            type="checkbox"
+            className="filter-checkbox"
+            checked={showInactive}
+            onChange={e => onShowInactiveChange?.(e.target.checked)}
+          />
+          {t('showInactive')}
+        </label>
+        <label className="filter-checkbox-label">
+          <input
+            type="checkbox"
+            className="filter-checkbox"
+            checked={hideBoardMembers}
+            onChange={e => onHideBoardMembersChange?.(e.target.checked)}
+          />
+          {t('hideBoardMembers')}
+        </label>
+      </div>
+
       <div className="member-filters__grid">
         <label className="member-filters__field">
           <span>{t('memberFilterClase')}</span>
           <select
             className="form-input"
             value={filters.claseId}
-            onChange={e => onChange({ claseId: e.target.value, requisitoId: '' })}
+            onChange={e => onChange({
+              claseId: e.target.value,
+              requisitoId: '',
+              claseEstadoProgreso: '',
+            })}
           >
             <option value="">{t('memberFilterAny')}</option>
             {clases.map(clase => (
@@ -42,6 +76,24 @@ export default function MemberFiltersPanel({
             ))}
           </select>
         </label>
+
+        {showClaseEstadoFilter && (
+          <label className="member-filters__field">
+            <span>{t('memberFilterClaseEstado')}</span>
+            <select
+              className="form-input"
+              value={filters.claseEstadoProgreso || ''}
+              onChange={e => onChange({ claseEstadoProgreso: e.target.value })}
+            >
+              <option value="">{t('memberFilterAny')}</option>
+              {MIEMBRO_CLASE_PROGRESO_ESTADOS.map(estado => (
+                <option key={estado} value={estado}>
+                  {miembroClaseProgresoEstadoLabel(estado, t)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {showRequisitoFilter && (
           <label className="member-filters__field">

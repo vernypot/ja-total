@@ -1,13 +1,17 @@
 import { useRef } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
 import PhotoCropModal from '../../components/PhotoCropModal';
+import { memberDisplayName } from '../../utils/memberDisplayName';
 import '../../styles/form.css';
 
 const FIELDS = [
   { key: 'nombre', labelKey: 'firstName', required: true },
   { key: 'apellido1', labelKey: 'lastName1Short' },
   { key: 'apellido2', labelKey: 'lastName2Short' },
+  { key: 'nombre_opcional', labelKey: 'optionalName', hintKey: 'optionalNameHint' },
+  { key: 'apellido_opcional', labelKey: 'optionalLastName', hintKey: 'optionalLastNameHint' },
   { key: 'fecha_nacimiento', labelKey: 'birthDate', type: 'date' },
   { key: 'genero', labelKey: 'gender' },
   { key: 'documento', labelKey: 'document' },
@@ -153,17 +157,29 @@ export default function DatosPersonalesView({
   calcularEdad,
 }) {
   const { t } = useLanguage();
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
+
+  function confirmRemovePhoto() {
+    askConfirm({
+      title: t('confirmRemovePhotoTitle'),
+      message: t('confirmRemovePhotoMessage'),
+      confirmLabel: t('removePhoto'),
+      onConfirm: handleRemovePhoto,
+    });
+  }
 
   if (loading) return <div className="loading">{t('loadingData')}</div>;
   if (error) return <div className="alert alert-error">{error}</div>;
   if (!data && !isNew) return <div className="text-muted">{t('noMemberData')}</div>;
 
-  const nombreCompleto = [data?.nombre, data?.apellido1, data?.apellido2].filter(Boolean).join(' ');
-  const displayName = isNew
+  const listingName = isNew
     ? t('newMember')
     : editing
-      ? [form.nombre, form.apellido1, form.apellido2].filter(Boolean).join(' ') || t('personalData')
-      : nombreCompleto;
+      ? (memberDisplayName(form) || t('personalData'))
+      : memberDisplayName(data);
 
   return (
     <div style={{ padding: '20px' }}>
@@ -219,12 +235,12 @@ export default function DatosPersonalesView({
           editing={editing}
           uploadingPhoto={uploadingPhoto}
           onSelect={handlePhotoSelect}
-          onRemove={handleRemovePhoto}
+          onRemove={confirmRemovePhoto}
           hasPhoto={Boolean(displayPhotoUrl)}
           t={t}
         />
         <div>
-          <h2 style={{ margin: '0 0 10px 0' }}>{displayName}</h2>
+          <h2 style={{ margin: '0 0 10px 0' }}>{listingName}</h2>
           {!editing && !isNew && data?.fecha_nacimiento && (
             <p style={{ margin: '5px 0', color: 'var(--color-text-secondary)' }}>
               {calcularEdad(data.fecha_nacimiento)} {t('yearsOld')} • {data.fecha_nacimiento}
@@ -238,7 +254,7 @@ export default function DatosPersonalesView({
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '20px',
       }}>
-        {FIELDS.map(({ key, labelKey, fullWidth, type, required }) => (
+        {FIELDS.map(({ key, labelKey, hintKey, fullWidth, type, required }) => (
           <div
             key={key}
             style={{
@@ -251,6 +267,11 @@ export default function DatosPersonalesView({
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#2563eb' }}>
               {t(labelKey)}{required ? ' *' : ''}
             </label>
+            {hintKey && (
+              <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                {t(hintKey)}
+              </p>
+            )}
             {editing ? (
               <input
                 type={type || 'text'}
@@ -303,6 +324,7 @@ export default function DatosPersonalesView({
           </button>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

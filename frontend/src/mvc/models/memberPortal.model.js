@@ -1,6 +1,6 @@
 import { sb } from '../../services/supabase';
-import { memberFullName } from './carnet.model';
-import { getEventoFromRow } from './eventos.model';
+import { memberDisplayName } from '../../utils/memberDisplayName';
+import { getEventoFromRow, getEventoIdFromRow, getEventoMiembroRowId } from './eventos.model';
 import { normalizeEventDate, normalizeEventHora } from '../../utils/eventTimezone';
 import { isValidDateKey } from '../../utils/calendar';
 
@@ -11,7 +11,7 @@ function parsePortalLoginPayload(data) {
   return {
     sessionToken: payload.session_token,
     miembroId: payload.miembro_id,
-    memberName: memberFullName(payload),
+    memberName: memberDisplayName(payload),
     expiresAt: payload.expires_at,
   };
 }
@@ -63,7 +63,7 @@ export async function resolvePortalToken(token) {
   return {
     data: row ? {
       miembroId: row.miembro_id,
-      memberName: memberFullName(row),
+      memberName: memberDisplayName(row),
       hasPin,
       needsPinSetup,
       needsPin: row?.needs_pin !== false,
@@ -124,6 +124,105 @@ export async function fetchPortalTab(sessionToken, tab) {
   });
   if (error) return { data: null, error };
   return { data: parsePortalJsonPayload(data), error: null };
+}
+
+export async function requestPortalRequisitoApproval(sessionToken, assignmentId, claseRequisitoId, comentario = null) {
+  return sb.rpc('member_portal_request_requisito_approval', {
+    p_session_token: sessionToken,
+    p_assignment_id: assignmentId,
+    p_clase_requisito_id: claseRequisitoId,
+    p_comentario: comentario,
+  });
+}
+
+export async function requestPortalClaseApproval(sessionToken, assignmentId, comentario = null) {
+  return sb.rpc('member_portal_request_clase_approval', {
+    p_session_token: sessionToken,
+    p_assignment_id: assignmentId,
+    p_comentario: comentario,
+  });
+}
+
+function isRpcSignatureMismatch(error) {
+  const msg = String(error?.message || '');
+  return msg.includes('Could not find the function')
+    || msg.includes('does not exist')
+    || msg.includes('PGRST202')
+    || msg.includes('schema cache');
+}
+
+export function patchPortalEventRowConfirmation(rows, {
+  eventoMiembroId = null,
+  eventoId = null,
+  confirmacionEstado,
+  savedRow = null,
+} = {}) {
+  const savedAssignmentId = savedRow?.id ?? eventoMiembroId ?? null;
+  const savedEventoId = savedRow?.evento_id ?? eventoId ?? null;
+  const nextEstado = savedRow?.confirmacion_estado ?? confirmacionEstado;
+  const nextConfirmadoAt = savedRow?.confirmado_at ?? (
+    nextEstado === 'pendiente' ? null : new Date().toISOString()
+  );
+
+  return (rows || []).map(row => {
+    const rowAssignmentId = getEventoMiembroRowId(row);
+    const rowEventoId = getEventoIdFromRow(row);
+    const matchesAssignment = savedAssignmentId && rowAssignmentId === savedAssignmentId;
+    const matchesEvento = savedEventoId && rowEventoId === savedEventoId;
+    if (!matchesAssignment && !matchesEvento) return row;
+
+    return {
+      ...row,
+      id: savedAssignmentId ?? row.id,
+      evento_id: savedEventoId ?? row.evento_id,
+      confirmacion_estado: nextEstado,
+      confirmado_at: nextConfirmadoAt,
+    };
+  });
+}
+
+export function patchPortalEventMapConfirmation(map, options) {
+  const rows = Object.values(map || {});
+  const patched = patchPortalEventRowConfirmation(rows, options);
+  const nextMap = { ...(map || {}) };
+  for (const row of patched) {
+    const eventoId = getEventoIdFromRow(row);
+    if (eventoId) nextMap[eventoId] = row;
+  }
+  return nextMap;
+}
+
+export async function setPortalEventConfirmation(
+  sessionToken,
+  confirmacionEstado,
+  { eventoMiembroId = null, eventoId = null } = {}
+) {
+  if (!eventoMiembroId && !eventoId) {
+    return { data: null, error: { message: 'event reference required' } };
+  }
+
+  const params = {
+    p_session_token: sessionToken,
+    p_confirmacion_estado: confirmacionEstado,
+  };
+
+  if (eventoMiembroId) {
+    params.p_evento_miembro_id = eventoMiembroId;
+  } else {
+    params.p_evento_id = eventoId;
+  }
+
+  const result = await sb.rpc('member_portal_set_evento_confirmacion', params);
+
+  if (!result.error || !eventoMiembroId || !isRpcSignatureMismatch(result.error)) {
+    return result;
+  }
+
+  return sb.rpc('member_portal_set_evento_confirmacion', {
+    p_session_token: sessionToken,
+    p_evento_miembro_id: eventoMiembroId,
+    p_confirmacion_estado: confirmacionEstado,
+  });
 }
 
 export async function logoutPortal(sessionToken) {
@@ -215,8 +314,7 @@ export async function fetchPortalEvents(sessionToken) {
     p_session_token: sessionToken,
   });
   if (error) return { data: [], error };
-  const rows = typeof data === 'string' ? JSON.parse(data) : (data || []);
-  return { data: normalizePortalEventRows(Array.isArray(rows) ? rows : []), error: null };
+  return { data: normalizePortalEventRows(parsePortalJsonRows(data)), error: null };
 }
 
 function parsePortalJsonRows(data) {
