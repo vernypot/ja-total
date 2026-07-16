@@ -303,6 +303,16 @@ export function getRequisitoDisplayText(req, completion = null) {
   return original;
 }
 
+export function formatSolicitudTarget(row, t) {
+  if (row.tipo === 'clase') {
+    return row.clases_progresivas?.nombre || t('classProgress');
+  }
+  const req = row.clase_requisitos;
+  if (!req) return t('approvalRequestTypeRequisito');
+  const text = getRequisitoDisplayText(req, null);
+  return req.numero != null ? `${req.numero}. ${text}` : text;
+}
+
 export async function updateClaseRequisito(id, { descripcion, texto_opcional, seccion_id, numero, orden, sesiones_esperadas } = {}) {
   const payload = {};
   if (descripcion !== undefined) payload.descripcion = descripcion.trim();

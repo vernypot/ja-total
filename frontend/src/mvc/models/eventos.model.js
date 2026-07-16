@@ -576,6 +576,28 @@ export function getConfirmacionFromRow(row) {
   return row?.confirmacion_estado || 'pendiente';
 }
 
+export function isPendingEventConfirmationRow(row) {
+  if (!row || !Object.prototype.hasOwnProperty.call(row, 'confirmacion_estado')) {
+    return false;
+  }
+  const estado = String(row.confirmacion_estado || 'pendiente').trim().toLowerCase();
+  return estado === 'pendiente';
+}
+
+function eventRequiresConfirmationForAdminAlerts(evento) {
+  if (!evento) return false;
+  if (!Object.prototype.hasOwnProperty.call(evento, 'requiere_confirmacion')) {
+    return false;
+  }
+  return evento.requiere_confirmacion !== false;
+}
+
+export function filterVisibleEventAttendanceAlerts(alerts) {
+  return (alerts || []).filter(
+    alert => alert?.evento?.id && Number(alert.pendingCount) > 0
+  );
+}
+
 export function eventRequiresConfirmation(evento) {
   if (!evento) return false;
   return evento.requiere_confirmacion !== false;
@@ -629,6 +651,57 @@ export function canMemberCancelEventConfirmation(row, now = new Date()) {
   if (!assignmentId && !eventoId) return false;
 
   return true;
+}
+
+export async function fetchEventPendingConfirmationSummariesByIglesia(
+  iglesiaId,
+  timeZone = EVENT_TIMEZONE,
+  { limit = 6, eventLimit = 24 } = {}
+) {
+  if (!iglesiaId) return { data: [], error: null };
+
+  const { data: events, error: eventsError } = await fetchUpcomingEventosByIglesia(
+    iglesiaId,
+    eventLimit,
+    timeZone
+  );
+  if (eventsError) return { data: [], error: eventsError };
+
+  const confirmationEvents = (events || []).filter(eventRequiresConfirmationForAdminAlerts);
+  if (!confirmationEvents.length) return { data: [], error: null };
+
+  const { data: grouped, error: assignmentsError } = await fetchAssignmentsForEventIds(
+    confirmationEvents.map(evento => evento.id)
+  );
+  if (assignmentsError) return { data: [], error: assignmentsError };
+
+  const summaries = filterVisibleEventAttendanceAlerts(
+    confirmationEvents
+      .map(evento => {
+        const assignments = grouped[evento.id] || [];
+        const pendingMembers = assignments.filter(row => {
+          if (!isPendingEventConfirmationRow(row)) return false;
+          const member = row.miembros;
+          return !member || member.estado !== 'inactivo';
+        });
+
+        if (!pendingMembers.length) return null;
+
+        return {
+          evento,
+          pendingCount: pendingMembers.length,
+          pendingMembers: pendingMembers
+            .slice(0, 3)
+            .map(row => row.miembros)
+            .filter(Boolean),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => compareEventsByLocalDateTime(a.evento, b.evento))
+      .slice(0, limit)
+  );
+
+  return { data: summaries, error: null };
 }
 
 export async function fetchUpcomingEventosByIglesia(iglesiaId, limit = 4, timeZone = EVENT_TIMEZONE) {

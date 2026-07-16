@@ -4,6 +4,68 @@
   gap: 1.5rem;
 }
 
+.home-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.home-notification-members {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.admin-approval-card {
+  align-items: flex-start;
+}
+
+.admin-approval-type {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-approval-date {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.admin-approval-comment {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+}
+
+.admin-approval-actions {
+  gap: 0.5rem;
+}
+
+.admin-approval-review-btn {
+  padding: 6px 12px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-approval-review-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .home-header {
   display: flex;
   justify-content: space-between;
