@@ -23,6 +23,10 @@ export default function BackLink({ fallbackTo, className = 'page-back-link', lab
       return '/dashboard/clubes';
     }
 
+    if (location.pathname.includes('/dashboard/unidades')) {
+      return '/dashboard/clubes';
+    }
+
     return DASHBOARD_HOME_PATH;
   }, [fallbackTo, location.pathname, params, activeClub?.id]);
 
