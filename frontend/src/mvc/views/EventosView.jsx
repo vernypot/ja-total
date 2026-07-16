@@ -334,7 +334,7 @@ export default function EventosView({
         >
           <option value="">{t('selectClub')}</option>
           {clubs.map(c => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
+            <option key={c.id} value={c.id}>{clubDisplayName(c)}</option>
           ))}
         </select>
       </div>

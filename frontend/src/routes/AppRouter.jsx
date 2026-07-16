@@ -7,6 +7,7 @@ import RecoveryRedirect from "../components/RecoveryRedirect";
 import Dashboard from "../pages/Dashboard";
 
 import Miembros from "../pages/Miembros";
+import BloquesCompletados from "../pages/BloquesCompletados";
 import Iglesias from "../pages/Iglesias";
 import Clubes from "../pages/Clubes";
 import Eventos from "../pages/Eventos";
@@ -77,6 +78,10 @@ export default function AppRouter() {
 
           <Route path="noticias" element={<NoticiasRoute />} />
           <Route path="miembros" element={<StaffOnlyRoute element={<Miembros />} />} />
+          <Route
+            path="bloques-completados"
+            element={<StaffOnlyRoute element={<AdminRoute element={<BloquesCompletados />} />} />}
+          />
           <Route path="iglesias" element={<StaffOnlyRoute element={<AdminRoute element={<Iglesias />} />} />} />
           <Route path="estructura" element={<StaffOnlyRoute element={<SuperAdminRoute element={<EstructuraOrganizacional />} />} />} />
           <Route path="contactos" element={<StaffOnlyRoute element={<Contactos />} />} />

@@ -44,6 +44,7 @@ export default function Breadcrumb() {
   const iglesiaId = params.get("iglesia") || activeIglesia;
   const clubId = params.get("club") || activeClub?.id;
   const onMembersPage = location.pathname.includes('/miembros');
+  const onBloquesPage = location.pathname.includes('/bloques-completados');
   const onMemberDetailPage = /\/dashboard\/miembro\//.test(location.pathname);
 
   useEffect(() => {
@@ -132,6 +133,21 @@ export default function Breadcrumb() {
         <>
           {" > "}
           <span style={{ color: 'var(--color-text-secondary)' }}>{t('members')}</span>
+        </>
+      )}
+
+      {onBloquesPage && (
+        <>
+          {clubId && activeClub ? (
+            <>
+              {" > "}
+              <Link to={`/dashboard/miembros?club=${clubId}`}>
+                {clubDisplayName(activeClub)}
+              </Link>
+            </>
+          ) : null}
+          {" > "}
+          <span style={{ color: 'var(--color-text-secondary)' }}>{t('completedBlocks')}</span>
         </>
       )}
 

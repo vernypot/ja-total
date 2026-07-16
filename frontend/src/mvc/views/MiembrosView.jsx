@@ -3,6 +3,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import ListSearchInput from '../../components/ListSearchInput';
+import MemberFiltersPanel from '../../components/MemberFiltersPanel';
 import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
@@ -30,7 +31,8 @@ function MemberListItem({
 }) {
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const nombreCompleto = [member.nombre, member.apellido1, member.apellido2].filter(Boolean).join(' ');
-  const assignedCount = clubsData.filter(club => member.clubIds.includes(club.id)).length;
+  const assignedClubIds = new Set((member.clubIds || []).map(id => String(id)));
+  const assignedCount = clubsData.filter(club => assignedClubIds.has(String(club.id))).length;
   const showClubAssignments = clubsData.length > 0;
   const showActionsToggle = canManage || showClubAssignments;
 
@@ -104,7 +106,7 @@ function MemberListItem({
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
                 {clubsData.map(club => {
-                  const isAssigned = member.clubIds.includes(club.id);
+                  const isAssigned = assignedClubIds.has(String(club.id));
                   const isAssigning = assigningKey === `${member.id}-${club.id}`;
 
                   return (
@@ -190,6 +192,16 @@ export default function MiembrosView({
   bulkDeactivate,
   bulkAssignClub,
   bulkUnassignClub,
+  memberFilters,
+  updateMemberFilters,
+  clearMemberFilters,
+  filterLoading,
+  filterError,
+  activeFilterCount,
+  filterClases,
+  filterRequisitos,
+  filterEspecialidades,
+  filterEventos,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -423,6 +435,24 @@ export default function MiembrosView({
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
           <p style={{ margin: 0, fontSize: '12px', color: '#888', width: '100%' }}>{t('filterByClubHint')}</p>
         </div>
+
+        <MemberFiltersPanel
+          filters={memberFilters}
+          onChange={updateMemberFilters}
+          onClear={clearMemberFilters}
+          clases={filterClases}
+          requisitos={filterRequisitos}
+          especialidades={filterEspecialidades}
+          eventos={filterEventos}
+          loading={filterLoading}
+          activeCount={activeFilterCount}
+        />
+
+        {filterError && (
+          <div className="alert alert-error" style={{ marginBottom: '15px' }}>
+            {filterError}
+          </div>
+        )}
 
         {assignmentError && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{assignmentError}</div>}
         {bulkActionError && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{bulkActionError}</div>}

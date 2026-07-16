@@ -106,6 +106,15 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to="/dashboard/miembros" icon="members" active={isActive('/dashboard/miembros')}>
               {t('members')}
             </NavLinkItem>
+            {adminOrAbove && (
+              <NavLinkItem
+                to="/dashboard/bloques-completados"
+                icon="plan"
+                active={isActive('/dashboard/bloques-completados')}
+              >
+                {t('completedBlocks')}
+              </NavLinkItem>
+            )}
             {superadmin && (
               <>
                 <NavLinkItem to="/dashboard/clases-progresivas" icon="book" active={isActive('/dashboard/clases-progresivas')}>
