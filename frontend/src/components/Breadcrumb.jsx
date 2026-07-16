@@ -45,6 +45,7 @@ export default function Breadcrumb() {
   const clubId = params.get("club") || activeClub?.id;
   const onMembersPage = location.pathname.includes('/miembros');
   const onBloquesPage = location.pathname.includes('/bloques-completados');
+  const onUnidadesPage = location.pathname.includes('/unidades');
   const onMemberDetailPage = /\/dashboard\/miembro\//.test(location.pathname);
 
   useEffect(() => {
@@ -133,6 +134,21 @@ export default function Breadcrumb() {
         <>
           {" > "}
           <span style={{ color: 'var(--color-text-secondary)' }}>{t('members')}</span>
+        </>
+      )}
+
+      {onUnidadesPage && (
+        <>
+          {clubId && activeClub ? (
+            <>
+              {" > "}
+              <Link to={`/dashboard/miembros?club=${clubId}`}>
+                {clubDisplayName(activeClub)}
+              </Link>
+            </>
+          ) : null}
+          {" > "}
+          <span style={{ color: 'var(--color-text-secondary)' }}>{t('unidades')}</span>
         </>
       )}
 

@@ -165,6 +165,12 @@ export function useClubesController() {
     navigate(`/dashboard/eventos?club=${clubId}`);
   }
 
+  function navigateToUnidades(clubId) {
+    const club = data.find(c => c.id === clubId);
+    if (club) updateActiveClub(club);
+    navigate(`/dashboard/unidades?club=${clubId}`);
+  }
+
   function navigateToDirectiva(clubId) {
     const club = data.find(c => c.id === clubId);
     if (club) updateActiveClub(club);
@@ -267,6 +273,7 @@ export function useClubesController() {
     navigateToMiembros,
     navigateToEventos,
     navigateToDirectiva,
+    navigateToUnidades,
     selectClub,
     activeClub,
     clubStats,

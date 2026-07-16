@@ -35,6 +35,7 @@ export default function ClubesView({
   navigateToMiembros,
   navigateToEventos,
   navigateToDirectiva,
+  navigateToUnidades,
   selectClub,
   clubStats = {},
   logoUploading,
@@ -269,6 +270,7 @@ export default function ClubesView({
                       ★ {t('select')}
                     </button>
                     <button onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
+                    <button onClick={() => navigateToUnidades(c.id)} className="btn btn-sm btn-edit">🧩 {t('unidadBtn')}</button>
                     <button onClick={() => navigateToDirectiva(c.id)} className="btn btn-sm btn-edit">🎖️ {t('directivaBtn')}</button>
                     <button onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
                     {canManage && (
