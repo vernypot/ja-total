@@ -1,14 +1,19 @@
-import { useEffect, useState, useContext, useRef, useMemo } from 'react';
+import { useEffect, useState, useContext, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageMembers } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { clubDisplayName } from '../../utils/club';
 import * as MiembrosModel from '../models/miembros.model';
+import * as MiembrosFiltersModel from '../models/miembrosFilters.model';
 import * as IglesiasModel from '../models/iglesias.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as CargosModel from '../models/cargos.model';
+import * as ClasesModel from '../models/clases.model';
+import * as EspecialidadesModel from '../models/especialidades.model';
+import * as EventosModel from '../models/eventos.model';
 import {
   downloadMemberTemplate,
   parseMemberSpreadsheet,
@@ -54,6 +59,38 @@ export function useMiembrosController() {
   const [bulkActionMessage, setBulkActionMessage] = useState('');
   const [bulkActionError, setBulkActionError] = useState('');
   const [bulkClubId, setBulkClubId] = useState('');
+  const [memberFilters, setMemberFilters] = useState({ ...MiembrosFiltersModel.EMPTY_MEMBER_FILTERS });
+  const [filterMemberIds, setFilterMemberIds] = useState(null);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterError, setFilterError] = useState('');
+  const [filterClases, setFilterClases] = useState([]);
+  const [filterEspecialidades, setFilterEspecialidades] = useState([]);
+  const [filterEventos, setFilterEventos] = useState([]);
+  const [filterRequisitos, setFilterRequisitos] = useState([]);
+  const [tiposClub, setTiposClub] = useState([]);
+
+  const clubTipoId = activeClub?.tipo_id || clubsData.find(c => c.id === clubId)?.tipo_id || null;
+
+  const scopedFilterClases = useMemo(() => {
+    if (!clubTipoId) return filterClases;
+    return ClasesModel.filterClasesByTipo(filterClases, clubTipoId, tiposClub);
+  }, [filterClases, clubTipoId, tiposClub]);
+
+  const scopedFilterEspecialidades = useMemo(() => {
+    if (!clubTipoId) return filterEspecialidades;
+    return EspecialidadesModel.filterEspecialidadesByTipo(filterEspecialidades, clubTipoId, tiposClub);
+  }, [filterEspecialidades, clubTipoId, tiposClub]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (memberFilters.claseId) count += 1;
+    if (memberFilters.requisitoId) count += 1;
+    if (memberFilters.minAge !== '' && memberFilters.minAge != null) count += 1;
+    if (memberFilters.maxAge !== '' && memberFilters.maxAge != null) count += 1;
+    if (memberFilters.especialidadId) count += 1;
+    if (memberFilters.eventoId) count += 1;
+    return count;
+  }, [memberFilters]);
 
   const filteredData = useMemo(() => {
     const searched = filterBySearch(data, searchQuery, m => [
@@ -65,11 +102,36 @@ export function useMiembrosController() {
       m.email,
     ]);
 
-    if (!hideBoardMembers || boardMemberIds.length === 0) return searched;
+    let rows = searched;
 
-    const hideSet = new Set(boardMemberIds);
-    return searched.filter(m => !hideSet.has(m.id));
-  }, [data, searchQuery, hideBoardMembers, boardMemberIds]);
+    if (hideBoardMembers && boardMemberIds.length > 0) {
+      const hideSet = new Set(boardMemberIds);
+      rows = rows.filter(m => !hideSet.has(m.id));
+    }
+
+    if (MiembrosFiltersModel.hasActiveMemberFilters(memberFilters)) {
+      const needsRemoteFilter = Boolean(
+        memberFilters.claseId
+        || memberFilters.especialidadId
+        || memberFilters.eventoId,
+      );
+
+      if (needsRemoteFilter && !filterLoading && filterMemberIds) {
+        rows = rows.filter(m => filterMemberIds.has(m.id));
+      }
+
+      const hasAgeFilter = memberFilters.minAge !== '' || memberFilters.maxAge !== '';
+      if (hasAgeFilter) {
+        rows = rows.filter(m => MiembrosFiltersModel.memberMatchesAgeRange(
+          m,
+          memberFilters.minAge,
+          memberFilters.maxAge,
+        ));
+      }
+    }
+
+    return rows;
+  }, [data, searchQuery, hideBoardMembers, boardMemberIds, memberFilters, filterMemberIds, filterLoading]);
 
   async function load() {
     if (!effectiveIglesiaId) {
@@ -136,6 +198,69 @@ export function useMiembrosController() {
       setClubsData([]);
     }
   }
+
+  async function loadFilterCatalogs() {
+    if (!effectiveIglesiaId) {
+      setFilterClases([]);
+      setFilterEspecialidades([]);
+      setFilterEventos([]);
+      setTiposClub([]);
+      return;
+    }
+
+    const [
+      { data: clasesRows },
+      { data: tiposRows },
+      { data: espCatalog },
+      { data: clubRows },
+    ] = await Promise.all([
+      ClasesModel.fetchClasesProgresivas({ showInactive: false }),
+      ClasesModel.fetchTiposClub(),
+      EspecialidadesModel.fetchEspecialidadesCatalogSorted({ showInactive: false }),
+      ClubesModel.fetchClubesByIglesia(effectiveIglesiaId),
+    ]);
+
+    setFilterClases(clasesRows || []);
+    setTiposClub(tiposRows || []);
+    setFilterEspecialidades(espCatalog?.data || []);
+
+    const clubs = clubRows || [];
+    const targetClubs = clubId ? clubs.filter(c => c.id === clubId) : clubs;
+    const eventoResults = await Promise.all(
+      targetClubs.map(async club => {
+        const { data } = await EventosModel.fetchEventosByClub(club.id, { showInactive: false });
+        return (data || []).map(evento => ({
+          ...evento,
+          clubNombre: clubDisplayName(club),
+        }));
+      }),
+    );
+
+    const eventos = eventoResults
+      .flat()
+      .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+
+    setFilterEventos(eventos);
+  }
+
+  async function loadFilterRequisitos(claseId) {
+    if (!claseId) {
+      setFilterRequisitos([]);
+      return;
+    }
+
+    const { data } = await ClasesModel.fetchRequisitosByClase(claseId);
+    setFilterRequisitos(data || []);
+  }
+
+  const updateMemberFilters = useCallback((patch) => {
+    setMemberFilters(prev => ({ ...prev, ...patch }));
+  }, []);
+
+  const clearMemberFilters = useCallback(() => {
+    setMemberFilters({ ...MiembrosFiltersModel.EMPTY_MEMBER_FILTERS });
+    setFilterError('');
+  }, []);
 
   function clearMemberSelection() {
     setSelectedMemberIds([]);
@@ -310,6 +435,13 @@ export function useMiembrosController() {
     if (error) {
       setAssignmentError(error.message);
     } else {
+      setData(prev => prev.map(row => {
+        if (row.id !== miembro.id) return row;
+        const clubIds = new Set(row.clubIds || []);
+        if (assigned) clubIds.add(clubId);
+        else clubIds.delete(clubId);
+        return { ...row, clubIds: Array.from(clubIds) };
+      }));
       await load();
     }
 
@@ -412,8 +544,89 @@ export function useMiembrosController() {
   }
 
   useEffect(() => { load(); }, [clubId, showInactive, effectiveIglesiaId]);
-  useEffect(() => { loadIglesias(); loadClubs(); }, [effectiveIglesiaId, clubId]);
+  useEffect(() => { loadIglesias(); loadClubs(); loadFilterCatalogs(); }, [effectiveIglesiaId, clubId]);
+  useEffect(() => { loadFilterRequisitos(memberFilters.claseId); }, [memberFilters.claseId]);
   useEffect(() => { loadBoardMemberIds(); }, [clubsData, clubId, effectiveIglesiaId]);
+
+  useEffect(() => {
+    if (!MiembrosFiltersModel.hasActiveMemberFilters(memberFilters)) {
+      setFilterMemberIds(null);
+      setFilterError('');
+      setFilterLoading(false);
+      return undefined;
+    }
+
+    const needsRemoteFilter = Boolean(
+      memberFilters.claseId
+      || memberFilters.especialidadId
+      || memberFilters.eventoId,
+    );
+
+    if (!needsRemoteFilter) {
+      setFilterMemberIds(null);
+      setFilterError('');
+      setFilterLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      setFilterLoading(true);
+      setFilterError('');
+
+      try {
+        const sets = [];
+
+        if (memberFilters.claseId && memberFilters.requisitoId) {
+          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsWithCompletedRequisito(
+            memberFilters.claseId,
+            memberFilters.requisitoId,
+          );
+          if (error) throw error;
+          sets.push(new Set(memberIds));
+        } else if (memberFilters.claseId) {
+          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsAssignedToClase(memberFilters.claseId);
+          if (error) throw error;
+          sets.push(new Set(memberIds));
+        }
+
+        if (memberFilters.especialidadId) {
+          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsWithEspecialidad(
+            memberFilters.especialidadId,
+          );
+          if (error) throw error;
+          sets.push(new Set(memberIds));
+        }
+
+        if (memberFilters.eventoId) {
+          const { memberIds, error } = await MiembrosFiltersModel.fetchMemberIdsAttendedEvento(
+            memberFilters.eventoId,
+          );
+          if (error) throw error;
+          sets.push(new Set(memberIds));
+        }
+
+        if (cancelled) return;
+
+        const scopeIds = new Set(data.map(m => m.id));
+        let result = scopeIds;
+        for (const set of sets) {
+          result = new Set([...result].filter(id => set.has(id)));
+        }
+        setFilterMemberIds(result);
+      } catch (err) {
+        if (!cancelled) {
+          setFilterError(err?.message || String(err));
+          setFilterMemberIds(new Set());
+        }
+      } finally {
+        if (!cancelled) setFilterLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [memberFilters, data]);
   useEffect(() => {
     setSelectedMemberIds(prev => prev.filter(id => filteredData.some(m => m.id === id)));
   }, [filteredData]);
@@ -479,5 +692,15 @@ export function useMiembrosController() {
     bulkDeactivate: t => bulkSetEstado('inactivo', t),
     bulkAssignClub,
     bulkUnassignClub,
+    memberFilters,
+    updateMemberFilters,
+    clearMemberFilters,
+    filterLoading,
+    filterError,
+    activeFilterCount,
+    filterClases: scopedFilterClases,
+    filterRequisitos,
+    filterEspecialidades: scopedFilterEspecialidades,
+    filterEventos,
   };
 }

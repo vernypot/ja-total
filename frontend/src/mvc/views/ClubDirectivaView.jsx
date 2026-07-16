@@ -51,20 +51,37 @@ export default function ClubDirectivaView({
         <p className="text-muted">{t('noClubDirectiva')}</p>
       ) : (
         <div className="card">
+          <div
+            className="club-directiva-header"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(160px, 0.9fr) minmax(220px, 1.4fr) auto',
+              gap: '12px',
+              padding: '0 15px 10px',
+              fontSize: '12px',
+              fontWeight: 700,
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            <div>{t('clubDirectivaMember')}</div>
+            <div>{t('clubDirectivaCargos')}</div>
+            <div />
+          </div>
           <div style={{ display: 'grid', gap: '10px' }}>
-            {rows.map(row => {
-              const cargo = row.cargos;
-              const path = getCargoPath(cargo?.id).map(c => c.nombre).join(' › ');
-              const name = memberDisplayName(row.miembros);
+            {rows.map(group => {
+              const name = memberDisplayName(group.miembros);
 
               return (
                 <div
-                  key={row.id}
+                  key={group.miembro_id}
+                  className="club-directiva-row"
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(160px, 1fr) minmax(180px, 1.2fr) minmax(120px, 0.8fr) auto',
+                    gridTemplateColumns: 'minmax(160px, 0.9fr) minmax(220px, 1.4fr) auto',
                     gap: '12px',
-                    alignItems: 'center',
+                    alignItems: 'start',
                     padding: '12px 15px',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
@@ -72,21 +89,33 @@ export default function ClubDirectivaView({
                   }}
                 >
                   <div>
-                    <strong>{cargo?.nombre || t('notAvailable')}</strong>
-                    {path && path !== cargo?.nombre && (
-                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                        {path}
-                      </div>
-                    )}
+                    <strong>{name || t('notAvailable')}</strong>
                   </div>
-                  <div>{name || t('notAvailable')}</div>
-                  <div style={{ fontSize: '13px', color: '#4b5563' }}>
-                    {t('planStartDate')}: {formatStartDate(row.fecha_inicio, t)}
+                  <div style={{ display: 'grid', gap: '8px' }}>
+                    {(group.assignments || []).map((assignment, index) => {
+                      const cargo = assignment.cargos;
+                      const path = getCargoPath(cargo?.id).map(c => c.nombre).join(' › ');
+
+                      return (
+                        <div key={assignment.id || `${group.miembro_id}-${assignment.cargo_id || index}`}>
+                          <strong>{cargo?.nombre || t('notAvailable')}</strong>
+                          {path && path !== cargo?.nombre && (
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                              {path}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '12px', color: '#4b5563', marginTop: '4px' }}>
+                            {t('planStartDate')}: {formatStartDate(assignment.fecha_inicio, t)}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigateToMember(row.miembro_id)}
+                    onClick={() => navigateToMember(group.miembro_id)}
                     className="btn btn-sm btn-edit"
+                    style={{ justifySelf: 'end' }}
                   >
                     📋 {t('details')}
                   </button>

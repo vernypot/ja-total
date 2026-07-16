@@ -774,6 +774,105 @@ export function mapCompletionsByAssignment(rows = []) {
   return map;
 }
 
+export async function fetchMiembroClaseAssignmentsForMembers(miembroIds, claseId) {
+  if (!miembroIds?.length || !claseId) return { data: [], error: null };
+
+  const attempts = [
+    {
+      col: 'clase_progresiva_id',
+      select: 'id, miembro_id, clase_progresiva_id, estado, estado_progreso, completado, tiene_investidura',
+    },
+    {
+      col: 'clase_id',
+      select: 'id, miembro_id, clase_id, estado, estado_progreso, completado, tiene_investidura',
+    },
+    {
+      col: 'clase_progresiva_id',
+      select: 'id, miembro_id, clase_progresiva_id, estado',
+    },
+    {
+      col: 'clase_id',
+      select: 'id, miembro_id, clase_id, estado',
+    },
+    {
+      col: 'clase_progresiva_id',
+      select: 'id, miembro_id, clase_progresiva_id',
+    },
+    {
+      col: 'clase_id',
+      select: 'id, miembro_id, clase_id',
+    },
+  ];
+
+  let lastError = null;
+
+  for (const { col, select } of attempts) {
+    const withEstado = await sb
+      .from('miembro_clase_progresiva')
+      .select(select)
+      .in('miembro_id', miembroIds)
+      .eq(col, claseId)
+      .eq('estado', 'activo');
+
+    if (!withEstado.error) return { data: withEstado.data || [], error: null };
+
+    lastError = withEstado.error;
+
+    if (isMissingColumnError(withEstado.error, 'estado')) {
+      const fallback = await sb
+        .from('miembro_clase_progresiva')
+        .select(select)
+        .in('miembro_id', miembroIds)
+        .eq(col, claseId);
+      if (!fallback.error) return { data: fallback.data || [], error: null };
+      lastError = fallback.error;
+    }
+
+    if (
+      isMissingColumnError(withEstado.error, col)
+      || isMissingColumnError(withEstado.error, 'completado')
+      || isMissingColumnError(withEstado.error, 'estado_progreso')
+      || isMissingColumnError(withEstado.error, 'tiene_investidura')
+      || isMissingColumnError(withEstado.error, 'estado')
+    ) {
+      continue;
+    }
+  }
+
+  const fallback = await sb
+    .from('miembro_clase_progresiva')
+    .select('*')
+    .in('miembro_id', miembroIds)
+    .eq('estado', 'activo');
+
+  if (!fallback.error) {
+    const rows = (fallback.data || []).filter(row => {
+      const linkClaseId = row.clase_progresiva_id || row.clase_id;
+      return linkClaseId === claseId;
+    });
+    return { data: rows, error: null };
+  }
+
+  if (isMissingColumnError(fallback.error, 'estado')) {
+    const withoutEstado = await sb
+      .from('miembro_clase_progresiva')
+      .select('*')
+      .in('miembro_id', miembroIds);
+
+    if (!withoutEstado.error) {
+      const rows = (withoutEstado.data || []).filter(row => {
+        const linkClaseId = row.clase_progresiva_id || row.clase_id;
+        const isActive = row.estado == null || row.estado === 'activo';
+        return isActive && linkClaseId === claseId;
+      });
+      return { data: rows, error: null };
+    }
+    lastError = withoutEstado.error;
+  }
+
+  return { data: [], error: lastError };
+}
+
 export async function initMiembroClaseRequisitos(assignmentId) {
   if (!assignmentId) return { data: null, error: null };
   return sb.rpc('init_miembro_clase_requisitos', { p_assignment_id: assignmentId });

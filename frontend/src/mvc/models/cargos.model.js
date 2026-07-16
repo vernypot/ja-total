@@ -82,17 +82,19 @@ export function memberDisplayName(m) {
   return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ');
 }
 
+function normalizeEntityId(value) {
+  return value == null ? '' : String(value);
+}
+
+function resolveMiembroId(row) {
+  return normalizeEntityId(row?.miembro_id || row?.miembros?.id);
+}
+
 export function sortDirectivaRows(rows, cargoCatalog) {
   const sortIndex = buildCargoSortIndex(cargoCatalog);
   return [...(rows || [])].sort((a, b) => {
-    const aCargoId = a.cargo_id || a.cargos?.id;
-    const bCargoId = b.cargo_id || b.cargos?.id;
-    const aOrden = a.cargos?.orden ?? 0;
-    const bOrden = b.cargos?.orden ?? 0;
-    const aIdx = sortIndex.has(aCargoId) ? sortIndex.get(aCargoId) : (aOrden * 1000 + 999);
-    const bIdx = sortIndex.has(bCargoId) ? sortIndex.get(bCargoId) : (bOrden * 1000 + 999);
-    if (aIdx !== bIdx) return aIdx - bIdx;
-    if (aOrden !== bOrden) return aOrden - bOrden;
+    const byCargo = compareDirectivaAssignments(a, b, sortIndex);
+    if (byCargo !== 0) return byCargo;
     return memberDisplayName(a.miembros).localeCompare(
       memberDisplayName(b.miembros),
       undefined,
@@ -101,16 +103,81 @@ export function sortDirectivaRows(rows, cargoCatalog) {
   });
 }
 
+function compareDirectivaAssignments(a, b, sortIndex) {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  const aCargoId = a.cargo_id || a.cargos?.id;
+  const bCargoId = b.cargo_id || b.cargos?.id;
+  const aOrden = a.cargos?.orden ?? 0;
+  const bOrden = b.cargos?.orden ?? 0;
+  const aIdx = sortIndex.has(aCargoId) ? sortIndex.get(aCargoId) : (aOrden * 1000 + 999);
+  const bIdx = sortIndex.has(bCargoId) ? sortIndex.get(bCargoId) : (bOrden * 1000 + 999);
+  if (aIdx !== bIdx) return aIdx - bIdx;
+  return aOrden - bOrden;
+}
+
+export function groupDirectivaRowsByMember(rows, cargoCatalog) {
+  const sortIndex = buildCargoSortIndex(cargoCatalog);
+  const byMember = new Map();
+
+  for (const row of rows || []) {
+    const miembroId = resolveMiembroId(row);
+    if (!miembroId) continue;
+
+    if (!byMember.has(miembroId)) {
+      byMember.set(miembroId, {
+        miembro_id: miembroId,
+        miembros: row.miembros,
+        assignments: [],
+      });
+    }
+
+    const group = byMember.get(miembroId);
+    if (!group.miembros && row.miembros) {
+      group.miembros = row.miembros;
+    }
+    group.assignments.push(row);
+  }
+
+  const groups = Array.from(byMember.values()).filter(group => group.assignments.length > 0);
+
+  for (const group of groups) {
+    group.assignments.sort((a, b) => compareDirectivaAssignments(a, b, sortIndex));
+  }
+
+  groups.sort((a, b) => {
+    const byCargo = compareDirectivaAssignments(a.assignments[0], b.assignments[0], sortIndex);
+    if (byCargo !== 0) return byCargo;
+    return memberDisplayName(a.miembros).localeCompare(
+      memberDisplayName(b.miembros),
+      undefined,
+      { sensitivity: 'base' }
+    );
+  });
+
+  return groups;
+}
+
 export function filterDirectivaRows(rows, { clubId, memberIds = [], tipoId } = {}) {
-  const memberSet = new Set(memberIds);
+  const normalizedClubId = normalizeEntityId(clubId);
+  const memberSet = new Set((memberIds || []).map(id => normalizeEntityId(id)));
+
   return (rows || []).filter(row => {
     if ((row.estado || 'activo') !== 'activo' || !row.en_curso) return false;
     const cargo = row.cargos;
     if (!cargo || (cargo.estado && cargo.estado !== 'activo')) return false;
-    if (tipoId && cargo.tipo_id && cargo.tipo_id !== tipoId) return false;
 
-    if (row.club_id === clubId) return true;
-    if (!row.club_id && memberSet.has(row.miembro_id)) return true;
+    if (normalizeEntityId(row.club_id) === normalizedClubId) {
+      return true;
+    }
+
+    if (!row.club_id && memberSet.has(resolveMiembroId(row))) {
+      if (tipoId && cargo.tipo_id && cargo.tipo_id !== tipoId) return false;
+      return true;
+    }
+
     return false;
   });
 }
@@ -125,7 +192,7 @@ function chunkArray(items, size) {
 
 export function countDirectivaMembers(rows, { clubId, memberIds = [], tipoId } = {}) {
   const filtered = filterDirectivaRows(rows, { clubId, memberIds, tipoId });
-  return new Set(filtered.map(row => row.miembro_id).filter(Boolean)).size;
+  return new Set(filtered.map(row => resolveMiembroId(row)).filter(Boolean)).size;
 }
 
 export async function fetchDirectivaMemberIds(clubs = [], { clubFilter } = {}) {
@@ -147,7 +214,7 @@ export async function fetchDirectivaMemberIds(clubs = [], { clubFilter } = {}) {
     membersByClub[row.club_id]?.add(row.miembro_id);
   }
 
-  const cargoSelect = 'miembro_id, club_id, cargo_id, en_curso, estado, cargos(id, tipo_id, estado)';
+  const cargoSelect = 'miembro_id, club_id, cargo_id, en_curso, estado, cargos(id, tipo_id, estado), miembros(id)';
 
   const { data: byClub, error: byClubError } = await sb
     .from('miembro_cargos')
@@ -194,7 +261,8 @@ export async function fetchDirectivaMemberIds(clubs = [], { clubFilter } = {}) {
       tipoId: club.tipo_id,
     });
     for (const row of filtered) {
-      if (row.miembro_id) boardIds.add(row.miembro_id);
+      const miembroId = resolveMiembroId(row);
+      if (miembroId) boardIds.add(miembroId);
     }
   }
 
@@ -226,7 +294,6 @@ export async function fetchClubListingStats(clubs = []) {
     boardCount: 0,
   }]));
 
-  const allMemberIds = [...new Set(clubIds.flatMap(id => [...(membersByClub[id] || [])]))];
   const cargoSelect = 'miembro_id, club_id, cargo_id, en_curso, estado, cargos(id, tipo_id, estado)';
 
   const { data: byClub, error: byClubError } = await sb
@@ -243,7 +310,9 @@ export async function fetchClubListingStats(clubs = []) {
     return { stats, error: byClubError };
   }
 
+  const allMemberIds = [...new Set(clubIds.flatMap(id => [...(membersByClub[id] || [])]))];
   const byMember = [];
+
   if (allMemberIds.length) {
     for (const chunk of chunkArray(allMemberIds, 200)) {
       const { data, error } = await sb
@@ -339,7 +408,7 @@ export async function fetchClubDirectiva(clubId) {
     memberIds,
     tipoId: club.tipo_id,
   });
-  const rows = sortDirectivaRows(filtered, scopedCatalog);
+  const rows = groupDirectivaRowsByMember(filtered, scopedCatalog);
 
   return { club, rows, catalog: scopedCatalog, error: null };
 }

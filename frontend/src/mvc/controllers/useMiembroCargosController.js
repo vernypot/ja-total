@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { validateForm } from '../../utils/validateForm';
@@ -22,6 +23,8 @@ function getCargoFromLink(row) {
 
 export function useMiembroCargosController(miembroId) {
   const { t } = useLanguage();
+  const [params] = useSearchParams();
+  const activeClubId = params.get('club') || '';
   const { user, userData } = useContext(AuthContext);
   const canManage = canManageChurchData(getUserRole(user, userData));
 
@@ -100,10 +103,17 @@ export function useMiembroCargosController(miembroId) {
     setShowForm(false);
   }
 
+  function defaultClubId() {
+    if (activeClubId && memberClubs.some(club => club.id === activeClubId)) {
+      return activeClubId;
+    }
+    return memberClubs.length === 1 ? memberClubs[0].id : '';
+  }
+
   function startAssign() {
     setForm({
       ...EMPTY_ASSIGNMENT,
-      club_id: memberClubs.length === 1 ? memberClubs[0].id : '',
+      club_id: defaultClubId(),
     });
     setEditingId(null);
     setFieldErrors({});

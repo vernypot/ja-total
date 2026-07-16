@@ -135,38 +135,56 @@ export async function fetchMiembrosByIglesia(iglesiaId, { clubFilter, showInacti
   if (!clubs?.length) return { data: [], error: null };
 
   const clubIds = clubs.map(c => c.id);
-  const filterIds = clubFilter ? [clubFilter] : clubIds;
 
   const { data: rows, error } = await sb
     .from('miembro_club')
-    .select('club_id, miembros(id,nombre,apellido1,apellido2,estado)')
-    .in('club_id', filterIds);
+    .select('club_id, miembro_id, miembros(id,nombre,apellido1,apellido2,estado,fecha_nacimiento)')
+    .in('club_id', clubIds);
 
-  if (error) return { data: [], error };
+  if (error) {
+    const fallback = await sb
+      .from('miembro_club')
+      .select('club_id, miembro_id, miembros(id,nombre,apellido1,apellido2,estado)')
+      .in('club_id', clubIds);
 
+    if (fallback.error) return { data: [], error: fallback.error };
+
+    return buildMembersFromClubRows(fallback.data, { clubFilter, showInactive });
+  }
+
+  return buildMembersFromClubRows(rows, { clubFilter, showInactive });
+}
+
+function buildMembersFromClubRows(rows, { clubFilter, showInactive = false } = {}) {
   const byMember = new Map();
 
   for (const row of rows || []) {
     const m = row.miembros;
-    if (!m) continue;
-    if (!showInactive && m.estado !== 'activo') continue;
+    const miembroId = m?.id || row.miembro_id;
+    if (!miembroId) continue;
+    if (!showInactive && m?.estado !== 'activo') continue;
 
-    if (!byMember.has(m.id)) {
-      byMember.set(m.id, {
-        id: m.id,
-        nombre: m.nombre,
-        apellido1: m.apellido1,
-        apellido2: m.apellido2,
-        estado: m.estado,
+    if (!byMember.has(miembroId)) {
+      byMember.set(miembroId, {
+        id: miembroId,
+        nombre: m?.nombre || '',
+        apellido1: m?.apellido1 || '',
+        apellido2: m?.apellido2 || '',
+        estado: m?.estado || 'activo',
+        fecha_nacimiento: m?.fecha_nacimiento || null,
         clubIds: new Set(),
       });
     }
-    byMember.get(m.id).clubIds.add(row.club_id);
+    byMember.get(miembroId).clubIds.add(row.club_id);
   }
 
-  const members = Array.from(byMember.values())
+  let members = Array.from(byMember.values())
     .map(m => ({ ...m, clubIds: Array.from(m.clubIds) }))
     .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', undefined, { sensitivity: 'base' }));
+
+  if (clubFilter) {
+    members = members.filter(m => m.clubIds.includes(clubFilter));
+  }
 
   return { data: members, error: null };
 }
