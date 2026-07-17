@@ -13,6 +13,7 @@ import Iglesias from "../pages/Iglesias";
 import Clubes from "../pages/Clubes";
 import Eventos from "../pages/Eventos";
 import TiposEvento from "../pages/TiposEvento";
+import Distinciones from "../pages/Distinciones";
 import Checkin from "../pages/Checkin";
 import Contactos from "../pages/Contactos";
 import Especialidades from "../pages/Especialidades";
@@ -102,6 +103,7 @@ export default function AppRouter() {
           />
           <Route path="planificacion" element={<StaffOnlyRoute element={<AdminRoute element={<PlanificacionPeriodo />} />} />} />
           <Route path="tipos-evento" element={<StaffOnlyRoute element={<AdminRoute element={<TiposEvento />} />} />} />
+          <Route path="distinciones" element={<StaffOnlyRoute element={<AdminRoute element={<Distinciones />} />} />} />
           <Route path="checkin" element={<StaffOnlyRoute element={<AdminRoute element={<Checkin />} />} />} />
           <Route path="carnets-club" element={<StaffOnlyRoute element={<AdminRoute element={<ClubCarnetsPrint />} />} />} />
           <Route path="especialidades" element={<StaffOnlyRoute element={<SuperAdminRoute element={<Especialidades />} />} />} />

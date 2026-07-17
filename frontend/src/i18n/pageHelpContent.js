@@ -466,6 +466,37 @@ const PAGE_HELP = {
     },
   },
 
+  distinciones: {
+    en: {
+      title: 'Distinctions',
+      overview: 'Manage the catalog of honors and distinctions that staff can award to members, such as Barra de Excelencia.',
+      steps: [
+        'Click “New distinction” and enter a name and optional description.',
+        'Use order to control how distinctions appear in lists.',
+        'Deactivate distinctions that are no longer awarded instead of deleting historical records.',
+      ],
+      fields: [
+        { name: 'Name', description: 'Title of the honor or distinction.' },
+        { name: 'Description', description: 'Optional explanation shown when assigning to members.' },
+        { name: 'Order', description: 'Sort order in selection lists.' },
+      ],
+    },
+    es: {
+      title: 'Distinciones',
+      overview: 'Administre el catálogo de honores y distinciones que el personal puede otorgar a miembros, como Barra de Excelencia.',
+      steps: [
+        'Haga clic en “Nueva distinción” e ingrese nombre y descripción opcional.',
+        'Use el orden para controlar cómo aparecen las distinciones en las listas.',
+        'Desactive distinciones que ya no se otorguen en lugar de borrar registros históricos.',
+      ],
+      fields: [
+        { name: 'Nombre', description: 'Título del honor o distinción.' },
+        { name: 'Descripción', description: 'Explicación opcional al asignar a miembros.' },
+        { name: 'Orden', description: 'Orden en listas de selección.' },
+      ],
+    },
+  },
+
   checkin: {
     en: {
       title: 'Member check-in',
@@ -1073,6 +1104,45 @@ const PAGE_HELP = {
       ],
       tips: [
         'El mismo cargo puede aparecer varias veces en el historial si se ocupó en periodos distintos.',
+      ],
+    },
+  },
+
+  memberDistinciones: {
+    en: {
+      title: 'Member distinctions',
+      overview: 'Award honors and distinctions from the catalog to this member, such as Barra de Excelencia.',
+      steps: [
+        'Click “Assign distinction” and choose from the active catalog.',
+        'Optionally link the award to a club and record the date it was granted.',
+        'Add notes when extra context is helpful.',
+      ],
+      fields: [
+        { name: 'Distinction', description: 'Selected from the global distinctions catalog.' },
+        { name: 'Date awarded', description: 'When the honor was granted to the member.' },
+        { name: 'Club', description: 'Optional club context for the award.' },
+      ],
+      tips: [
+        'Each distinction can only be assigned once per member.',
+        'Manage the catalog from Administration → Distinctions.',
+      ],
+    },
+    es: {
+      title: 'Distinciones del miembro',
+      overview: 'Otorgue honores y distinciones del catálogo a este miembro, como Barra de Excelencia.',
+      steps: [
+        'Haga clic en “Asignar distinción” y elija del catálogo activo.',
+        'Opcionalmente vincule el reconocimiento a un club y registre la fecha de otorgamiento.',
+        'Agregue notas cuando se necesite contexto adicional.',
+      ],
+      fields: [
+        { name: 'Distinción', description: 'Seleccionada del catálogo global de distinciones.' },
+        { name: 'Fecha de otorgamiento', description: 'Cuándo se otorgó el honor al miembro.' },
+        { name: 'Club', description: 'Contexto opcional del club para el reconocimiento.' },
+      ],
+      tips: [
+        'Cada distinción solo puede asignarse una vez por miembro.',
+        'Administre el catálogo en Administración → Distinciones.',
       ],
     },
   },

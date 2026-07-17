@@ -15,9 +15,12 @@ const PERSONAL_DATA_FIELD_KEYS = [
   'nombre',
   'apellido1',
   'apellido2',
+  'nombre_opcional',
+  'apellido_opcional',
   'fecha_nacimiento',
   'genero',
   'documento',
+  'email',
   'telefono',
   'celular',
   'ciudad',
@@ -27,22 +30,9 @@ const PERSONAL_DATA_FIELD_KEYS = [
 const t = key => key;
 
 function emptyRaw(overrides = {}) {
-  return {
-    nombre: '',
-    apellido1: '',
-    apellido2: '',
-    fecha_nacimiento: '',
-    documento: '',
-    genero: '',
-    telefono: '',
-    celular: '',
-    direccion: '',
-    ciudad: '',
-    contacto_nombre: '',
-    contacto_celular: '',
-    contacto_relacion: '',
-    ...overrides,
-  };
+  const base = {};
+  for (const col of MEMBER_TEMPLATE_COLUMNS) base[col] = '';
+  return { ...base, ...overrides };
 }
 
 function workbookBuffer(rows, { dataSheet = 'Members', instructionSheet = 'Instructions' } = {}) {
@@ -115,8 +105,10 @@ describe('parseDateValue', () => {
 
 describe('parseMemberSpreadsheet', () => {
   it('parses Excel serial date cells', async () => {
-    const ws = XLSX.utils.aoa_to_sheet([MEMBER_TEMPLATE_COLUMNS, ['Juan', '', '', '', '', '', '', '', '', '', '', '', '']]);
-    ws['D2'] = { t: 'n', v: 36526 };
+    const row = MEMBER_TEMPLATE_COLUMNS.map(col => (col === 'nombre' ? 'Juan' : ''));
+    const ws = XLSX.utils.aoa_to_sheet([MEMBER_TEMPLATE_COLUMNS, row]);
+    const dateIdx = MEMBER_TEMPLATE_COLUMNS.indexOf('fecha_nacimiento');
+    ws[XLSX.utils.encode_cell({ r: 1, c: dateIdx })] = { t: 'n', v: 36526 };
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Members');
     const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
@@ -131,15 +123,28 @@ describe('parseMemberSpreadsheet', () => {
 
   it('parses standard template headers and example row with contact', async () => {
     const headers = MEMBER_TEMPLATE_COLUMNS.map(col => (col === 'nombre' ? 'nombre*' : col));
-    const row = [
-      'Ana', 'López', 'Ruiz', '2010-05-20', 'DOC-1', 'F', '', '809-555-0000',
-      'Calle 1', 'SD', 'Rosa Ruiz', '809-555-9999', 'Madre',
-    ];
+    const row = MEMBER_TEMPLATE_COLUMNS.map(col => {
+      if (col === 'nombre') return 'Ana';
+      if (col === 'apellido1') return 'López';
+      if (col === 'apellido2') return 'Ruiz';
+      if (col === 'fecha_nacimiento') return '2010-05-20';
+      if (col === 'documento') return 'DOC-1';
+      if (col === 'genero') return 'F';
+      if (col === 'email') return 'ana@example.com';
+      if (col === 'celular') return '809-555-0000';
+      if (col === 'direccion') return 'Calle 1';
+      if (col === 'ciudad') return 'SD';
+      if (col === 'contacto_nombre') return 'Rosa Ruiz';
+      if (col === 'contacto_celular') return '809-555-9999';
+      if (col === 'contacto_relacion') return 'Madre';
+      return '';
+    });
     const buffer = workbookBuffer([headers, row]);
     const { rows, error } = await parseMemberSpreadsheet(fileFromBuffer(buffer));
 
     expect(error).toBeNull();
     expect(rows).toHaveLength(1);
+    expect(rows[0].raw.email).toBe('ana@example.com');
     expect(rows[0].raw.contacto_nombre).toBe('Rosa Ruiz');
     expect(rows[0].raw.contacto_celular).toBe('809-555-9999');
     expect(rows[0].raw.contacto_relacion).toBe('Madre');
@@ -147,7 +152,8 @@ describe('parseMemberSpreadsheet', () => {
 
   it('ignores instruction sheet and reads data sheet', async () => {
     const headers = MEMBER_TEMPLATE_COLUMNS;
-    const buffer = workbookBuffer([headers, ['Pedro', '', '', '', '', 'M', '', '', '', '', '', '', '']]);
+    const row = MEMBER_TEMPLATE_COLUMNS.map(col => (col === 'nombre' ? 'Pedro' : col === 'genero' ? 'M' : ''));
+    const buffer = workbookBuffer([headers, row]);
     const { rows, error } = await parseMemberSpreadsheet(fileFromBuffer(buffer));
 
     expect(error).toBeNull();
@@ -183,11 +189,30 @@ describe('validateMemberRows', () => {
 
   it('allows rows without contact data', () => {
     const result = validateMemberRows(
+      [{ rowNumber: 2, raw: emptyRaw({ nombre: 'Carlos', genero: 'M', email: 'carlos@example.com' }) }],
+      { activeClub, t },
+    );
+    expect(result.validCount).toBe(1);
+    expect(result.results[0].member.email).toBe('carlos@example.com');
+    expect(result.results[0].member.contact).toBeNull();
+  });
+
+  it('rejects invalid email when provided', () => {
+    const result = validateMemberRows(
+      [{ rowNumber: 2, raw: emptyRaw({ nombre: 'Carlos', email: 'not-an-email' }) }],
+      { activeClub, t },
+    );
+    expect(result.validCount).toBe(0);
+    expect(result.results[0].errors).toContain('bulkErrInvalidEmail');
+  });
+
+  it('allows empty email', () => {
+    const result = validateMemberRows(
       [{ rowNumber: 2, raw: emptyRaw({ nombre: 'Carlos', genero: 'M' }) }],
       { activeClub, t },
     );
     expect(result.validCount).toBe(1);
-    expect(result.results[0].member.contact).toBeNull();
+    expect(result.results[0].member.email).toBeNull();
   });
 
   it('requires contact name and phone when any contact field is filled', () => {

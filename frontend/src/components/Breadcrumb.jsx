@@ -23,6 +23,7 @@ const PORTAL_PROFILE_TAB_LABELS = {
   contactos: 'tabContacts',
   especialidades: 'tabSpecialties',
   cargos: 'tabCargos',
+  distinciones: 'tabDistinciones',
   clases: 'tabClasses',
   eventos: 'tabEvents',
   asistencia: 'tabAttendance',

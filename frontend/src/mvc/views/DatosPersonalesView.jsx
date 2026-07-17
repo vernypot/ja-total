@@ -16,6 +16,7 @@ const FIELDS = [
   { key: 'fecha_nacimiento', labelKey: 'birthDate', type: 'date' },
   { key: 'genero', labelKey: 'gender' },
   { key: 'documento', labelKey: 'document' },
+  { key: 'email', labelKey: 'email', type: 'email' },
   { key: 'telefono', labelKey: 'phone' },
   { key: 'celular', labelKey: 'cellphone' },
   { key: 'ciudad', labelKey: 'city' },

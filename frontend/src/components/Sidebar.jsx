@@ -149,6 +149,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
                   <NavLinkItem to="/dashboard/tipos-evento" icon="tag" className="admin-link" active={isActive('/dashboard/tipos-evento')}>
                     {t('eventTypes')}
                   </NavLinkItem>
+                  <NavLinkItem to="/dashboard/distinciones" icon="star" className="admin-link" active={isActive('/dashboard/distinciones')}>
+                    {t('distinciones')}
+                  </NavLinkItem>
                   <NavLinkItem to="/dashboard/carnets-club" icon="idcard" className="admin-link" active={isActive('/dashboard/carnets-club')}>
                     {t('printClubCarnets')}
                   </NavLinkItem>

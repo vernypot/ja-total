@@ -47,11 +47,12 @@ export function useMiembroSystemAccessController(miembroId) {
     setLoading(true);
     setError('');
 
-    const [linkedResult, unlinkedResult, iglesiasResult, iglesiaResult] = await Promise.all([
+    const [linkedResult, unlinkedResult, iglesiasResult, iglesiaResult, memberResult] = await Promise.all([
       UsuariosModel.fetchLinkedUsuarioForMiembro(miembroId),
       UsuariosModel.fetchUnlinkedUsuarios(),
       IglesiasModel.fetchActiveIglesias(),
       MiembrosModel.fetchMiembroPrimaryIglesiaId(miembroId),
+      MiembrosModel.fetchMiembroById(miembroId),
     ]);
 
     if (linkedResult.error) {
@@ -72,6 +73,7 @@ export function useMiembroSystemAccessController(miembroId) {
     setPromoteForm(prev => ({
       ...prev,
       iglesia_id: iglesiaResult.iglesiaId || prev.iglesia_id || '',
+      email: memberResult.data?.email || prev.email || '',
     }));
 
     setLoading(false);

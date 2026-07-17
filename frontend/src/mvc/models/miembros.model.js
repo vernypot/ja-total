@@ -225,7 +225,7 @@ export async function unassignMiembroFromClub(miembroId, clubId) {
 export async function fetchMiembroById(id) {
   return sb
     .from('miembros')
-    .select(`${MIEMBRO_NAME_FIELDS},fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular,usuario_id,estado`)
+    .select(`${MIEMBRO_NAME_FIELDS},fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular,email,usuario_id,estado`)
     .eq('id', id)
     .single();
 }

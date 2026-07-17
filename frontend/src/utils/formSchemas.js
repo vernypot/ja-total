@@ -1,5 +1,5 @@
 import { getPasswordValidationError } from './passwordValidation';
-import { isBlank, isValidDate, validators } from './validation';
+import { isBlank, isValidDate, isValidEmail, validators } from './validation';
 import { isValidChurchTimezone } from './churchTimezones';
 import { isValidChurchCountry } from './churchCountries';
 
@@ -133,6 +133,25 @@ export const FORM_SCHEMAS = {
     submitAction: 'saveTipo',
     fields: {
       nombre: [v.required()],
+    },
+  },
+
+  distincion: {
+    id: 'distincion',
+    label: 'Distinction',
+    submitAction: 'saveDistincion',
+    fields: {
+      nombre: [v.required()],
+    },
+  },
+
+  miembroDistincion: {
+    id: 'miembroDistincion',
+    label: 'Member distinction',
+    submitAction: 'assignDistincion',
+    fields: {
+      distincion_id: [v.required()],
+      fecha_otorgada: [v.required(), v.date()],
     },
   },
 
@@ -271,6 +290,9 @@ export const FORM_SCHEMAS = {
     submitAction: 'saveMemberPersonal',
     fields: {
       nombre: [v.required()],
+      email: [
+        value => (value == null || String(value).trim() === '' ? null : (isValidEmail(value) ? null : 'validationEmail')),
+      ],
     },
   },
 };
