@@ -389,6 +389,7 @@ html[data-ui-theme='dark'] .home-panel-head {
 html[data-ui-theme='dark'] .home-news-item,
 html[data-ui-theme='dark'] .home-birthday-item,
 html[data-ui-theme='dark'] .home-event-item,
+html[data-ui-theme='dark'] .home-landing-event-row,
 html[data-ui-theme='dark'] .list-item,
 html[data-ui-theme='dark'] .noticia-item {
   background: var(--blix-chrome-elevated);

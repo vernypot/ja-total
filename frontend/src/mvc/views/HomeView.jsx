@@ -123,8 +123,8 @@ function HomePanels({
   goToNoticiasAdmin,
   goToEventos,
   toggleNewsExpand,
-  getClubName,
-  formatEventDate,
+  eventDayParts,
+  eventPlace,
   formatEventTime,
 }) {
   return (
@@ -133,55 +133,94 @@ function HomePanels({
       {loading && <p className="home-loading">{t('loading')}</p>}
 
       <div className="home-grid">
-        <section className="home-panel">
-          <div className="home-panel-head">
-            <h2>📰 {t('homeNews')}</h2>
-            {canManage && (
-              <button type="button" className="home-link-btn" onClick={goToNoticiasAdmin}>
-                {t('manageNews')}
-              </button>
-            )}
-          </div>
-          <div className="home-panel-body">
-            {!loading && !news.length ? (
-              <p className="home-empty">{t('homeNoNews')}</p>
-            ) : (
-              <div className="home-news-list">
-                {news.map(item => (
-                  <article key={item.id} className="home-news-item">
-                    <div className="home-news-meta">
-                      <span>{formatNewsDate(item.publicado_en)}</span>
-                      {item.estado !== 'activo' && <span>{t('inactive')}</span>}
-                    </div>
-                    <NoticiaHtml
-                      html={item.titulo}
-                      variant="title"
-                      as="h3"
-                      className="noticia-html--title"
-                    />
-                    {item.resumen && (
+        <div className="home-main-stack">
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>📰 {t('homeNews')}</h2>
+              {canManage && (
+                <button type="button" className="home-link-btn" onClick={goToNoticiasAdmin}>
+                  {t('manageNews')}
+                </button>
+              )}
+            </div>
+            <div className="home-panel-body">
+              {!loading && !news.length ? (
+                <p className="home-empty">{t('homeNoNews')}</p>
+              ) : (
+                <div className="home-news-list">
+                  {news.map(item => (
+                    <article key={item.id} className="home-news-item">
+                      <div className="home-news-meta">
+                        <span>{formatNewsDate(item.publicado_en)}</span>
+                        {item.estado !== 'activo' && <span>{t('inactive')}</span>}
+                      </div>
                       <NoticiaHtml
-                        html={item.resumen}
-                        variant="summary"
-                        className="home-news-resumen noticia-html--summary"
+                        html={item.titulo}
+                        variant="title"
+                        as="h3"
+                        className="noticia-html--title"
                       />
-                    )}
-                    {expandedNewsId === item.id && (
-                      <NoticiaHtml
-                        html={item.contenido}
-                        variant="content"
-                        className="home-news-contenido noticia-html--content"
-                      />
-                    )}
-                    <button type="button" className="home-link-btn" onClick={() => toggleNewsExpand(item.id)}>
-                      {expandedNewsId === item.id ? t('homeReadLess') : t('homeReadMore')}
-                    </button>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+                      {item.resumen && (
+                        <NoticiaHtml
+                          html={item.resumen}
+                          variant="summary"
+                          className="home-news-resumen noticia-html--summary"
+                        />
+                      )}
+                      {expandedNewsId === item.id && (
+                        <NoticiaHtml
+                          html={item.contenido}
+                          variant="content"
+                          className="home-news-contenido noticia-html--content"
+                        />
+                      )}
+                      <button type="button" className="home-link-btn" onClick={() => toggleNewsExpand(item.id)}>
+                        {expandedNewsId === item.id ? t('homeReadLess') : t('homeReadMore')}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>📅 {t('homeUpcomingEvents')}</h2>
+              <Link to="/dashboard/eventos" className="home-link-btn">{t('viewAll')}</Link>
+            </div>
+            <div className="home-panel-body">
+              {!loading && !events.length ? (
+                <p className="home-empty">{t('homeNoEvents')}</p>
+              ) : (
+                <div className="home-landing-events-list">
+                  {events.map(evento => {
+                    const parts = eventDayParts(evento.fecha);
+                    const place = eventPlace(evento);
+                    return (
+                      <article key={evento.id} className="home-landing-event-row">
+                        <div className="home-landing-event-date">
+                          <strong>{parts.day}</strong>
+                          <span>{parts.month}</span>
+                        </div>
+                        <div className="home-landing-event-info">
+                          <h3>{eventDisplayName(evento) || t('eventUntitled')}</h3>
+                          {place && <p>{place}</p>}
+                        </div>
+                        <div className="home-landing-event-time">{formatEventTime(evento.hora)}</div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+              {canManage && events.length > 0 && (
+                <button type="button" className="home-link-btn" style={{ marginTop: '0.75rem' }} onClick={goToEventos}>
+                  {t('homeManageEvents')}
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
 
         <div className="home-sidebar-stack">
           <section className="home-panel">
@@ -208,41 +247,6 @@ function HomePanels({
                     </li>
                   ))}
                 </ul>
-              )}
-            </div>
-          </section>
-
-          <section className="home-panel">
-            <div className="home-panel-head">
-              <h2>📅 {t('homeUpcomingEvents')}</h2>
-              <Link to="/dashboard/eventos" className="home-link-btn">{t('viewAll')}</Link>
-            </div>
-            <div className="home-panel-body">
-              {!loading && !events.length ? (
-                <p className="home-empty">{t('homeNoEvents')}</p>
-              ) : (
-                <ul className="home-event-list">
-                  {events.map(evento => {
-                    const day = evento.fecha?.slice(8, 10) || '--';
-                    return (
-                      <li key={evento.id} className="home-event-item">
-                        <div className="home-event-badge">
-                          <span>{day}</span>
-                        </div>
-                        <div className="home-item-main">
-                          <strong>{eventDisplayName(evento) || t('eventUntitled')}</strong>
-                          <span>{getClubName(evento)}{evento.lugar ? ` · ${evento.lugar}` : ''}</span>
-                          <span>{formatEventDate(evento.fecha)} · {formatEventTime(evento.hora)}</span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {canManage && events.length > 0 && (
-                <button type="button" className="home-link-btn" style={{ marginTop: '0.75rem' }} onClick={goToEventos}>
-                  {t('homeManageEvents')}
-                </button>
               )}
             </div>
           </section>

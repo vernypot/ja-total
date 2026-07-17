@@ -91,6 +91,13 @@
   align-items: start;
 }
 
+.home-main-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
 .home-panel {
   background: var(--white);
   border: 1px solid var(--gray-200);
@@ -281,9 +288,89 @@
   color: var(--color-badge-warning);
 }
 
+/* Upcoming events — landing-style rows */
+.home-dashboard {
+  --home-event-navy: #0d1b2a;
+  --home-event-gold: #fbbf24;
+  --home-event-teal: #0f766e;
+  --home-event-cream: #e7edf2;
+  --home-event-muted: #475569;
+}
+
+.home-landing-events-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.home-landing-event-row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  background: var(--home-event-cream);
+  border: 1px solid rgba(27, 54, 93, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.home-landing-event-row:hover {
+  border-color: rgba(13, 148, 136, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 35, 64, 0.06);
+}
+
+.home-landing-event-date {
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--white);
+  border: 2px solid var(--home-event-gold);
+}
+
+.home-landing-event-date strong {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--home-event-navy);
+  line-height: 1;
+}
+
+.home-landing-event-date span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--home-event-teal);
+}
+
+.home-landing-event-info h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.0625rem;
+  color: var(--home-event-navy);
+}
+
+.home-landing-event-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--home-event-muted);
+}
+
+.home-landing-event-time {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--home-event-teal);
+  white-space: nowrap;
+}
+
 @media (max-width: 960px) {
   .home-grid {
     grid-template-columns: 1fr;
+  }
+
+  .home-landing-event-row {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .home-landing-event-time {
+    grid-column: 2;
   }
 }
 
