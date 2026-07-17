@@ -39,6 +39,14 @@ export function useLoginController() {
         setError(authError.message || 'Login failed. Please check your credentials.');
         return;
       }
+
+      const { data: profile, error: profileError } = await AuthModel.fetchUserByEmail(email.trim().toLowerCase());
+      if (!profileError && profile && profile.estado && profile.estado !== 'activo') {
+        await AuthModel.signOut();
+        setError(t('loginInactiveUser'));
+        return;
+      }
+
       setUser(data.user);
       navigate(DASHBOARD_HOME_PATH);
     } catch {

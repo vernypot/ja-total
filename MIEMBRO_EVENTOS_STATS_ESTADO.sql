@@ -1,7 +1,6 @@
 -- =============================================================================
--- Include general club events (requiere_confirmacion = false) in member event
--- listings, not only events with an evento_miembro invite row.
--- Run in Supabase SQL Editor after MIEMBRO_PORTAL_DASHBOARD.sql
+-- Member meeting stats: include ended (finalizado) events, exclude cancelled.
+-- Run in Supabase SQL Editor after EVENTO_ESTADO_FINALIZADO.sql
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.miembro_event_listing_json(p_miembro_id UUID)
@@ -131,39 +130,4 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.member_portal_fetch_events(p_session_token TEXT)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_miembro_id UUID;
-BEGIN
-  v_miembro_id := public.member_portal_verify_session(p_session_token);
-
-  IF v_miembro_id IS NULL THEN
-    RAISE EXCEPTION 'invalid or expired session';
-  END IF;
-
-  RETURN public.miembro_event_listing_json(v_miembro_id);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.fetch_miembro_event_listing(p_miembro_id UUID)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  IF NOT public.user_can_manage_miembro(p_miembro_id) THEN
-    RAISE EXCEPTION 'permission denied';
-  END IF;
-
-  RETURN public.miembro_event_listing_json(p_miembro_id);
-END;
-$$;
-
 GRANT EXECUTE ON FUNCTION public.miembro_event_listing_json(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.fetch_miembro_event_listing(UUID) TO authenticated;

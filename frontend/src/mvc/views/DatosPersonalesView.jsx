@@ -3,6 +3,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
 import PhotoCropModal from '../../components/PhotoCropModal';
+import MiembroSystemAccessPanel from './MiembroSystemAccessView';
 import { memberDisplayName } from '../../utils/memberDisplayName';
 import '../../styles/form.css';
 
@@ -155,6 +156,7 @@ export default function DatosPersonalesView({
   photoCrop,
   handleRemovePhoto,
   calcularEdad,
+  miembroId,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -325,6 +327,7 @@ export default function DatosPersonalesView({
         </div>
       )}
       {confirmDialog}
+      {!isNew && miembroId && <MiembroSystemAccessPanel miembroId={miembroId} />}
     </div>
   );
 }

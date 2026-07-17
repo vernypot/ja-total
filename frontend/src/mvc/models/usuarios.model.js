@@ -222,6 +222,106 @@ export async function updateProfile(id, { nombre, apellido1, apellido2, telefono
   }).eq('id', id);
 }
 
+export async function fetchLinkedMiembroForUsuario(usuarioId) {
+  if (!usuarioId) return { data: null, error: null };
+  const { data, error } = await sb.rpc('admin_get_usuario_linked_miembro', {
+    p_usuario_id: usuarioId,
+  });
+  return { data: data || null, error };
+}
+
+export async function fetchLinkedUsuarioForMiembro(miembroId) {
+  if (!miembroId) return { data: null, error: null };
+  const { data, error } = await sb.rpc('admin_get_miembro_linked_usuario', {
+    p_miembro_id: miembroId,
+  });
+  return { data: data || null, error };
+}
+
+export async function fetchUnlinkedUsuarios() {
+  const { data, error } = await sb.rpc('admin_list_unlinked_usuarios');
+  return { data: data || [], error };
+}
+
+export async function linkUsuarioMiembro(miembroId, usuarioId) {
+  return sb.rpc('admin_link_usuario_miembro', {
+    p_miembro_id: miembroId,
+    p_usuario_id: usuarioId,
+  });
+}
+
+export async function unlinkUsuarioMiembro(miembroId) {
+  return sb.rpc('admin_unlink_usuario_miembro', {
+    p_miembro_id: miembroId,
+  });
+}
+
+export async function promoteMiembroToUsuario({
+  miembroId,
+  email,
+  password,
+  rol = 'user',
+  rolIglesia = 'member',
+  iglesiaId = null,
+}) {
+  return sb.rpc('admin_promote_miembro_to_usuario', {
+    p_miembro_id: miembroId,
+    p_email: email.trim().toLowerCase(),
+    p_password: password,
+    p_rol: rol,
+    p_rol_iglesia: rolIglesia,
+    p_iglesia_id: iglesiaId,
+  });
+}
+
+export async function setUsuarioSystemAccess(usuarioId, activo) {
+  const result = await sb.rpc('admin_set_usuario_system_access', {
+    p_usuario_id: usuarioId,
+    p_activo: activo,
+  });
+
+  if (!result.error) return result;
+
+  const msg = result.error?.message || '';
+  const isMissingRpc =
+    msg.includes('admin_set_usuario_system_access')
+    || msg.includes('Could not find the function')
+    || result.error?.code === 'PGRST202';
+
+  if (isMissingRpc) {
+    return updateUsuarioEstado(usuarioId, activo ? 'activo' : 'inactivo');
+  }
+
+  return result;
+}
+
+export async function attachLinkedMiembros(usuarios) {
+  if (!usuarios?.length) return [];
+
+  const enriched = await Promise.all(
+    usuarios.map(async usuario => {
+      try {
+        const { data: miembro, error } = await fetchLinkedMiembroForUsuario(usuario.id);
+        if (error) {
+          return { ...usuario, linked_miembro: null, linked_miembro_id: null, linked_miembro_nombre: null };
+        }
+        return {
+          ...usuario,
+          linked_miembro: miembro,
+          linked_miembro_id: miembro?.id || null,
+          linked_miembro_nombre: miembro
+            ? [miembro.nombre, miembro.apellido1, miembro.apellido2].filter(Boolean).join(' ')
+            : null,
+        };
+      } catch {
+        return { ...usuario, linked_miembro: null, linked_miembro_id: null, linked_miembro_nombre: null };
+      }
+    })
+  );
+
+  return enriched;
+}
+
 export async function updateUiTheme(id, ui_theme) {
   const { data, error } = await sb
     .from('usuarios')

@@ -67,11 +67,13 @@ function EventStatusBadge({ estado, t }) {
   const styles = {
     cancelado: { bg: '#fee2e2', color: '#991b1b' },
     inactivo: { bg: '#f3f4f6', color: '#4b5563' },
+    finalizado: { bg: '#e0e7ff', color: '#3730a3' },
   };
   const style = styles[estado] || styles.inactivo;
   const labels = {
     cancelado: t('eventStatusCancelled'),
     inactivo: t('eventStatusInactive'),
+    finalizado: t('eventStatusEnded'),
   };
 
   return (
@@ -265,6 +267,7 @@ export default function EventosView({
   cancelEvent,
   deactivateEvent,
   reactivateEvent,
+  endEvent,
   savingEvent,
   fieldErrors = {},
   bulkUpdatingEventId,
@@ -279,6 +282,8 @@ export default function EventosView({
   selectAllAttendeeEdit,
   saveEventAttendees,
   startEvent,
+  isEventoActive,
+  isEventoEnded,
   sortEventAttendanceRows,
   isEventInFuture,
   getCheckedInAtFromRow,
@@ -343,6 +348,16 @@ export default function EventosView({
       highlight: evento.nombre || t('eventUntitled'),
       confirmLabel: t('deactivate'),
       onConfirm: async () => { await deactivateEvent(evento.id); },
+    });
+  }
+
+  function confirmEndEvent(evento) {
+    askConfirm({
+      title: t('confirmEndEventTitle'),
+      message: t('endEventConfirm'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('endEvent'),
+      onConfirm: async () => { await endEvent(evento.id); },
     });
   }
 
@@ -481,7 +496,8 @@ export default function EventosView({
                 const editingAttendees = editingAttendeesEventId === evento.id;
                 const isEditing = editingEventId === evento.id;
                 const isFuture = isEventInFuture(evento);
-                const isActive = !evento.estado || evento.estado === 'activo';
+                const isActive = isEventoActive(evento);
+                const isEnded = isEventoEnded(evento);
                 const rows = sortEventAttendanceRows(assignments[evento.id] || []);
                 const recordedCount = rows.filter(row => getAsistenciaFromRow(row)).length;
                 const confirmedCount = rows.filter(row => getConfirmacionFromRow(row) === 'confirmado').length;
@@ -489,7 +505,7 @@ export default function EventosView({
                 const needsConfirmation = eventRequiresConfirmation(evento);
 
                 return (
-                  <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : 0.85 }}>
+                  <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : isEnded ? 0.92 : 0.85 }}>
                     <div style={{ padding: '14px 16px', backgroundColor: expanded || editingAttendees || isEditing ? '#f0f9ff' : '#fff' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                         <div>
@@ -563,6 +579,9 @@ export default function EventosView({
                               </EventActionButton>
                               {isActive && (
                                 <>
+                                  <EventActionButton tone="muted" onClick={() => confirmEndEvent(evento)}>
+                                    ⏹ {t('endEvent')}
+                                  </EventActionButton>
                                   <EventActionButton tone="warning" onClick={() => confirmCancelEvent(evento)}>
                                     {t('cancelEvent')}
                                   </EventActionButton>

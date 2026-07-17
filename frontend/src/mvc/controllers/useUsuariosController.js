@@ -56,6 +56,7 @@ export function useUsuariosController() {
       u.estado,
       u.iglesia_nombre,
       u.rol_iglesia,
+      u.linked_miembro_nombre,
     ]),
     [usuarios, searchQuery]
   );
@@ -83,7 +84,8 @@ export function useUsuariosController() {
       return;
     }
 
-    setUsuarios(data || []);
+    const enriched = await UsuariosModel.attachLinkedMiembros(data || []);
+    setUsuarios(enriched);
     setLoading(false);
   }
 
@@ -207,20 +209,29 @@ export function useUsuariosController() {
 
   async function toggleEstado(usuario) {
     if (usuario.id === user?.id || usuario.id === userData?.id) {
-      alert('No puede desactivar su propio usuario');
+      alert(t('cannotDeactivateSelf'));
       return;
     }
 
     setError('');
-    const nuevo = usuario.estado === 'activo' ? 'inactivo' : 'activo';
+    const activo = usuario.estado !== 'activo';
 
-    const { error: updateError } = await UsuariosModel.updateUsuarioEstado(usuario.id, nuevo);
+    const { error: updateError } = await UsuariosModel.setUsuarioSystemAccess(usuario.id, activo);
     if (updateError) {
-      setError('Error actualizando usuario: ' + updateError.message);
+      const msg = updateError.message || '';
+      setError(
+        msg.includes('admin_set_usuario_system_access') || msg.includes('USUARIO_MIEMBRO_LINK')
+          ? `${t('userDeactivateFailed')}: ${msg} ${t('runSqlMigrationHint')}`
+          : `${t('userDeactivateFailed')}: ${msg}`
+      );
       return;
     }
 
-    setSuccess(nuevo === 'inactivo' ? 'Usuario desactivado' : 'Usuario activado');
+    if (!activo && usuario.linked_miembro_id) {
+      setSuccess(t('userDeactivatedMemberAccessKept'));
+    } else {
+      setSuccess(activo ? t('userReactivatedSuccess') : t('userDeactivatedSuccess'));
+    }
     loadUsuarios();
   }
 

@@ -3,11 +3,13 @@ import { useLanguage } from '../hooks/useLanguage';
 import { PageHelpLink } from '../components/PageHelp';
 import EventCheckinScanner from '../components/EventCheckinScanner';
 import { AttendanceBadge, EventActionButton } from '../components/EventAttendanceControls';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useEventCheckinController } from '../mvc/controllers/useEventCheckinController';
 import '../styles/eventAttendance.css';
 
 export default function Checkin() {
   const { t } = useLanguage();
+  const { askConfirm } = useConfirmDialog();
   const {
     eventoId,
     evento,
@@ -18,14 +20,27 @@ export default function Checkin() {
     notice,
     canManage,
     sessionStarted,
+    isActive,
+    isEnded,
     scannerEnabled,
     beginEvent,
+    endEvent,
     checkin,
     memberDisplayName,
     getAsistenciaFromRow,
     getCheckedInAtFromRow,
     getTipoEventoNombre,
   } = useEventCheckinController();
+
+  function confirmEndEvent() {
+    askConfirm({
+      title: t('confirmEndEventTitle'),
+      message: t('endEventConfirm'),
+      highlight: evento?.nombre || t('eventUntitled'),
+      confirmLabel: t('endEvent'),
+      onConfirm: endEvent,
+    });
+  }
 
   if (!eventoId) {
     return (
@@ -82,11 +97,13 @@ export default function Checkin() {
         <p>{t('loading')}</p>
       ) : !canManage ? (
         <div className="alert alert-warning">{t('checkinNoPermission')}</div>
+      ) : isEnded ? (
+        <div className="alert alert-warning">{t('eventEndedHint')}</div>
       ) : !sessionStarted ? (
         <section className="event-start-scan-cta card">
           <h2 style={{ marginTop: 0 }}>{t('startEvent')}</h2>
           <p>{t('startEventScanHint')}</p>
-          <EventActionButton tone="success" onClick={beginEvent}>
+          <EventActionButton tone="success" onClick={beginEvent} disabled={!isActive}>
             ▶ {t('startEvent')}
           </EventActionButton>
         </section>
@@ -94,6 +111,12 @@ export default function Checkin() {
         <>
           <div className="event-started-banner">
             {t('eventStartedBanner')}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <EventActionButton tone="muted" onClick={confirmEndEvent}>
+              ⏹ {t('endEvent')}
+            </EventActionButton>
           </div>
 
           <EventCheckinScanner

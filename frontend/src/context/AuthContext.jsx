@@ -67,7 +67,15 @@ export function AuthProvider({ children }) {
         assignment = iglesiaLink;
       }
 
-      setUserData(resolveUserData(authUser, usuariosData, assignment));
+      const resolved = resolveUserData(authUser, usuariosData, assignment);
+      if (resolved?.estado && resolved.estado !== 'activo' && !isSuperAdminEmail(authUser.email)) {
+        await AuthModel.signOut();
+        setUser(null);
+        setUserData(null);
+        return;
+      }
+
+      setUserData(resolved);
     } catch {
       setUserData(resolveUserData(authUser, null));
     }

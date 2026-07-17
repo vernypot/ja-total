@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import PasswordReset from '../../components/PasswordReset';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
@@ -44,7 +45,7 @@ export default function UsuariosView({
     return <div className="container"><div className="loading">{t('loadingUsers')}</div></div>;
   }
 
-  const tableHeaders = ['firstName', 'email', 'churchLabel', 'role', 'status', 'phone', 'created', 'actions'];
+  const tableHeaders = ['firstName', 'email', 'linkedMember', 'churchLabel', 'role', 'status', 'phone', 'created', 'actions'];
 
   return (
     <div className="container">
@@ -221,6 +222,13 @@ export default function UsuariosView({
                       {usuario.apellido2 && ` ${usuario.apellido2}`}
                     </td>
                     <td style={{ padding: '12px' }}>{usuario.email}</td>
+                    <td style={{ padding: '12px' }}>
+                      {usuario.linked_miembro_id ? (
+                        <Link to={`/dashboard/miembro/${usuario.linked_miembro_id}/datos`}>
+                          {usuario.linked_miembro_nombre || t('memberDetail')}
+                        </Link>
+                      ) : '—'}
+                    </td>
                     <td style={{ padding: '12px' }}>
                       {usuario.iglesia_nombre || '—'}
                       {usuario.rol_iglesia && usuario.iglesia_nombre && (

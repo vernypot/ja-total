@@ -29,7 +29,9 @@ export function useEventCheckinController() {
   const [notice, setNotice] = useState('');
 
   const isFuture = evento ? EventosModel.isEventInFuture(evento, new Date(), getEventChurchTimezone(evento)) : false;
-  const scannerEnabled = sessionStarted || !isFuture;
+  const isActive = evento ? EventosModel.isEventoActive(evento) : false;
+  const isEnded = evento ? EventosModel.isEventoEnded(evento) : false;
+  const scannerEnabled = isActive && (sessionStarted || !isFuture);
   const recordedCount = useMemo(
     () => rows.filter(row => EventosModel.getAsistenciaFromRow(row)).length,
     [rows]
@@ -129,9 +131,27 @@ export function useEventCheckinController() {
   }, [eventoId, tokenFromUrl, canManage, checkin]);
 
   const beginEvent = useCallback(() => {
-    if (!eventoId) return;
+    if (!eventoId || !EventosModel.isEventoActive(evento)) return;
     navigate(`/dashboard/checkin?evento=${encodeURIComponent(eventoId)}&started=1`, { replace: true });
-  }, [eventoId, navigate]);
+  }, [evento, eventoId, navigate]);
+
+  const endEvent = useCallback(async () => {
+    if (!canManage || !eventoId) return;
+
+    setError('');
+    setNotice('');
+
+    const { error: saveError } = await EventosModel.setEventoEstado(
+      eventoId,
+      EventosModel.EVENTO_ESTADO.FINALIZADO
+    );
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    navigate('/dashboard/eventos', { replace: true });
+  }, [canManage, eventoId, navigate]);
 
   return {
     eventoId,
@@ -143,9 +163,12 @@ export function useEventCheckinController() {
     notice,
     canManage,
     isFuture,
+    isActive,
+    isEnded,
     sessionStarted,
     scannerEnabled,
     beginEvent,
+    endEvent,
     checkin,
     memberDisplayName: EventosModel.memberDisplayName,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,

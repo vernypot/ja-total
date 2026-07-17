@@ -32,6 +32,32 @@ export {
   toLocalDateKey,
 };
 
+export const EVENTO_ESTADO = {
+  ACTIVO: 'activo',
+  INACTIVO: 'inactivo',
+  CANCELADO: 'cancelado',
+  FINALIZADO: 'finalizado',
+};
+
+export function isEventoActive(evento) {
+  return !evento?.estado || evento.estado === EVENTO_ESTADO.ACTIVO;
+}
+
+export function isEventoEnded(evento) {
+  return evento?.estado === EVENTO_ESTADO.FINALIZADO;
+}
+
+export function isEventoIncludedInMemberStats(evento) {
+  if (!evento) return false;
+  const estado = evento.estado || EVENTO_ESTADO.ACTIVO;
+  if (estado === EVENTO_ESTADO.CANCELADO || estado === EVENTO_ESTADO.INACTIVO) return false;
+  return true;
+}
+
+export function filterRowsForMemberAttendanceStats(rows) {
+  return (rows || []).filter(row => isEventoIncludedInMemberStats(getEventoFromRow(row)));
+}
+
 function isRlsError(error) {
   const msg = error?.message || '';
   return msg.includes('row-level security') || msg.includes('permission denied');
@@ -74,7 +100,7 @@ async function queryEventos(buildQuery) {
 export async function fetchEventosByClub(clubId, { showInactive = false } = {}) {
   return queryEventos(select => {
     let query = sb.from('eventos').select(select).eq('club_id', clubId).order('fecha', { ascending: false });
-    if (!showInactive) query = query.eq('estado', 'activo');
+    if (!showInactive) query = query.in('estado', [EVENTO_ESTADO.ACTIVO, EVENTO_ESTADO.FINALIZADO]);
     return query;
   });
 }
@@ -101,7 +127,7 @@ export async function fetchEventosByClubInRange(clubId, startDate, endDate) {
     sb.from('eventos')
       .select(select)
       .eq('club_id', clubId)
-      .eq('estado', 'activo')
+      .in('estado', [EVENTO_ESTADO.ACTIVO, EVENTO_ESTADO.FINALIZADO])
       .gte('fecha', startDate)
       .lte('fecha', endDate)
       .order('fecha', { ascending: true })
@@ -116,7 +142,10 @@ export async function fetchMiembroEventos(miembroId) {
 
   if (!error) {
     const rows = typeof data === 'string' ? JSON.parse(data) : (data || []);
-    return { data: Array.isArray(rows) ? rows : [], error: null };
+    return {
+      data: filterRowsForMemberAttendanceStats(Array.isArray(rows) ? rows : []),
+      error: null,
+    };
   }
 
   const msg = error?.message || '';
@@ -144,14 +173,18 @@ export async function fetchMiembroEventos(miembroId) {
       .select(select)
       .eq('miembro_id', miembroId)
       .order('created_at', { ascending: false });
-    if (!error) return { data: data || [], error: null };
+    if (!error) {
+      return { data: filterRowsForMemberAttendanceStats(data || []), error: null };
+    }
     if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'requiere_confirmacion')) {
       continue;
     }
     return { data: [], error };
   }
 
-  return sb.from('evento_miembro').select('*').eq('miembro_id', miembroId);
+  const fallback = await sb.from('evento_miembro').select('*').eq('miembro_id', miembroId);
+  if (fallback.error) return fallback;
+  return { data: filterRowsForMemberAttendanceStats(fallback.data || []), error: null };
 }
 
 export async function fetchEventoAssignments(eventoId) {
@@ -459,7 +492,7 @@ export function computeMemberAttendanceStats(rows, helpers) {
   } = helpers;
 
   const stats = {
-    assigned: rows.length,
+    assigned: 0,
     upcoming: 0,
     pastAssigned: 0,
     attended: 0,
@@ -474,7 +507,9 @@ export function computeMemberAttendanceStats(rows, helpers) {
 
   for (const row of rows) {
     const evento = getEventoFromRow(row);
-    if (!evento) continue;
+    if (!evento || !isEventoIncludedInMemberStats(evento)) continue;
+
+    stats.assigned += 1;
 
     const isFuture = isEventInFuture(evento);
     const asistencia = getAsistenciaFromRow(row);
