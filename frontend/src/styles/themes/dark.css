@@ -142,7 +142,8 @@ html[data-ui-theme='dark'] .home-panel-head {
 
 html[data-ui-theme='dark'] .home-news-item,
 html[data-ui-theme='dark'] .home-birthday-item,
-html[data-ui-theme='dark'] .home-event-item {
+html[data-ui-theme='dark'] .home-event-item,
+html[data-ui-theme='dark'] .home-landing-event-row {
   background: var(--gray-50);
   border-color: var(--gray-200);
 }

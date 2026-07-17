@@ -150,6 +150,23 @@ export function useHomeController() {
     return EventosModel.memberDisplayName(evento) || '';
   }
 
+  function eventDayParts(dateStr) {
+    if (!dateStr) return { day: '--', month: '' };
+    const locale = language === 'en' ? 'en-US' : 'es-CO';
+    const d = new Date(`${dateStr}T12:00:00`);
+    return {
+      day: d.getDate(),
+      month: d.toLocaleDateString(locale, { month: 'short' }).replace('.', ''),
+    };
+  }
+
+  function eventPlace(evento) {
+    const club = evento?.clubes?.nombre || '';
+    const lugar = evento?.lugar?.trim() || '';
+    if (club && lugar) return `${club} · ${lugar}`;
+    return club || lugar;
+  }
+
   function goToNoticiasAdmin() {
     navigate('/dashboard/noticias');
   }
@@ -279,5 +296,7 @@ export function useHomeController() {
     getClubName: evento => evento?.clubes?.nombre || '',
     formatEventDate: dateStr => churchTz.formatEventLocalDate(dateStr, language),
     formatEventTime: EventosModel.formatEventLocalTime,
+    eventDayParts,
+    eventPlace,
   };
 }

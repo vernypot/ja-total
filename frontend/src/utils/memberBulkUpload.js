@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { isValidEmail } from './validation';
 
 /** Columns recognized in uploads but never validated or imported (estado is always activo). */
 export const MEMBER_IMPORT_IGNORED_COLUMNS = ['estado', 'club_nombre'];
@@ -13,6 +14,7 @@ export const MEMBER_PERSONAL_COLUMNS = [
   'fecha_nacimiento',
   'documento',
   'genero',
+  'email',
   'telefono',
   'celular',
   'direccion',
@@ -50,6 +52,7 @@ const HEADER_ALIASES = {
   fecha_nacimiento: ['fecha_nacimiento', 'fecha nacimiento', 'birth date', 'birthdate', 'fecha', 'fecha de nacimiento'],
   documento: ['documento', 'document', 'id', 'cedula', 'cédula', 'dni'],
   genero: ['genero', 'género', 'gender', 'sexo'],
+  email: ['email', 'correo', 'e-mail', 'correo electronico', 'correo electrónico', 'mail'],
   telefono: ['telefono', 'teléfono', 'phone', 'tel'],
   celular: ['celular', 'cellphone', 'mobile', 'móvil', 'movil'],
   direccion: ['direccion', 'dirección', 'address'],
@@ -312,6 +315,7 @@ const COLUMN_LABEL_KEYS = {
   fecha_nacimiento: 'birthDate',
   documento: 'document',
   genero: 'gender',
+  email: 'email',
   telefono: 'phone',
   celular: 'cellphone',
   direccion: 'address',
@@ -339,6 +343,7 @@ export function buildMemberTemplateInstructions({ t, activeClubName = '' }) {
     [''],
     [t('bulkTemplateDateFormats')],
     [t('bulkTemplateGenderValues')],
+    [t('bulkTemplateEmailHint')],
     [t('bulkTemplateDuplicates')],
     [t('bulkTemplateContactHint')],
     [''],
@@ -363,6 +368,7 @@ export function downloadMemberTemplate({ t, activeClubName = '' }) {
     if (col === 'apellido2') return 'García';
     if (col === 'fecha_nacimiento') return '2000-01-15';
     if (col === 'genero') return 'M';
+    if (col === 'email') return 'juan.perez@example.com';
     if (col === 'documento') return '001-0000000-0';
     if (col === 'telefono') return '809-555-0100';
     if (col === 'celular') return '809-555-0101';
@@ -382,6 +388,16 @@ export function downloadMemberTemplate({ t, activeClubName = '' }) {
   XLSX.utils.book_append_sheet(workbook, dataSheet, t('bulkTemplateSheet'));
   XLSX.utils.book_append_sheet(workbook, instructionsSheet, t('bulkInstructionsSheet'));
   XLSX.writeFile(workbook, 'plantilla_miembros.xlsx');
+}
+
+function parseEmailValue(value) {
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return { valid: true, value: null };
+  }
+  const email = String(value).trim().toLowerCase();
+  return isValidEmail(email)
+    ? { valid: true, value: email }
+    : { valid: false, value: null };
 }
 
 export async function parseMemberSpreadsheet(file) {
@@ -437,6 +453,9 @@ export function validateMemberRows(parsedRows, { activeClub, t }) {
     const genderResult = normalizeGender(raw.genero);
     if (!genderResult.valid) errors.push(t('bulkErrInvalidGender'));
 
+    const emailResult = parseEmailValue(raw.email);
+    if (!emailResult.valid) errors.push(t('bulkErrInvalidEmail'));
+
     const contact = buildContactFromRaw(raw);
     if (contact) {
       if (!contact.nombre) errors.push(t('bulkErrContactNombreRequired'));
@@ -457,6 +476,7 @@ export function validateMemberRows(parsedRows, { activeClub, t }) {
       fecha_nacimiento: dateResult.value,
       documento: raw.documento || null,
       genero: genderResult.value,
+      email: emailResult.value,
       telefono: raw.telefono || null,
       celular: raw.celular || null,
       direccion: raw.direccion || null,
