@@ -375,12 +375,29 @@ export function useEventosController() {
     if (!canManage) return;
     setError('');
 
-    const { error: saveError } = await EventosModel.setEventoEstado(eventoId, 'activo');
+    const { error: saveError } = await EventosModel.setEventoEstado(eventoId, EventosModel.EVENTO_ESTADO.ACTIVO);
     if (saveError) {
       setError('Error reactivating event: ' + saveError.message);
       return;
     }
 
+    loadEvents();
+  }
+
+  async function endEvent(eventoId) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoEstado(
+      eventoId,
+      EventosModel.EVENTO_ESTADO.FINALIZADO
+    );
+    if (saveError) {
+      setError('Error ending event: ' + saveError.message);
+      return;
+    }
+
+    if (editingEventId === eventoId) closeEditForm();
     loadEvents();
   }
 
@@ -581,6 +598,7 @@ export function useEventosController() {
     cancelEvent,
     deactivateEvent,
     reactivateEvent,
+    endEvent,
     savingEvent,
     fieldErrors,
     bulkUpdatingEventId,
@@ -596,6 +614,8 @@ export function useEventosController() {
     saveEventAttendees,
     startEvent,
     sortEventAttendanceRows: EventosModel.sortEventAttendanceRows,
+    isEventoActive: EventosModel.isEventoActive,
+    isEventoEnded: EventosModel.isEventoEnded,
     isEventInFuture: churchTz.isEventInFuture,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,

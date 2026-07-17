@@ -32,7 +32,9 @@ export function useMiembroAsistenciaController(miembroId) {
       return fb.localeCompare(fa);
     });
 
-    setRows(sorted);
+    setRows(sorted.filter(row => EventosModel.isEventoIncludedInMemberStats(
+      EventosModel.getEventoFromRow(row)
+    )));
     setLoading(false);
   }
 

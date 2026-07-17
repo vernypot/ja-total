@@ -225,9 +225,21 @@ export async function unassignMiembroFromClub(miembroId, clubId) {
 export async function fetchMiembroById(id) {
   return sb
     .from('miembros')
-    .select(`${MIEMBRO_NAME_FIELDS},fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular`)
+    .select(`${MIEMBRO_NAME_FIELDS},fecha_nacimiento,direccion,telefono,ciudad,foto_url,documento,genero,celular,usuario_id,estado`)
     .eq('id', id)
     .single();
+}
+
+export async function fetchMiembroPrimaryIglesiaId(miembroId) {
+  const { data, error } = await sb
+    .from('miembro_club')
+    .select('clubes(iglesia_id)')
+    .eq('miembro_id', miembroId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { iglesiaId: null, error };
+  return { iglesiaId: data?.clubes?.iglesia_id || null, error: null };
 }
 
 export async function updateMiembroEstado(id, estado) {

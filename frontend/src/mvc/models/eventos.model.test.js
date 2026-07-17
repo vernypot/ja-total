@@ -8,15 +8,86 @@ import {
   canMemberConfirmEvent,
   canMemberCancelEventConfirmation,
   computeCheckinAttendanceEstado,
+  computeMemberAttendanceStats,
   eventRequiresConfirmation,
   getAsistenciaFromRow,
   getEventoIdFromRow,
   getEventoMiembroRowId,
+  isEventoActive,
+  isEventoEnded,
+  isEventoIncludedInMemberStats,
   memberAttendedEvent,
   shouldCorrectLateCheckin,
   wasMemberCheckedInToEvent,
 } from './eventos.model';
 import { patchPortalEventRowConfirmation } from './memberPortal.model';
+
+describe('isEventoActive', () => {
+  it('treats missing estado as active', () => {
+    expect(isEventoActive({})).toBe(true);
+  });
+
+  it('treats finalizado as not active', () => {
+    expect(isEventoActive({ estado: 'finalizado' })).toBe(false);
+  });
+});
+
+describe('isEventoEnded', () => {
+  it('detects finalizado estado', () => {
+    expect(isEventoEnded({ estado: 'finalizado' })).toBe(true);
+    expect(isEventoEnded({ estado: 'activo' })).toBe(false);
+  });
+});
+
+describe('isEventoIncludedInMemberStats', () => {
+  it('includes active and ended events', () => {
+    expect(isEventoIncludedInMemberStats({ estado: 'activo' })).toBe(true);
+    expect(isEventoIncludedInMemberStats({ estado: 'finalizado' })).toBe(true);
+    expect(isEventoIncludedInMemberStats({})).toBe(true);
+  });
+
+  it('excludes cancelled and inactive events', () => {
+    expect(isEventoIncludedInMemberStats({ estado: 'cancelado' })).toBe(false);
+    expect(isEventoIncludedInMemberStats({ estado: 'inactivo' })).toBe(false);
+  });
+});
+
+describe('computeMemberAttendanceStats', () => {
+  const helpers = {
+    getEventoFromRow: row => row.eventos,
+    getAsistenciaFromRow: row => row.evento_asistencia?.estado,
+    getConfirmacionFromRow: () => 'confirmado',
+    eventRequiresConfirmation: () => false,
+  };
+
+  it('counts ended past events and skips cancelled events', () => {
+    const stats = computeMemberAttendanceStats([
+      {
+        eventos: {
+          fecha: '2020-01-01',
+          hora: '19:00:00',
+          estado: 'finalizado',
+          clubes: { iglesias: { timezone: 'America/Bogota' } },
+        },
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        eventos: {
+          fecha: '2020-01-02',
+          hora: '19:00:00',
+          estado: 'cancelado',
+          clubes: { iglesias: { timezone: 'America/Bogota' } },
+        },
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+    ], helpers);
+
+    expect(stats.assigned).toBe(1);
+    expect(stats.pastAssigned).toBe(1);
+    expect(stats.attended).toBe(1);
+    expect(stats.onTime).toBe(1);
+  });
+});
 
 describe('canMemberConfirmEvent', () => {
   const futureDate = '2099-12-31';
@@ -69,6 +140,16 @@ describe('canMemberConfirmEvent', () => {
         ...baseEvento,
         fecha: '2020-01-01',
         hora: '10:00:00',
+      },
+    })).toBe(false);
+  });
+
+  it('blocks ended events', () => {
+    expect(canMemberConfirmEvent({
+      id: 'em-ended',
+      eventos: {
+        ...baseEvento,
+        estado: 'finalizado',
       },
     })).toBe(false);
   });

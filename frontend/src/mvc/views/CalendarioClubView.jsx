@@ -36,6 +36,7 @@ function EventStatusBadge({ estado, t }) {
   const styles = {
     cancelado: { bg: '#fee2e2', color: '#991b1b', label: t('eventStatusCancelled') },
     inactivo: { bg: '#f3f4f6', color: '#4b5563', label: t('eventStatusInactive') },
+    finalizado: { bg: '#e0e7ff', color: '#3730a3', label: t('eventStatusEnded') },
   };
   const style = styles[estado] || styles.inactivo;
 

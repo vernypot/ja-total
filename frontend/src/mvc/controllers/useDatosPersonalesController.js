@@ -301,5 +301,6 @@ export function useDatosPersonalesController(miembroId) {
     photoCrop,
     handleRemovePhoto,
     calcularEdad,
+    miembroId: isNew ? null : miembroId,
   };
 }

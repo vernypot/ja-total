@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   hora TIME NOT NULL,   -- church-local wall-clock time (iglesias.timezone)
   lugar TEXT NOT NULL,
   estado VARCHAR(20) NOT NULL DEFAULT 'activo'
-    CHECK (estado IN ('activo', 'inactivo', 'cancelado')),
+    CHECK (estado IN ('activo', 'inactivo', 'cancelado', 'finalizado')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

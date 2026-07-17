@@ -93,5 +93,7 @@ export function useMiembroEventosController(miembroId) {
     memberAttendedEvent: EventosModel.memberAttendedEvent,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
+    isEventInFuture: EventosModel.isEventInFuture,
+    getEventChurchTimezone: EventosModel.getEventChurchTimezone,
   };
 }
