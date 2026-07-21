@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import {
   buildCalendarCells,
@@ -71,6 +72,10 @@ export default function DatePickerInput({
     setOpen(false);
   }
 
+  function closeModal() {
+    setOpen(false);
+  }
+
   function goToPreviousMonth() {
     setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   }
@@ -114,8 +119,8 @@ export default function DatePickerInput({
         </span>
       </button>
 
-      {open && (
-        <div className="date-picker-overlay" onClick={() => setOpen(false)} role="presentation">
+      {open && createPortal(
+        <div className="date-picker-overlay" onClick={closeModal} role="presentation">
           <div
             className="date-picker-modal"
             onClick={event => event.stopPropagation()}
@@ -123,13 +128,25 @@ export default function DatePickerInput({
             aria-modal="true"
             aria-labelledby={`${id}-month-label`}
           >
+            <div className="date-picker-modal-top">
+              <div id={`${id}-month-label`} className="date-picker-month-label">
+                {monthLabel}
+              </div>
+              <button
+                type="button"
+                className="date-picker-close-btn"
+                onClick={closeModal}
+                aria-label={t('close')}
+              >
+                ✕
+              </button>
+            </div>
+
             <div className="date-picker-header">
               <button type="button" className="date-picker-nav-btn" onClick={goToPreviousMonth} aria-label={t('calendarPreviousMonth')}>
                 ←
               </button>
-              <div id={`${id}-month-label`} className="date-picker-month-label">
-                {monthLabel}
-              </div>
+              <span className="date-picker-header-spacer" aria-hidden />
               <button type="button" className="date-picker-nav-btn" onClick={goToNextMonth} aria-label={t('calendarNextMonth')}>
                 →
               </button>
@@ -181,7 +198,8 @@ export default function DatePickerInput({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
