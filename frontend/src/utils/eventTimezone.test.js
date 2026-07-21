@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeCheckinAttendanceEstado,
   formatEventLocalDate,
+  formatEventLocalTime,
   formatIsoDateInTimezone,
   getEventChurchTimezone,
   getEventStartInstant,
@@ -73,6 +74,12 @@ describe('eventTimezone', () => {
 
   it('formats event dates in church timezone', () => {
     expect(formatEventLocalDate('2026-07-13', 'es', { timeZone: 'America/Bogota' })).toContain('2026');
+  });
+
+  it('formats event times in 12-hour locale', () => {
+    expect(formatEventLocalTime('19:00:00', 'en')).toMatch(/7:00\s*PM/i);
+    expect(formatEventLocalTime('09:30:00', 'es')).toMatch(/9:30\s*(a\.\s*m\.|AM)/i);
+    expect(formatEventLocalTime('', 'es')).toBe('');
   });
 
   it('normalizes ISO timestamp dates before formatting', () => {

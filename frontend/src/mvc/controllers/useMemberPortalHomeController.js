@@ -223,7 +223,7 @@ export function useMemberPortalHomeController() {
   }
 
   function formatEventTime(hora) {
-    return EventosModel.formatEventLocalTime(hora);
+    return EventosModel.formatEventLocalTime(hora, language);
   }
 
   function eventDisplayName(evento) {

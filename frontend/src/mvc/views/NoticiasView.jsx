@@ -7,6 +7,7 @@ import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
 import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
 import { PageHelpLink } from '../../components/PageHelp';
+import DatePickerInput from '../../components/DatePickerInput';
 import '../../styles/form.css';
 import '../../styles/noticias.css';
 
@@ -132,8 +133,7 @@ export default function NoticiasView({
               </label>
               <label>
                 <span>{t('noticiasFieldDate')}</span>
-                <input
-                  type="date"
+                <DatePickerInput
                   className="form-input"
                   value={form.publicado_en}
                   onChange={e => setForm(f => ({ ...f, publicado_en: e.target.value }))}
@@ -141,8 +141,7 @@ export default function NoticiasView({
               </label>
               <label>
                 <span>{t('noticiasFieldExpiration')}</span>
-                <input
-                  type="date"
+                <DatePickerInput
                   className="form-input"
                   value={form.expira_en}
                   onChange={e => setForm(f => ({ ...f, expira_en: e.target.value }))}

@@ -264,6 +264,10 @@
   color: var(--color-text-muted);
 }
 
+.calendario-event-detail-description {
+  margin-bottom: 4px;
+}
+
 .calendario-event-detail-members {
   border-top: 1px solid #e5e7eb;
   padding-top: 16px;

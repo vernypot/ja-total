@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import ListSearchInput from '../../components/ListSearchInput';
 import FormField from '../../components/FormField';
+import DatePickerInput from '../../components/DatePickerInput';
 import { PageHelpLink } from '../../components/PageHelp';
 import {
   AttendanceControls,
@@ -9,6 +10,7 @@ import {
   EventActionButton,
 } from '../../components/EventAttendanceControls';
 import { clubDisplayName } from '../../utils/club';
+import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import '../../styles/form.css';
 
 function FormSection({ title, children, className = '' }) {
@@ -119,14 +121,14 @@ function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors 
         </select>
       </div>
       <FormField label={t('eventDate')} htmlFor="event-fecha" error={fieldErrors.fecha} required>
-        <input
+        <DatePickerInput
           id="event-fecha"
-          type="date"
           value={eventForm.fecha}
           onChange={e => setEventForm({ ...eventForm, fecha: e.target.value })}
           className="form-input"
           style={{ margin: 0 }}
           aria-invalid={Boolean(fieldErrors.fecha)}
+          required
         />
       </FormField>
       <FormField label={t('eventTime')} htmlFor="event-hora" error={fieldErrors.hora} required>
@@ -151,6 +153,20 @@ function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors 
             className="form-input"
             style={{ margin: 0 }}
             aria-invalid={Boolean(fieldErrors.lugar)}
+          />
+        </FormField>
+      </div>
+      <div style={{ gridColumn: '1 / -1' }}>
+        <FormField label={t('eventDescription')} htmlFor="event-descripcion">
+          <textarea
+            id="event-descripcion"
+            value={eventForm.descripcion}
+            onChange={e => setEventForm({ ...eventForm, descripcion: e.target.value })}
+            placeholder={t('eventDescriptionOptional')}
+            className="form-input"
+            rows={3}
+            maxLength={500}
+            style={{ margin: 0, resize: 'vertical' }}
           />
         </FormField>
       </div>
@@ -292,6 +308,7 @@ export default function EventosView({
   eventRequiresConfirmation,
   getTipoEventoNombre,
   memberDisplayName,
+  formatEventTime,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -526,9 +543,10 @@ export default function EventosView({
                             )}
                           </div>
                           <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                            {evento.fecha} · {String(evento.hora).slice(0, 5)} · {evento.lugar}
+                            {evento.fecha} · {formatEventTime(evento.hora)} · {evento.lugar}
                             {tipoNombre && <> · {tipoNombre}</>}
                           </div>
+                          <EventDescriptionToggle description={evento.descripcion} />
                           {needsConfirmation && (
                             <div style={{ fontSize: '12px', color: '#854d0e', marginTop: '4px' }}>
                               {t('eventRequiresConfirmationBadge')}

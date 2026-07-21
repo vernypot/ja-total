@@ -69,6 +69,7 @@ function isMissingColumnError(error, column) {
 }
 
 const EVENTO_SELECTS = [
+  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre),tipos_evento(id,nombre)',
@@ -155,7 +156,7 @@ export async function fetchMiembroEventos(miembroId) {
 
   const selects = [
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, tipo_evento_id,
        clubes ( id, nombre, iglesia_id, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
@@ -243,6 +244,7 @@ export async function createEvento({
   fecha,
   hora,
   lugar,
+  descripcion,
   tipoEventoId,
   requiereConfirmacion = true,
   miembroIds = [],
@@ -253,6 +255,7 @@ export async function createEvento({
     fecha,
     hora,
     lugar: lugar.trim(),
+    descripcion: descripcion?.trim() || null,
   };
   if (tipoEventoId) payload.tipo_evento_id = tipoEventoId;
   if (requiereConfirmacion !== undefined) payload.requiere_confirmacion = Boolean(requiereConfirmacion);
@@ -269,8 +272,12 @@ export async function createEvento({
   }
 
   if (!isRlsError(direct.error)) {
-    if (isMissingColumnError(direct.error, 'tipo_evento_id') || isMissingColumnError(direct.error, 'requiere_confirmacion')) {
-      const { tipo_evento_id, requiere_confirmacion, ...base } = payload;
+    if (
+      isMissingColumnError(direct.error, 'tipo_evento_id')
+      || isMissingColumnError(direct.error, 'requiere_confirmacion')
+      || isMissingColumnError(direct.error, 'descripcion')
+    ) {
+      const { tipo_evento_id, requiere_confirmacion, descripcion: _descripcion, ...base } = payload;
       const retry = await sb.from('eventos').insert([base]).select('id').single();
       if (!retry.error && retry.data?.id) {
         if (assignIds.length) await assignMiembrosToEvento(retry.data.id, assignIds, { requiereConfirmacion });
@@ -291,6 +298,7 @@ export async function createEvento({
     p_miembro_ids: requiereConfirmacion ? (assignIds.length ? assignIds : null) : [],
     p_tipo_evento_id: tipoEventoId || null,
     p_requiere_confirmacion: Boolean(requiereConfirmacion),
+    p_descripcion: descripcion?.trim() || null,
   });
 
   return { data: rpc.data, error: rpc.error };
@@ -301,6 +309,7 @@ export async function updateEvento(eventoId, {
   fecha,
   hora,
   lugar,
+  descripcion,
   tipoEventoId,
   requiereConfirmacion,
 }) {
@@ -309,13 +318,18 @@ export async function updateEvento(eventoId, {
   if (fecha !== undefined) payload.fecha = fecha;
   if (hora !== undefined) payload.hora = hora;
   if (lugar !== undefined) payload.lugar = lugar.trim();
+  if (descripcion !== undefined) payload.descripcion = descripcion?.trim() || null;
   if (tipoEventoId !== undefined) payload.tipo_evento_id = tipoEventoId || null;
   if (requiereConfirmacion !== undefined) payload.requiere_confirmacion = Boolean(requiereConfirmacion);
 
   const direct = await sb.from('eventos').update(payload).eq('id', eventoId);
   if (!direct.error) return direct;
-  if (isMissingColumnError(direct.error, 'tipo_evento_id') || isMissingColumnError(direct.error, 'requiere_confirmacion')) {
-    const { tipo_evento_id, requiere_confirmacion, ...base } = payload;
+  if (
+    isMissingColumnError(direct.error, 'tipo_evento_id')
+    || isMissingColumnError(direct.error, 'requiere_confirmacion')
+    || isMissingColumnError(direct.error, 'descripcion')
+  ) {
+    const { tipo_evento_id, requiere_confirmacion, descripcion: _descripcion, ...base } = payload;
     return sb.from('eventos').update(base).eq('id', eventoId);
   }
   return direct;

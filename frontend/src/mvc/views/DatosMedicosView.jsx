@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import DatePickerInput from '../../components/DatePickerInput';
 import FichaMedicaPrint from '../../components/FichaMedicaPrint';
 import { BLOOD_TYPES, RH_FACTORS, isDenominationalInsuranceNearExpiry } from '../models/datosMedicos.model';
 import '../../styles/form.css';
@@ -88,8 +89,7 @@ function renderFieldInput({ field, form, setForm, editing, data, t }) {
         </label>
         <label style={{ display: 'grid', gap: '4px' }}>
           <span style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{t('denominationalInsuranceDate')}</span>
-          <input
-            type="date"
+          <DatePickerInput
             value={form.seguro_denominacional_fecha}
             disabled={!form.seguro_denominacional}
             onChange={e => setForm(prev => ({ ...prev, seguro_denominacional_fecha: e.target.value }))}

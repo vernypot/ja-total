@@ -295,7 +295,7 @@ export function useHomeController() {
     selectIglesia,
     getClubName: evento => evento?.clubes?.nombre || '',
     formatEventDate: dateStr => churchTz.formatEventLocalDate(dateStr, language),
-    formatEventTime: EventosModel.formatEventLocalTime,
+    formatEventTime: hora => EventosModel.formatEventLocalTime(hora, language),
     eventDayParts,
     eventPlace,
   };

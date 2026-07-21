@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import FormField from '../../components/FormField';
+import DatePickerInput from '../../components/DatePickerInput';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
@@ -103,12 +104,12 @@ export default function MiembroDistincionesView({
               </select>
             </FormField>
             <FormField label={t('distincionDateAwarded')} htmlFor="miembro-distincion-fecha" error={fieldErrors.fecha_otorgada} required>
-              <input
+              <DatePickerInput
                 id="miembro-distincion-fecha"
-                type="date"
                 className="form-input"
                 value={form.fecha_otorgada}
                 onChange={e => setForm(f => ({ ...f, fecha_otorgada: e.target.value }))}
+                required
               />
             </FormField>
             <FormField label={t('notes')} htmlFor="miembro-distincion-notas">

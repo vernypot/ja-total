@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { groupRequisitosBySeccion, getRequisitoDisplayText } from '../mvc/models/clases.model';
+import DatePickerInput from './DatePickerInput';
 
 function sectionTitle(seccion) {
   const roman = seccion.numero_romano ? `${seccion.numero_romano}. ` : '';
@@ -263,8 +264,7 @@ function RequisitoCompletionModal({
               </label>
               <label style={{ display: 'grid', gap: '4px' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>{t('dateCompleted')}</span>
-                <input
-                  type="date"
+                <DatePickerInput
                   value={draft.fecha_completado}
                   disabled={saving || !draft.completado}
                   onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}

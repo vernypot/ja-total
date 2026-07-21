@@ -2,13 +2,15 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import { PageHelpLink } from '../components/PageHelp';
 import EventCheckinScanner from '../components/EventCheckinScanner';
+import EventDescriptionToggle from '../components/EventDescriptionToggle';
 import { AttendanceBadge, EventActionButton } from '../components/EventAttendanceControls';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useEventCheckinController } from '../mvc/controllers/useEventCheckinController';
+import * as EventosModel from '../mvc/models/eventos.model';
 import '../styles/eventAttendance.css';
 
 export default function Checkin() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { askConfirm } = useConfirmDialog();
   const {
     eventoId,
@@ -72,7 +74,7 @@ export default function Checkin() {
                 <strong>{evento.nombre || t('eventUntitled')}</strong>
               </p>
               <p className="checkin-session-event-meta">
-                {evento.fecha} · {String(evento.hora || '').slice(0, 5)} · {evento.lugar}
+                {evento.fecha} · {EventosModel.formatEventLocalTime(evento.hora, language)} · {evento.lugar}
                 {tipoNombre && <> · {tipoNombre}</>}
               </p>
               {evento.clubes?.nombre && (
@@ -80,6 +82,7 @@ export default function Checkin() {
                   {t('clubLabel')}: {evento.clubes.nombre}
                 </p>
               )}
+              <EventDescriptionToggle description={evento.descripcion} />
             </>
           )}
         </div>

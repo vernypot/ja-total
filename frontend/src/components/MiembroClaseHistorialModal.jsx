@@ -7,6 +7,7 @@ import {
   miembroClaseProgresoEstadoLabel,
 } from '../constants/miembroClaseProgresoEstado';
 import { clubDisplayName } from '../utils/club';
+import DatePickerInput from './DatePickerInput';
 
 export default function MiembroClaseHistorialModal({
   row = null,
@@ -182,8 +183,7 @@ export default function MiembroClaseHistorialModal({
           {showCompletionDate && (
             <label style={{ display: 'grid', gap: '4px' }}>
               <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}</span>
-              <input
-                type="date"
+              <DatePickerInput
                 value={draft.fecha_completado}
                 disabled={saving || readOnly}
                 onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}
@@ -197,8 +197,7 @@ export default function MiembroClaseHistorialModal({
               <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: 0 }} />
               <label style={{ display: 'grid', gap: '4px' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraDate')}</span>
-                <input
-                  type="date"
+                <DatePickerInput
                   value={draft.investidura_fecha}
                   disabled={saving || readOnly}
                   onChange={e => setDraft(prev => ({ ...prev, investidura_fecha: e.target.value }))}

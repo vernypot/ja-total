@@ -4,6 +4,7 @@ import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import * as EventosModel from '../../mvc/models/eventos.model';
 import {
   AttendanceBadge,
@@ -16,6 +17,7 @@ import '../../styles/eventAttendance.css';
 function MemberEventCard({
   row,
   t,
+  language,
   canManage,
   updateAttendance,
   updateConfirmation,
@@ -56,7 +58,7 @@ function MemberEventCard({
             )}
           </div>
           <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-            {evento?.fecha} · {String(evento?.hora || '').slice(0, 5)} · {evento?.lugar}
+            {evento?.fecha} · {EventosModel.formatEventLocalTime(evento?.hora, language)} · {evento?.lugar}
             {tipoNombre && <> · {tipoNombre}</>}
           </div>
           {clubName && (
@@ -64,6 +66,7 @@ function MemberEventCard({
               {t('clubLabel')}: {clubName}
             </div>
           )}
+          <EventDescriptionToggle description={evento?.descripcion} />
           {checkedInAt && (
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
               {t('checkedInAt')}: {(() => {
@@ -170,7 +173,7 @@ export default function MiembroEventosView({
   getEventChurchTimezone,
   savingConfirmationId = null,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
@@ -213,6 +216,7 @@ export default function MiembroEventosView({
     const eventName = evento?.nombre || t('eventUntitled');
     return {
       t,
+      language,
       canManage,
       updateAttendance,
       updateConfirmation,
