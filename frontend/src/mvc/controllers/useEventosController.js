@@ -18,6 +18,7 @@ const emptyForm = () => ({
   fecha: '',
   hora: '',
   lugar: '',
+  descripcion: '',
   tipo_evento_id: '',
   requiere_confirmacion: true,
   memberAssignmentMode: 'all',
@@ -25,7 +26,7 @@ const emptyForm = () => ({
 });
 
 export function useEventosController() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, canSwitchIglesia, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
@@ -66,6 +67,7 @@ export function useEventosController() {
     () => filterBySearch(events, searchQuery, e => [
       e.nombre,
       e.lugar,
+      e.descripcion,
       e.fecha,
       e.clubes?.nombre,
     ]),
@@ -207,6 +209,7 @@ export function useEventosController() {
       fecha: evento.fecha || '',
       hora: String(evento.hora || '').slice(0, 5),
       lugar: evento.lugar || '',
+      descripcion: evento.descripcion || '',
       tipo_evento_id: evento.tipo_evento_id || '',
       requiere_confirmacion: EventosModel.eventRequiresConfirmation(evento),
       memberAssignmentMode: allAssigned || assignedIds.length === 0 ? 'all' : 'specific',
@@ -242,6 +245,7 @@ export function useEventosController() {
         fecha: eventForm.fecha,
         hora: eventForm.hora,
         lugar: eventForm.lugar,
+        descripcion: eventForm.descripcion,
         tipoEventoId: eventForm.tipo_evento_id || null,
         requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
       });
@@ -304,6 +308,7 @@ export function useEventosController() {
       fecha: eventForm.fecha,
       hora: eventForm.hora,
       lugar: eventForm.lugar,
+      descripcion: eventForm.descripcion,
       tipoEventoId: eventForm.tipo_evento_id || null,
       requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
       miembroIds,
@@ -560,6 +565,10 @@ export function useEventosController() {
     }
   }
 
+  function formatEventTime(hora) {
+    return EventosModel.formatEventLocalTime(hora, language);
+  }
+
   return {
     clubs,
     clubId,
@@ -623,5 +632,6 @@ export function useEventosController() {
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     memberDisplayName: EventosModel.memberDisplayName,
+    formatEventTime,
   };
 }

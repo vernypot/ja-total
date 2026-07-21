@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import { confirmationLabel } from '../../i18n/helpers';
 import '../../styles/home.css';
 import '../../styles/eventAttendance.css';
@@ -59,6 +60,7 @@ function EventRowCard({
           {evento.lugar ? ` · ${evento.lugar}` : ''}
         </span>
         <span>{formatEventDate(evento.fecha)} · {formatEventTime(evento.hora)}</span>
+        <EventDescriptionToggle description={evento.descripcion} />
         {!memberResponded && needsConfirmation && !showConfirmControls && (
           <span className="portal-home-event-status">
             {confirmationLabel(confirmacion, t)}

@@ -117,7 +117,8 @@ CREATE OR REPLACE FUNCTION public.admin_create_evento(
   p_nombre TEXT DEFAULT NULL,
   p_miembro_ids UUID[] DEFAULT NULL,
   p_tipo_evento_id UUID DEFAULT NULL,
-  p_requiere_confirmacion BOOLEAN DEFAULT TRUE
+  p_requiere_confirmacion BOOLEAN DEFAULT TRUE,
+  p_descripcion TEXT DEFAULT NULL
 )
 RETURNS public.eventos
 LANGUAGE plpgsql
@@ -147,7 +148,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.eventos (
-    club_id, nombre, fecha, hora, lugar, tipo_evento_id, requiere_confirmacion
+    club_id, nombre, fecha, hora, lugar, descripcion, tipo_evento_id, requiere_confirmacion
   )
   VALUES (
     p_club_id,
@@ -155,6 +156,7 @@ BEGIN
     p_fecha,
     p_hora,
     trim(p_lugar),
+    nullif(trim(coalesce(p_descripcion, '')), ''),
     p_tipo_evento_id,
     coalesce(p_requiere_confirmacion, true)
   )
@@ -282,7 +284,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.admin_create_evento(UUID, DATE, TIME, TEXT, TEXT, UUID[], UUID, BOOLEAN) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_create_evento(UUID, DATE, TIME, TEXT, TEXT, UUID[], UUID, BOOLEAN, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_evento_confirmacion(UUID, TEXT) TO authenticated;
 
 -- Allow updating member assignment confirmation

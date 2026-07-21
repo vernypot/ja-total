@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   fecha DATE NOT NULL,  -- church-local calendar date (iglesias.timezone)
   hora TIME NOT NULL,   -- church-local wall-clock time (iglesias.timezone)
   lugar TEXT NOT NULL,
+  descripcion TEXT,
   estado VARCHAR(20) NOT NULL DEFAULT 'activo'
     CHECK (estado IN ('activo', 'inactivo', 'cancelado', 'finalizado')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -132,6 +133,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_evento(
   p_hora TIME,
   p_lugar TEXT,
   p_nombre TEXT DEFAULT NULL,
+  p_descripcion TEXT DEFAULT NULL,
   p_miembro_ids UUID[] DEFAULT '{}'
 )
 RETURNS public.eventos
@@ -147,13 +149,14 @@ BEGIN
     RAISE EXCEPTION 'permission denied for admin_create_evento';
   END IF;
 
-  INSERT INTO public.eventos (club_id, nombre, fecha, hora, lugar)
+  INSERT INTO public.eventos (club_id, nombre, fecha, hora, lugar, descripcion)
   VALUES (
     p_club_id,
     nullif(trim(coalesce(p_nombre, '')), ''),
     p_fecha,
     p_hora,
-    trim(p_lugar)
+    trim(p_lugar),
+    nullif(trim(coalesce(p_descripcion, '')), '')
   )
   RETURNING * INTO result;
 
@@ -254,7 +257,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.admin_create_evento(UUID, DATE, TIME, TEXT, TEXT, UUID[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_create_evento(UUID, DATE, TIME, TEXT, TEXT, TEXT, UUID[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_evento_asistencia(UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_assign_evento_miembros(UUID, UUID[]) TO authenticated;
 

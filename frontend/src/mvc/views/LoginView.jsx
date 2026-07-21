@@ -19,11 +19,13 @@ export default function LoginView({
   setShowForgotPassword,
   forgotMessage,
   handleForgotPassword,
+  modalTitleId = 'login-modal-title',
+  onClose,
 }) {
   const { t } = useLanguage();
 
   return (
-    <div className="login-page">
+    <div className={`login-page${onClose ? ' login-page--modal' : ''}`}>
       <div className="login-page-brand">
         <div className="login-page-brand-content">
           <img src={BRAND_MARK} alt="" className="login-page-brand-mark" />
@@ -37,8 +39,18 @@ export default function LoginView({
         <div className="login-page-form">
           <div className="login-page-form-top">
             <LanguageSwitcher />
+            {onClose && (
+              <button
+                type="button"
+                className="login-modal-close"
+                onClick={onClose}
+                aria-label={t('cancel')}
+              >
+                ×
+              </button>
+            )}
           </div>
-          <h2>{t('loginTitle')} <PageHelpLink pageId="login" compact /></h2>
+          <h2 id={modalTitleId}>{t('loginTitle')} <PageHelpLink pageId="login" compact /></h2>
           <p className="login-page-form-sub">{t('loginSubtitle')}</p>
           {forgotMessage && (
             <div className="login-page-error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' }}>

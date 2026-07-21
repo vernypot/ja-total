@@ -1,4 +1,4 @@
-import { compareEventsByLocalDateTime, normalizeEventDate } from './eventTimezone';
+import { compareEventsByLocalDateTime, formatEventLocalTime, normalizeEventDate } from './eventTimezone';
 
 export function pad2(value) {
   return String(value).padStart(2, '0');
@@ -135,9 +135,8 @@ export function groupEventsByDate(events = []) {
   return map;
 }
 
-export function formatEventTime(hora) {
-  if (!hora) return '';
-  return String(hora).slice(0, 5);
+export function formatEventTime(hora, language = 'es') {
+  return formatEventLocalTime(hora, language);
 }
 
 export function sortEventsByTime(events = []) {

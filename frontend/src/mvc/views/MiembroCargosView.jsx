@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
+import DatePickerInput from '../../components/DatePickerInput';
 
 function formatCargoDate(value, t) {
   if (!value) return t('cargoStartUnknown');
@@ -162,9 +163,8 @@ export default function MiembroCargosView({
               </select>
             </FormField>
             <FormField label={t('planStartDate')} htmlFor="miembro-cargo-inicio" error={fieldErrors.fecha_inicio}>
-              <input
+              <DatePickerInput
                 id="miembro-cargo-inicio"
-                type="date"
                 className="form-input"
                 value={form.fecha_inicio}
                 disabled={form.inicioDesconocido}
@@ -203,12 +203,12 @@ export default function MiembroCargosView({
             </FormField>
             {!form.en_curso && (
               <FormField label={t('planEndDate')} htmlFor="miembro-cargo-fin" error={fieldErrors.fecha_fin} required>
-                <input
+                <DatePickerInput
                   id="miembro-cargo-fin"
-                  type="date"
                   className="form-input"
                   value={form.fecha_fin}
                   onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))}
+                  required
                 />
               </FormField>
             )}

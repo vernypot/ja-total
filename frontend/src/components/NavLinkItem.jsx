@@ -25,16 +25,26 @@ const EMOJI_BY_ICON = {
   settings: '⚙️',
 };
 
-export default function NavLinkItem({ to, active, icon, className = '', onClick, children }) {
+export default function NavLinkItem({ to, active, icon, className = '', onClick, children, reloadOnActive = true }) {
   const { theme } = useTheme();
   const useBlixIcons = isBlixLayoutTheme(theme);
   const emoji = EMOJI_BY_ICON[icon] || '•';
+
+  function handleClick(event) {
+    if (reloadOnActive && active) {
+      event.preventDefault();
+      window.location.reload();
+      return;
+    }
+    onClick?.(event);
+  }
 
   return (
     <Link
       to={to}
       className={`nav-link${active ? ' active' : ''}${className ? ` ${className}` : ''}`}
-      onClick={onClick}
+      onClick={handleClick}
+      aria-current={active ? 'page' : undefined}
     >
       {useBlixIcons ? (
         <>

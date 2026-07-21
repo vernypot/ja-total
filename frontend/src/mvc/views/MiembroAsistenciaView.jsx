@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
+import * as EventosModel from '../../mvc/models/eventos.model';
 import { PageHelpLink } from '../../components/PageHelp';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
@@ -109,7 +110,7 @@ export default function MiembroAsistenciaView({
   updateConfirmation,
   savingConfirmationId = null,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   if (loading) {
     return <p>{t('loadingAttendance')}</p>;
@@ -201,7 +202,7 @@ export default function MiembroAsistenciaView({
                     <td style={{ padding: '12px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                       <div>{evento?.fecha}</div>
                       <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        {String(evento?.hora || '').slice(0, 5)}
+                        {EventosModel.formatEventLocalTime(evento?.hora, language)}
                       </div>
                       {checkedInAt && (
                         <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>

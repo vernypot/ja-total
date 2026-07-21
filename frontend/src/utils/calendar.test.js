@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCalendarCells,
   dateFromKey,
   formatCalendarPeriodLabel,
   groupEventsByDate,
@@ -40,5 +41,12 @@ describe('calendar utils', () => {
 
     expect(range.startDate).toBe('2026-07-01');
     expect(range.endDate).toBe('2026-07-31');
+  });
+
+  it('builds month grid with Sunday as the first column', () => {
+    const cells = buildCalendarCells(2026, 6);
+    expect(cells[0]).toBeNull();
+    expect(cells[3]?.getDate()).toBe(1);
+    expect(cells.length % 7).toBe(0);
   });
 });

@@ -5,6 +5,7 @@ import PlanPeriodoPrint from '../../components/PlanPeriodoPrint';
 import PlanSessionsSummary from '../../components/PlanSessionsSummary';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
+import DatePickerInput from '../../components/DatePickerInput';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 import '../../styles/planPeriodoPrint.css';
@@ -141,25 +142,25 @@ export default function PlanificacionPeriodoView({
                   />
                 </FormField>
                 <FormField label={t('planStartDate')} htmlFor="plan-inicio" error={fieldErrors.fecha_inicio} required>
-                  <input
+                  <DatePickerInput
                     id="plan-inicio"
-                    type="date"
                     className="form-input"
                     value={planForm.fecha_inicio}
                     onChange={e => setPlanForm(f => ({ ...f, fecha_inicio: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
                     aria-invalid={Boolean(fieldErrors.fecha_inicio)}
+                    required
                   />
                 </FormField>
                 <FormField label={t('planEndDate')} htmlFor="plan-fin" error={fieldErrors.fecha_fin} required>
-                  <input
+                  <DatePickerInput
                     id="plan-fin"
-                    type="date"
                     className="form-input"
                     value={planForm.fecha_fin}
                     onChange={e => setPlanForm(f => ({ ...f, fecha_fin: e.target.value }))}
                     style={{ marginTop: '4px', width: '100%' }}
                     aria-invalid={Boolean(fieldErrors.fecha_fin)}
+                    required
                   />
                 </FormField>
                 <FormField label={t('planNumMeetings')} htmlFor="plan-reuniones" error={fieldErrors.num_reuniones} required>

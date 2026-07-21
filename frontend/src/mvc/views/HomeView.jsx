@@ -3,6 +3,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import { PageHelpLink } from '../../components/PageHelp';
 import AdminPendingApprovalsPanel from '../../components/AdminPendingApprovalsPanel';
+import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import '../../styles/home.css';
 
 function HomeNotifications({
@@ -206,6 +207,7 @@ function HomePanels({
                         <div className="home-landing-event-info">
                           <h3>{eventDisplayName(evento) || t('eventUntitled')}</h3>
                           {place && <p>{place}</p>}
+                          <EventDescriptionToggle description={evento.descripcion} />
                         </div>
                         <div className="home-landing-event-time">{formatEventTime(evento.hora)}</div>
                       </article>

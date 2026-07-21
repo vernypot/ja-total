@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isMeetingScheduled, normalizeMeetingHora } from '../mvc/models/planificacion.model';
 import { clampSesiones, defaultSesionesEsperadas } from '../mvc/models/clases.model';
+import DatePickerInput from './DatePickerInput';
 
 const DRAG_TYPE = 'application/x-plan-requisito';
 
@@ -703,8 +704,7 @@ function MeetingColumn({
               <label style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
                 {t('eventDate')}
               </label>
-              <input
-                type="date"
+              <DatePickerInput
                 value={draft.fecha}
                 onChange={e => setDraft(d => ({ ...d, fecha: e.target.value }))}
                 style={fieldStyle}

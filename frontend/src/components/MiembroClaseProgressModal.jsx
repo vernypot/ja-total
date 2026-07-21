@@ -7,6 +7,7 @@ import {
   miembroClaseProgresoEstadoLabel,
 } from '../constants/miembroClaseProgresoEstado';
 import MiembroClaseProgresoEstadoBadge from './MiembroClaseProgresoEstadoBadge';
+import DatePickerInput from './DatePickerInput';
 
 export default function MiembroClaseProgressModal({
   claseNombre,
@@ -131,8 +132,7 @@ export default function MiembroClaseProgressModal({
               {showCompletionDate && (
                 <label style={{ display: 'grid', gap: '4px' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>{t('classCompletionDate')}</span>
-                  <input
-                    type="date"
+                  <DatePickerInput
                     value={draft.fecha_completado}
                     disabled={saving}
                     onChange={e => setDraft(prev => ({ ...prev, fecha_completado: e.target.value }))}
@@ -146,8 +146,7 @@ export default function MiembroClaseProgressModal({
                   <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: 0 }} />
                   <label style={{ display: 'grid', gap: '4px' }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>{t('investiduraDate')}</span>
-                    <input
-                      type="date"
+                    <DatePickerInput
                       value={draft.investidura_fecha}
                       disabled={saving}
                       onChange={e => setDraft(prev => ({ ...prev, investidura_fecha: e.target.value }))}

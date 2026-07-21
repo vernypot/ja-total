@@ -225,9 +225,25 @@ export function formatEventLocalDate(fecha, language = 'es', options = {}) {
   return formatted === 'Invalid Date' || formatted === 'Invalid time value' ? '' : formatted;
 }
 
-export function formatEventLocalTime(hora) {
+export function formatEventLocalTime(hora, language = 'es') {
   if (!hora) return '';
-  return String(hora).slice(0, 5);
+  const normalized = normalizeEventHora(hora);
+  const match = normalized.match(/^(\d{2}):(\d{2})/);
+  if (!match) return '';
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return '';
+
+  const locale = language === 'en' ? 'en-US' : 'es-CO';
+  const stamp = new Date(2000, 0, 1, hour, minute, 0);
+  const formatted = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(stamp);
+
+  return formatted === 'Invalid Date' ? '' : formatted;
 }
 
 export function formatEventLocalDateTime(evento, language = 'es', timeZone = DEFAULT_CHURCH_TIMEZONE) {
@@ -236,6 +252,6 @@ export function formatEventLocalDateTime(evento, language = 'es', timeZone = DEF
     ? getEventChurchTimezone(evento)
     : normalizeChurchTimezone(timeZone);
   const date = formatEventLocalDate(evento.fecha, language, { timeZone: zone });
-  const time = formatEventLocalTime(evento.hora);
+  const time = formatEventLocalTime(evento.hora, language);
   return time ? `${date} · ${time}` : date;
 }

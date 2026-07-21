@@ -5,6 +5,7 @@ import { formatEventLocalDate } from '../../utils/eventTimezone';
 import { PageHelpLink } from '../../components/PageHelp';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import '../../styles/calendario.css';
 import '../../styles/eventAttendance.css';
 
@@ -15,8 +16,8 @@ const VIEW_MODES = [
   { id: 'day', labelKey: 'calendarViewDay' },
 ];
 
-function EventPill({ event, t, selected, onClick }) {
-  const time = formatEventTime(event.hora);
+function EventPill({ event, t, language, selected, onClick }) {
+  const time = formatEventTime(event.hora, language);
   return (
     <button
       type="button"
@@ -74,6 +75,7 @@ function CalendarDayCell({
   isSelected,
   isWeekView,
   t,
+  language,
   selectedEventId,
   onSelectDate,
   onSelectEvent,
@@ -111,6 +113,7 @@ function CalendarDayCell({
           key={event.id}
           event={event}
           t={t}
+          language={language}
           selected={selectedEventId === event.id}
           onClick={e => {
             e.stopPropagation();
@@ -171,7 +174,7 @@ function DayActivitiesPanel({
                     <div style={{ textAlign: 'left' }}>
                       <strong>{event.nombre || t('eventUntitled')}</strong>
                       <div className="calendario-day-event-meta">
-                        {formatEventTime(event.hora) && `${formatEventTime(event.hora)} · `}
+                        {formatEventTime(event.hora, language) && `${formatEventTime(event.hora, language)} · `}
                         {event.lugar}
                         {tipoNombre && ` · ${tipoNombre}`}
                       </div>
@@ -271,12 +274,13 @@ function EventDetailModal({
             </div>
             <div className="calendario-event-detail-row">
               <span className="calendario-event-detail-label">{t('eventTime')}</span>
-              <span>{formatEventTime(event.hora) || '—'}</span>
+              <span>{formatEventTime(event.hora, language) || '—'}</span>
             </div>
             <div className="calendario-event-detail-row">
               <span className="calendario-event-detail-label">{t('eventPlace')}</span>
               <span>{event.lugar || '—'}</span>
             </div>
+            <EventDescriptionToggle description={event.descripcion} className="calendario-event-detail-description" />
             {tipoNombre && (
               <div className="calendario-event-detail-row">
                 <span className="calendario-event-detail-label">{t('eventType')}</span>
@@ -562,6 +566,7 @@ export default function CalendarioClubView({
                           isSelected={dateKey === selectedDateKey}
                           isWeekView={false}
                           t={t}
+                          language={language}
                           selectedEventId={selectedEvent?.id}
                           onSelectDate={selectDate}
                           onSelectEvent={selectEvent}
@@ -581,6 +586,7 @@ export default function CalendarioClubView({
                           isSelected={dateKey === selectedDateKey}
                           isWeekView
                           t={t}
+                          language={language}
                           selectedEventId={selectedEvent?.id}
                           onSelectDate={selectDate}
                           onSelectEvent={selectEvent}
