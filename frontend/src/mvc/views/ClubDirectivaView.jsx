@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import { clubDisplayName } from '../../utils/club';
 import { PageHelpLink } from '../../components/PageHelp';
+import ListPagination from '../../components/ListPagination';
 import BackLink from '../../components/BackLink';
 import '../../styles/form.css';
 
@@ -18,6 +19,7 @@ export default function ClubDirectivaView({
   navigateToMember,
   memberDisplayName,
   getCargoPath,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -51,6 +53,7 @@ export default function ClubDirectivaView({
         <p className="text-muted">{t('noClubDirectiva')}</p>
       ) : (
         <div className="card">
+          <ListPagination {...listPagination} />
           <div
             className="club-directiva-header"
             style={{
@@ -123,6 +126,7 @@ export default function ClubDirectivaView({
               );
             })}
           </div>
+          {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
         </div>
       )}
     </div>

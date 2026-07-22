@@ -2,6 +2,7 @@ import { useEffect, useState, useContext, useMemo } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as ContactosModel from '../models/contactos.model';
@@ -28,6 +29,11 @@ export function useContactosController(miembroId) {
     () => filterBySearch(data, searchQuery, c => [c.nombre, c.telefono, c.relacion, c.estado]),
     [data, searchQuery]
   );
+
+  const {
+    pageItems: paginatedData,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, showInactive]);
 
   async function load() {
     if (!miembroId) {
@@ -151,7 +157,8 @@ export function useContactosController(miembroId) {
   }, [miembroId, showInactive]);
 
   return {
-    data: filteredData,
+    data: paginatedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     showInactive,

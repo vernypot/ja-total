@@ -5,6 +5,7 @@ import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageMembers } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { clubDisplayName } from '../../utils/club';
 import * as MiembrosModel from '../models/miembros.model';
 import * as MiembrosFiltersModel from '../models/miembrosFilters.model';
@@ -135,6 +136,18 @@ export function useMiembrosController() {
 
     return rows;
   }, [data, searchQuery, hideBoardMembers, boardMemberIds, memberFilters, filterMemberIds, filterLoading]);
+
+  const {
+    pageItems: paginatedData,
+    ...listPagination
+  } = useListPagination(filteredData, [
+    searchQuery,
+    showInactive,
+    hideBoardMembers,
+    memberFilters,
+    filterMemberIds,
+    clubId,
+  ]);
 
   async function load() {
     if (!effectiveIglesiaId) {
@@ -656,7 +669,8 @@ export function useMiembrosController() {
   }, [clubId, clubsData]);
 
   return {
-    data: filteredData,
+    data: paginatedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     clubsData,

@@ -6,7 +6,7 @@ import * as AuthModel from '../models/auth.model';
 
 function clearRecoveryParamsFromUrl() {
   if (typeof window === 'undefined') return;
-  window.history.replaceState({}, document.title, '/reset-password');
+  window.history.replaceState({}, document.title, window.location.pathname);
 }
 
 export function useResetPasswordController() {
@@ -57,7 +57,11 @@ export function useResetPasswordController() {
         const { session, error: sessionError, mode } = await AuthModel.completePasswordRecoverySession();
 
         if (sessionError) {
-          if (active) setError(sessionError.message);
+          if (active) {
+            setError(AuthModel.formatAuthRecoveryError(sessionError, t));
+            setLinkExpired(true);
+            setReady(false);
+          }
           return;
         }
 
@@ -71,6 +75,10 @@ export function useResetPasswordController() {
             setReady(true);
             clearRecoveryParamsFromUrl();
           }
+        } else if (mode === 'pkce' && active) {
+          setReady(false);
+          setLinkExpired(true);
+          setError(t('passwordResetPkceHint'));
         } else if (active) {
           setReady(false);
         }

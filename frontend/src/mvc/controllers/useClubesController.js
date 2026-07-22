@@ -6,6 +6,7 @@ import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as ClubesModel from '../models/clubes.model';
@@ -45,6 +46,11 @@ export function useClubesController() {
     () => filterBySearch(data, searchQuery, c => [c.nombre, c.tipos_club?.nombre, c.estado]),
     [data, searchQuery]
   );
+
+  const {
+    pageItems: paginatedData,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, showInactive, iglesiaId]);
 
   async function loadTipos() {
     const { data: tiposData, error: tiposError } = await ClubesModel.fetchTiposClub();
@@ -250,7 +256,8 @@ export function useClubesController() {
   }, [iglesiaId, showInactive]);
 
   return {
-    data: filteredData,
+    data: paginatedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     iglesiasData,

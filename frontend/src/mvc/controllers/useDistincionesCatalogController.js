@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, isAdminOrAbove } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as DistincionesModel from '../models/distinciones.model';
@@ -32,6 +33,11 @@ export function useDistincionesCatalogController() {
     () => filterBySearch(items, searchQuery, item => [item.nombre, item.descripcion]),
     [items, searchQuery]
   );
+
+  const {
+    pageItems: paginatedItems,
+    ...listPagination
+  } = useListPagination(filteredItems, [searchQuery, showInactive]);
 
   async function load() {
     setLoading(true);
@@ -120,7 +126,8 @@ export function useDistincionesCatalogController() {
   }, [showInactive]);
 
   return {
-    items: filteredItems,
+    items: paginatedItems,
+    listPagination,
     showInactive,
     setShowInactive,
     showForm,

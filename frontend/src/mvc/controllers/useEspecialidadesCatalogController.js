@@ -3,6 +3,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as EspecialidadesModel from '../models/especialidades.model';
@@ -49,16 +50,21 @@ export function useEspecialidadesCatalogController() {
     [data, searchQuery]
   );
 
+  const {
+    pageItems,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, effectiveTipoId, seccionFilter, showInactive]);
+
   const groupedData = useMemo(() => {
     if (seccionFilter) return null;
 
-    const hasSectionLinks = filteredData.some(
+    const hasSectionLinks = pageItems.some(
       e => e.seccion_id || e.especialidad_secciones?.id
     );
-    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(filteredData, secciones);
+    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(pageItems, secciones);
 
     if (sectionCatalog.length || hasSectionLinks) {
-      return EspecialidadesModel.groupEspecialidadesBySeccion(filteredData, sectionCatalog);
+      return EspecialidadesModel.groupEspecialidadesBySeccion(pageItems, sectionCatalog);
     }
 
     if (effectiveTipoId) return null;
@@ -67,10 +73,10 @@ export function useEspecialidadesCatalogController() {
       .map(tipo => ({
         seccion: null,
         tipo,
-        especialidades: filteredData.filter(e => e.tipo_id === tipo.id || e.club_tipo === tipo.nombre),
+        especialidades: pageItems.filter(e => e.tipo_id === tipo.id || e.club_tipo === tipo.nombre),
       }))
       .filter(group => group.especialidades.length > 0);
-  }, [filteredData, secciones, tipos, effectiveTipoId, seccionFilter]);
+  }, [pageItems, secciones, tipos, effectiveTipoId, seccionFilter]);
 
   async function load() {
     setError('');
@@ -272,8 +278,9 @@ export function useEspecialidadesCatalogController() {
   }, [activeClub?.tipoId]);
 
   return {
-    data: filteredData,
+    data: pageItems,
     groupedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     secciones,

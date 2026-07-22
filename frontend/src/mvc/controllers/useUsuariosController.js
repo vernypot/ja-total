@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as UsuariosModel from '../models/usuarios.model';
 import * as AuthModel from '../models/auth.model';
@@ -60,6 +61,11 @@ export function useUsuariosController() {
     ]),
     [usuarios, searchQuery]
   );
+
+  const {
+    pageItems: paginatedUsuarios,
+    ...listPagination
+  } = useListPagination(filteredUsuarios, [searchQuery, showInactive]);
 
   useEffect(() => {
     if (!isSuperAdmin(userRole)) navigate(DASHBOARD_HOME_PATH);
@@ -285,7 +291,8 @@ export function useUsuariosController() {
   }, [authLoading, showInactive]);
 
   return {
-    usuarios: filteredUsuarios,
+    usuarios: paginatedUsuarios,
+    listPagination,
     searchQuery,
     setSearchQuery,
     iglesias,

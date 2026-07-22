@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as LandingCmsModel from '../models/landingCms.model';
 
 const THEME_FIELDS = [
@@ -45,6 +46,11 @@ export function useLandingCmsController() {
     () => sortByOrden(items.filter(item => item.section_key === selectedSectionKey)),
     [items, selectedSectionKey],
   );
+
+  const {
+    pageItems: paginatedSectionItems,
+    ...listPagination
+  } = useListPagination(sectionItems, [selectedSectionKey]);
 
   async function loadAll(preserveSectionKey = selectedSectionKey) {
     setLoading(true);
@@ -364,7 +370,8 @@ export function useLandingCmsController() {
     activeTab,
     setActiveTab,
     sections: sortedSections,
-    items: sectionItems,
+    items: paginatedSectionItems,
+    listPagination,
     settings,
     selectedSectionKey,
     sectionForm,

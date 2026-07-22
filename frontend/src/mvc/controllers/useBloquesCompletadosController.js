@@ -6,6 +6,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { applyMiembroClaseProgresoEstadoToDraft } from '../../constants/miembroClaseProgresoEstado';
 import * as ClasesModel from '../models/clases.model';
 import * as EspecialidadesModel from '../models/especialidades.model';
@@ -130,6 +131,11 @@ export function useBloquesCompletadosController() {
     () => filteredMembers.filter(m => !assignedMemberIds.has(m.id)),
     [filteredMembers, assignedMemberIds],
   );
+
+  const {
+    pageItems: paginatedPoolMembers,
+    ...listPagination
+  } = useListPagination(poolMembers, [searchQuery, clubId]);
 
   async function ensureClaseCatalog(claseId) {
     if (!claseId || requisitosByClase[claseId]) return;
@@ -476,7 +482,8 @@ export function useBloquesCompletadosController() {
     error,
     searchQuery,
     setSearchQuery,
-    poolMembers,
+    poolMembers: paginatedPoolMembers,
+    listPagination,
     blocks,
     addBlock,
     removeBlock,

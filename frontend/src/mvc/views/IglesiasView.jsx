@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import FormField from '../../components/FormField';
 import ChurchOrgFields, { ChurchOrgFilters, ChurchOrgPath } from '../../components/ChurchOrgFields';
 import ChurchCountrySelect from '../../components/ChurchCountrySelect';
@@ -63,6 +64,7 @@ export default function IglesiasView({
   navigateToClubes,
   resetChurchForm,
   iglesiaHierarchyLabel,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -168,7 +170,7 @@ export default function IglesiasView({
 
         {canSelectChurch && hasOrgStructure && (
           <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-            {t('showing')} {data.length} {t('of')} {totalCount} {t('churches').toLowerCase()}
+            {t('showing')} {data.length} {t('of')} {listPagination?.totalItems ?? totalCount} {t('churches').toLowerCase()}
           </p>
         )}
 
@@ -233,6 +235,8 @@ export default function IglesiasView({
             </div>
           </div>
         )}
+
+        <ListPagination {...listPagination} />
 
         {loading ? (
           <div className="loading">{t('loadingChurches')}</div>
@@ -352,6 +356,7 @@ export default function IglesiasView({
             })}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

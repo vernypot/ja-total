@@ -13,6 +13,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { DEFAULT_CHURCH_COUNTRY } from '../../utils/churchCountries';
 import { DEFAULT_CHURCH_TIMEZONE } from '../../utils/churchTimezones';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as IglesiasModel from '../models/iglesias.model';
@@ -82,6 +83,11 @@ export function useIglesiasController() {
       IglesiasModel.iglesiaHierarchyLabel(i),
     ]);
   }, [scopedRows, orgFilters, searchQuery]);
+
+  const {
+    pageItems: paginatedData,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, showInactive, orgFilters]);
 
   const loadDivisiones = useCallback(async () => {
     const { data: rows, hasTable } = await OrgModel.fetchDivisiones();
@@ -380,7 +386,8 @@ export function useIglesiasController() {
   }, [orgFilters.campo_id, loadZonas]);
 
   return {
-    data: filteredData,
+    data: paginatedData,
+    listPagination,
     totalCount: scopedRows.length,
     searchQuery,
     setSearchQuery,

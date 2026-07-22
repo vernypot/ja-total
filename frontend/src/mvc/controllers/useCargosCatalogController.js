@@ -3,6 +3,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as CargosModel from '../models/cargos.model';
@@ -51,6 +52,11 @@ export function useCargosCatalogController() {
   }, [data, effectiveTipoId, searchQuery]);
 
   const tree = useMemo(() => CargosModel.buildCargoTree(filteredData), [filteredData]);
+
+  const {
+    pageItems: paginatedTree,
+    ...listPagination
+  } = useListPagination(tree, [searchQuery, showInactive, effectiveTipoId]);
 
   const parentOptions = useMemo(() => {
     const exclude = editingId
@@ -177,7 +183,8 @@ export function useCargosCatalogController() {
   }, [showInactive]);
 
   return {
-    tree,
+    tree: paginatedTree,
+    listPagination,
     filteredData,
     tipos,
     form,

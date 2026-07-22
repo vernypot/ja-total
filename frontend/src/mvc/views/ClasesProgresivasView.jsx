@@ -4,6 +4,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import * as ClasesModel from '../models/clases.model';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import ClaseRequisitosList from '../../components/ClaseRequisitosList';
 import ClaseRequisitosEditor from '../../components/ClaseRequisitosEditor';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -391,6 +392,7 @@ export default function ClasesProgresivasView({
   assignTagFromPool,
   removeTagFromRequisito,
   deleteTagFromPool,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const activeTipo = tipos.find(tipo => tipo.id === effectiveTipoId);
@@ -531,6 +533,8 @@ export default function ClasesProgresivasView({
           </p>
         )}
 
+        <ListPagination {...listPagination} />
+
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
             <h4 style={{ marginTop: 0 }}>{editingId ? t('editClass') : t('newClass')}</h4>
@@ -609,6 +613,7 @@ export default function ClasesProgresivasView({
             />
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

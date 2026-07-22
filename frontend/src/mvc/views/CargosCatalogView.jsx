@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
 import '../../styles/form.css';
@@ -137,6 +138,7 @@ export default function CargosCatalogView({
   toggleEstado,
   toggleExpanded,
   getCargoPath,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -177,6 +179,8 @@ export default function CargosCatalogView({
           {t('showInactive')}
         </label>
       </div>
+
+      <ListPagination {...listPagination} />
 
       {showForm && canManage && (
         <div className="card" style={{ marginBottom: '20px' }}>
@@ -275,6 +279,7 @@ export default function CargosCatalogView({
           ))}
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
     </div>
   );
 }

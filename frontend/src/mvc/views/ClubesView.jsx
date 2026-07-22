@@ -4,6 +4,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import { PageHelpLink } from '../../components/PageHelp';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import LogoAssetField from '../../components/LogoAssetField';
 import FormField from '../../components/FormField';
 import { ChurchOrgPath } from '../../components/ChurchOrgFields';
@@ -43,6 +44,7 @@ export default function ClubesView({
   handleClubLogoRemove,
   handleTipoLogoUpload,
   handleTipoLogoRemove,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -108,6 +110,8 @@ export default function ClubesView({
           </label>
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
+
+        <ListPagination {...listPagination} />
 
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
@@ -290,6 +294,7 @@ export default function ClubesView({
             })}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

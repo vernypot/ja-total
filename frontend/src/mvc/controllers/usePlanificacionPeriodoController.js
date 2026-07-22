@@ -6,6 +6,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as PlanModel from '../models/planificacion.model';
 import * as ClasesModel from '../models/clases.model';
@@ -64,6 +65,11 @@ export function usePlanificacionPeriodoController() {
     () => filterBySearch(plans, searchQuery, p => [p.nombre, p.fecha_inicio, p.fecha_fin]),
     [plans, searchQuery]
   );
+
+  const {
+    pageItems: paginatedPlans,
+    ...listPagination
+  } = useListPagination(filteredPlans, [searchQuery, clubId, showInactive]);
 
   const assignedIds = useMemo(
     () => PlanModel.getAssignedRequisitoIdsFromMap(assignmentsByMeeting),
@@ -542,7 +548,8 @@ export function usePlanificacionPeriodoController() {
     clubId,
     clubs,
     activeClubData,
-    plans: filteredPlans,
+    plans: paginatedPlans,
+    listPagination,
     availableClases,
     expandedPlanId,
     planDetail,

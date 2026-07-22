@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useListPagination } from '../../hooks/useListPagination';
 
 export function useLabelSettingsController() {
   const { t, customLabels, updateLabel, resetLabels, allKeys, translations } = useLanguage();
@@ -7,11 +8,19 @@ export function useLabelSettingsController() {
   const [editingKey, setEditingKey] = useState(null);
   const [editingValue, setEditingValue] = useState('');
 
-  const filteredKeys = allKeys.filter(key =>
-    key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customLabels[key]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    translations.es[key]?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredKeys = useMemo(
+    () => allKeys.filter(key =>
+      key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customLabels[key]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      translations.es[key]?.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [allKeys, customLabels, translations.es, searchTerm]
   );
+
+  const {
+    pageItems: paginatedKeys,
+    ...listPagination
+  } = useListPagination(filteredKeys, [searchTerm]);
 
   function startEdit(key) {
     setEditingKey(key);
@@ -46,7 +55,8 @@ export function useLabelSettingsController() {
     setEditingKey,
     editingValue,
     setEditingValue,
-    filteredKeys,
+    filteredKeys: paginatedKeys,
+    listPagination,
     startEdit,
     saveEdit,
     resetLabel,

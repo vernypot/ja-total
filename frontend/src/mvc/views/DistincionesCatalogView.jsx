@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -23,6 +24,7 @@ export default function DistincionesCatalogView({
   startEdit,
   save,
   toggleEstado,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -67,6 +69,8 @@ export default function DistincionesCatalogView({
           </label>
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
+
+        <ListPagination {...listPagination} />
 
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
@@ -148,6 +152,7 @@ export default function DistincionesCatalogView({
             ))}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

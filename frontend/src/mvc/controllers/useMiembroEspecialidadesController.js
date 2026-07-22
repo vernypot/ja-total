@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as EspecialidadesModel from '../models/especialidades.model';
 import * as MiembrosModel from '../models/miembros.model';
 import { fetchTiposClub } from '../models/clases.model';
@@ -38,13 +39,23 @@ export function useMiembroEspecialidadesController(miembroId) {
     [catalog, assignedIds, requisitosByEsp]
   );
 
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [miembroId]);
+
+  const {
+    pageItems: paginatedUnassigned,
+    ...unassignedListPagination
+  } = useListPagination(unassigned, [miembroId]);
+
   const unassignedGrouped = useMemo(() => {
-    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(unassigned, secciones);
-    if (!sectionCatalog.length && !unassigned.some(e => e.seccion_id || e.especialidad_secciones?.id)) {
+    const sectionCatalog = EspecialidadesModel.collectSeccionesFromEspecialidades(paginatedUnassigned, secciones);
+    if (!sectionCatalog.length && !paginatedUnassigned.some(e => e.seccion_id || e.especialidad_secciones?.id)) {
       return null;
     }
-    return EspecialidadesModel.groupEspecialidadesBySeccion(unassigned, sectionCatalog);
-  }, [unassigned, secciones]);
+    return EspecialidadesModel.groupEspecialidadesBySeccion(paginatedUnassigned, sectionCatalog);
+  }, [paginatedUnassigned, secciones]);
 
   async function load() {
     if (!miembroId) return;
@@ -144,8 +155,10 @@ export function useMiembroEspecialidadesController(miembroId) {
   }, [miembroId]);
 
   return {
-    assigned,
-    unassigned,
+    assigned: paginatedAssigned,
+    unassigned: paginatedUnassigned,
+    listPagination,
+    unassignedListPagination,
     unassignedGrouped,
     requisitosByEsp,
     memberTipos,

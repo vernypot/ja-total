@@ -6,6 +6,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as UnidadesModel from '../models/unidades.model';
 import * as ClubesModel from '../models/clubes.model';
 
@@ -61,6 +62,11 @@ export function useUnidadesController() {
     const filtered = members.filter(member => !assignedMemberIds.has(member.id));
     return filterBySearch(filtered, searchQuery, member => UnidadesModel.memberDisplayNameFromRow(member));
   }, [members, assignedMemberIds, searchQuery]);
+
+  const {
+    pageItems: paginatedPoolMembers,
+    ...listPagination
+  } = useListPagination(poolMembers, [searchQuery, clubId]);
 
   const displayUnidades = useMemo(
     () => UnidadesModel.attachMembersToUnidadAssignments(unidades, membersById),
@@ -373,7 +379,8 @@ export function useUnidadesController() {
     unidades: displayUnidades,
     members,
     membersById,
-    poolMembers,
+    poolMembers: paginatedPoolMembers,
+    listPagination,
     loading,
     error,
     message,

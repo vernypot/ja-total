@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
 import { campoTipoLabel } from '../models/estructuraOrganizacional.model';
@@ -34,6 +35,7 @@ export default function EstructuraOrganizacionalView({
   goUp,
   canDrillDown,
   canGoUp,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -160,6 +162,8 @@ export default function EstructuraOrganizacionalView({
           </div>
         )}
 
+        <ListPagination {...listPagination} />
+
         {loading ? (
           <div className="loading">{t('loadingData')}</div>
         ) : items.length === 0 ? (
@@ -228,6 +232,7 @@ export default function EstructuraOrganizacionalView({
             ))}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

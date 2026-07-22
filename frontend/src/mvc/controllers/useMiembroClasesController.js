@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as ClasesModel from '../models/clases.model';
 import * as MiembrosModel from '../models/miembros.model';
 
@@ -47,6 +48,16 @@ export function useMiembroClasesController(miembroId) {
     () => available.filter(c => !assignedIds.has(c.id)),
     [available, assignedIds]
   );
+
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [miembroId]);
+
+  const {
+    pageItems: paginatedUnassigned,
+    ...unassignedListPagination
+  } = useListPagination(unassigned, [miembroId]);
 
   async function load() {
     if (!miembroId) return;
@@ -333,8 +344,10 @@ export function useMiembroClasesController(miembroId) {
   }, [miembroId]);
 
   return {
-    assigned,
-    unassigned,
+    assigned: paginatedAssigned,
+    unassigned: paginatedUnassigned,
+    listPagination,
+    unassignedListPagination,
     requisitosByClase,
     completionsByAssignment,
     memberTipos,

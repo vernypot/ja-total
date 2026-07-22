@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import BloquesCompletadosBoard from '../../components/BloquesCompletadosBoard';
 import BloquesCompletadosApplyModal from '../../components/BloquesCompletadosApplyModal';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -37,6 +38,7 @@ export default function BloquesCompletadosView({
   requisitoLabel,
   defaultValidatorName,
   actionTypes,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -62,6 +64,8 @@ export default function BloquesCompletadosView({
           onChange={setSearchQuery}
         />
       </div>
+
+      <ListPagination {...listPagination} />
 
       {error && (
         <div className="alert alert-error" style={{ marginBottom: '12px' }}>
@@ -108,6 +112,8 @@ export default function BloquesCompletadosView({
           t={t}
         />
       )}
+
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
 
       <BloquesCompletadosApplyModal
         pending={pendingApply}

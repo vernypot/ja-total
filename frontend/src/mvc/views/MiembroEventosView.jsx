@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
+import ListPagination from '../../components/ListPagination';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
@@ -172,6 +173,7 @@ export default function MiembroEventosView({
   isEventInFuture,
   getEventChurchTimezone,
   savingConfirmationId = null,
+  listPagination,
 }) {
   const { t, language } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -278,6 +280,8 @@ export default function MiembroEventosView({
         </div>
       )}
 
+      <ListPagination {...listPagination} />
+
       {allRows.length === 0 ? (
         <p className="text-muted">{t('noMemberEvents')}</p>
       ) : (
@@ -320,6 +324,7 @@ export default function MiembroEventosView({
           )}
         </>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       {confirmDialog}
     </div>
   );

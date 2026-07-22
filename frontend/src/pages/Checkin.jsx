@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import { PageHelpLink } from '../components/PageHelp';
+import ListPagination from '../components/ListPagination';
 import EventCheckinScanner from '../components/EventCheckinScanner';
 import EventDescriptionToggle from '../components/EventDescriptionToggle';
 import { AttendanceBadge, EventActionButton } from '../components/EventAttendanceControls';
@@ -32,6 +33,7 @@ export default function Checkin() {
     getAsistenciaFromRow,
     getCheckedInAtFromRow,
     getTipoEventoNombre,
+    listPagination,
   } = useEventCheckinController();
 
   function confirmEndEvent() {
@@ -134,10 +136,12 @@ export default function Checkin() {
               <h2>{t('eventAttendanceRegistry')}</h2>
               <span className="checkin-session-registry-count">
                 {t('attendanceSummary')
-                  .replace('{assigned}', String(rows.length))
+                  .replace('{assigned}', String(listPagination?.totalItems ?? rows.length))
                   .replace('{recorded}', String(recordedCount))}
               </span>
             </div>
+
+            <ListPagination {...listPagination} />
 
             {rows.length === 0 ? (
               <p className="text-muted">{t('eventQrAttendanceEmpty')}</p>
@@ -163,6 +167,7 @@ export default function Checkin() {
                 })}
               </div>
             )}
+            {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
           </section>
         </>
       )}
