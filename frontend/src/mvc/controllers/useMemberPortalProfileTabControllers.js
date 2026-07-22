@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useMemberPortal } from '../../context/MemberPortalContext';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
@@ -199,6 +200,11 @@ export function useMemberPortalContactosController() {
     [data, searchQuery]
   );
 
+  const {
+    pageItems: paginatedData,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, showInactive]);
+
   async function load() {
     if (!session?.sessionToken) {
       setLoading(false);
@@ -224,7 +230,8 @@ export function useMemberPortalContactosController() {
   }, [session?.sessionToken]);
 
   return {
-    data: filteredData,
+    data: paginatedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     showInactive,
@@ -283,8 +290,14 @@ export function useMemberPortalEspecialidadesController() {
     load();
   }, [session?.sessionToken]);
 
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [session?.sessionToken]);
+
   return {
-    assigned,
+    assigned: paginatedAssigned,
+    listPagination,
     unassigned: [],
     unassignedGrouped: null,
     requisitosByEsp,
@@ -341,8 +354,14 @@ export function useMemberPortalCargosController() {
     load();
   }, [session?.sessionToken]);
 
+  const {
+    pageItems: paginatedActive,
+    ...listPagination
+  } = useListPagination(active, [session?.sessionToken]);
+
   return {
-    active,
+    active: paginatedActive,
+    listPagination,
     history,
     assignableCargos: [],
     catalog,
@@ -463,8 +482,14 @@ export function useMemberPortalClasesController() {
     load();
   }, [session?.sessionToken]);
 
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [session?.sessionToken]);
+
   return {
-    assigned,
+    assigned: paginatedAssigned,
+    listPagination,
     unassigned: [],
     requisitosByClase,
     seccionesByClase,
@@ -588,8 +613,14 @@ export function useMemberPortalAsistenciaController() {
     load();
   }, [session?.sessionToken]);
 
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(rows, [session?.sessionToken]);
+
   return {
-    rows,
+    rows: paginatedRows,
+    listPagination,
     stats,
     error,
     loading,

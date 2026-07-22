@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as OrgModel from '../models/estructuraOrganizacional.model';
 
@@ -43,6 +44,11 @@ export function useEstructuraOrganizacionalController() {
     ]),
     [items, searchQuery]
   );
+
+  const {
+    pageItems: paginatedItems,
+    ...listPagination
+  } = useListPagination(filteredItems, [searchQuery, divisionId, unionId, campoId, showInactive]);
 
   const loadParents = useCallback(async () => {
     const next = {};
@@ -286,7 +292,8 @@ export function useEstructuraOrganizacionalController() {
   return {
     level,
     levels: LEVELS,
-    items: filteredItems,
+    items: paginatedItems,
+    listPagination,
     breadcrumb,
     levelTitle,
     levelHint,

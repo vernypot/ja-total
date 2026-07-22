@@ -6,6 +6,7 @@ import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as EventosModel from '../models/eventos.model';
 import * as MiembrosModel from '../models/miembros.model';
@@ -73,6 +74,11 @@ export function useEventosController() {
     ]),
     [events, searchQuery]
   );
+
+  const {
+    pageItems: paginatedEvents,
+    ...listPagination
+  } = useListPagination(filteredEvents, [searchQuery, showInactive, clubId]);
 
   async function loadTiposEvento() {
     const { data } = await TiposEventoModel.fetchTiposEvento({ showInactive: false });
@@ -573,7 +579,8 @@ export function useEventosController() {
     clubs,
     clubId,
     activeClubData,
-    events: filteredEvents,
+    events: paginatedEvents,
+    listPagination,
     tiposEvento,
     clubMembers,
     expandedEventId,

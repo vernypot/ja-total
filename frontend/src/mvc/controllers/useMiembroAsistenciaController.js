@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as EventosModel from '../models/eventos.model';
 
 const attendanceHelpers = {
@@ -38,6 +39,11 @@ export function useMiembroAsistenciaController(miembroId) {
     setLoading(false);
   }
 
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(rows, [miembroId]);
+
   const stats = useMemo(
     () => EventosModel.computeMemberAttendanceStats(rows, attendanceHelpers),
     [rows],
@@ -48,7 +54,8 @@ export function useMiembroAsistenciaController(miembroId) {
   }, [miembroId]);
 
   return {
-    rows,
+    rows: paginatedRows,
+    listPagination,
     stats,
     error,
     loading,

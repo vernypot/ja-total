@@ -3,6 +3,7 @@ import PasswordReset from '../../components/PasswordReset';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -37,6 +38,7 @@ export default function UsuariosView({
   resetForm,
   openPasswordReset,
   closePasswordReset,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -190,7 +192,7 @@ export default function UsuariosView({
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-          <h3 style={{ margin: 0 }}>👥 {t('usersCount')} ({usuarios.length})</h3>
+          <h3 style={{ margin: 0 }}>👥 {t('usersCount')} ({listPagination?.totalItems ?? usuarios.length})</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -199,6 +201,7 @@ export default function UsuariosView({
             </label>
           </div>
         </div>
+        <ListPagination {...listPagination} />
         {usuarios.length === 0 ? (
           <p className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
             {isSearching ? t('noSearchResults') : t('noUsers')}
@@ -262,6 +265,7 @@ export default function UsuariosView({
             </table>
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
 
       {showPasswordReset && (

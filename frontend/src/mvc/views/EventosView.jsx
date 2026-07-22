@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import FormField from '../../components/FormField';
 import DatePickerInput from '../../components/DatePickerInput';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -309,6 +310,7 @@ export default function EventosView({
   getTipoEventoNombre,
   memberDisplayName,
   formatEventTime,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -501,6 +503,8 @@ export default function EventosView({
               </div>
             </div>
           )}
+
+          <ListPagination {...listPagination} />
 
           {loading ? (
             <div className="loading">{t('loadingEvents')}</div>
@@ -807,6 +811,7 @@ export default function EventosView({
               })}
             </div>
           )}
+          {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
         </div>
       )}
       {confirmDialog}

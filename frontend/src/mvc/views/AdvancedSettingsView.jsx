@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import ListPagination from '../../components/ListPagination';
 import ThemeColorOverridesPanel from '../../components/ThemeColorOverridesPanel';
 import '../../styles/form.css';
 import '../../styles/theme-color-overrides.css';
@@ -24,6 +25,7 @@ export default function AdvancedSettingsView({
   addLabel,
   syncWithDefaults,
   themeColors,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -76,6 +78,8 @@ export default function AdvancedSettingsView({
           </div>
         )}
 
+        <ListPagination {...listPagination} />
+
         {loading ? (
           <div className="loading">{t('loadingLabels')}</div>
         ) : filteredLabels.length === 0 ? (
@@ -123,6 +127,7 @@ export default function AdvancedSettingsView({
             </table>
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

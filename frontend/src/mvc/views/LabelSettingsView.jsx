@@ -1,4 +1,5 @@
 import '../../styles/form.css';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 
 export default function LabelSettingsView({
@@ -16,6 +17,7 @@ export default function LabelSettingsView({
   saveEdit,
   resetLabel,
   handleResetAll,
+  listPagination,
 }) {
   return (
     <div className="container">
@@ -30,6 +32,8 @@ export default function LabelSettingsView({
             🔄 {t('resetAll')}
           </button>
         </div>
+
+        <ListPagination {...listPagination} />
 
         <div style={{ display: 'grid', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
           {filteredKeys.map(key => {
@@ -66,6 +70,7 @@ export default function LabelSettingsView({
             );
           })}
         </div>
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

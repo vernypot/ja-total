@@ -31,6 +31,10 @@ if (!isSupabaseConfigured && import.meta.env.DEV) {
 export const sb = createClient(url, key, {
   auth: {
     detectSessionInUrl: true,
-    flowType: 'pkce',
+    // Implicit flow so password-reset links work when opened from email in any browser.
+    // PKCE stores the verifier in the browser that sends the email, which breaks admin/user mail links.
+    flowType: 'implicit',
+    persistSession: true,
+    autoRefreshToken: true,
   },
 });

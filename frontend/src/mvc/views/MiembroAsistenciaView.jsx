@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import * as EventosModel from '../../mvc/models/eventos.model';
 import { PageHelpLink } from '../../components/PageHelp';
+import ListPagination from '../../components/ListPagination';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import '../../styles/eventAttendance.css';
@@ -109,6 +110,7 @@ export default function MiembroAsistenciaView({
   canMemberConfirmEvent,
   updateConfirmation,
   savingConfirmationId = null,
+  listPagination,
 }) {
   const { t, language } = useLanguage();
 
@@ -142,6 +144,8 @@ export default function MiembroAsistenciaView({
             .replace('{past}', String(stats.pastAssigned))}
         </p>
       )}
+
+      <ListPagination {...listPagination} />
 
       {rows.length === 0 ? (
         <p className="text-muted">{t('noMemberAttendance')}</p>
@@ -259,6 +263,7 @@ export default function MiembroAsistenciaView({
           </table>
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
     </div>
   );
 }

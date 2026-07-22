@@ -13,6 +13,7 @@ import {
   miembroClaseProgresoEstadoStyle,
 } from '../../constants/miembroClaseProgresoEstado';
 import { clubDisplayName } from '../../utils/club';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 
 const classActionBtnStyle = (completed) => ({
@@ -204,6 +205,8 @@ export default function MiembroClasesView({
   solicitudes = [],
   reviewSolicitud,
   reviewingSolicitudId = null,
+  listPagination,
+  unassignedListPagination,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -282,6 +285,7 @@ export default function MiembroClasesView({
             ➕ {t('add')}
           </button>
         </div>
+        <ListPagination {...unassignedListPagination} />
       </div>
       )}
 
@@ -295,6 +299,7 @@ export default function MiembroClasesView({
       )}
 
       <h4>{t('assignedClasses')}</h4>
+      <ListPagination {...listPagination} />
       {assigned.length === 0 ? (
         <p className="text-muted">{t('noAssignedClasses')}</p>
       ) : (
@@ -450,6 +455,7 @@ export default function MiembroClasesView({
           })}
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
 
       {progressModalRow && (
         <MiembroClaseProgressModal

@@ -4,6 +4,7 @@ import { IglesiaContext } from '../../context/IglesiaContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as ClasesModel from '../models/clases.model';
@@ -68,17 +69,22 @@ export function useClasesProgresivasController() {
     [data, searchQuery]
   );
 
+  const {
+    pageItems,
+    ...listPagination
+  } = useListPagination(filteredData, [searchQuery, showInactive, effectiveTipoId]);
+
   const groupedData = useMemo(() => {
     if (effectiveTipoId) return null;
     return tipos
       .map(tipo => ({
         tipo,
         clases: ClasesModel.sortClasesByOrden(
-          filteredData.filter(c => c.tipo_id === tipo.id || c.club_tipo === tipo.nombre),
+          pageItems.filter(c => c.tipo_id === tipo.id || c.club_tipo === tipo.nombre),
         ),
       }))
       .filter(group => group.clases.length > 0);
-  }, [filteredData, tipos, effectiveTipoId]);
+  }, [pageItems, tipos, effectiveTipoId]);
 
   async function loadClubs() {
     if (!activeIglesia) {
@@ -592,8 +598,9 @@ export function useClasesProgresivasController() {
   }, [activeClub?.tipoId]);
 
   return {
-    data: filteredData,
+    data: pageItems,
     groupedData,
+    listPagination,
     searchQuery,
     setSearchQuery,
     tipos,

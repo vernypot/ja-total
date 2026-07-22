@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import BackLink from '../../components/BackLink';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
@@ -111,6 +112,7 @@ export default function UnidadesView({
   roleLabel,
   roles,
   getCaptainName,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -251,6 +253,8 @@ export default function UnidadesView({
                 <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
               </div>
 
+              <ListPagination {...listPagination} />
+
               <UnidadesBoard
                 canManage={canManage}
                 poolMembers={poolMembers}
@@ -269,6 +273,7 @@ export default function UnidadesView({
                 assigningKey={assigningKey}
                 t={t}
               />
+              {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
             </>
           )}
         </>

@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
+import { useListPagination } from '../../hooks/useListPagination';
 import { stripHtmlTags } from '../../utils/sanitizeHtml';
 import { validateForm } from '../../utils/validateForm';
 import * as NoticiasModel from '../models/noticias.model';
@@ -54,6 +55,11 @@ export function useNoticiasController() {
     ]),
     [items, searchQuery]
   );
+
+  const {
+    pageItems: paginatedItems,
+    ...listPagination
+  } = useListPagination(filteredItems, [searchQuery, showInactive]);
 
   async function load() {
     if (!effectiveIglesiaId) {
@@ -189,7 +195,8 @@ export function useNoticiasController() {
     effectiveIglesiaId,
     iglesiaNombre,
     clubs,
-    items: filteredItems,
+    items: paginatedItems,
+    listPagination,
     showForm,
     showInactive,
     setShowInactive,

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as LabelsModel from '../models/labels.model';
 import { useThemeColorOverridesController } from './useThemeColorOverridesController';
 
@@ -43,11 +44,19 @@ export function useAdvancedSettingsController() {
     if (query) setSearchTerm(query);
   }, [searchParams]);
 
-  const filteredLabels = labels.filter(label =>
-    label.label_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    label.label_es.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    label.label_en.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLabels = useMemo(
+    () => labels.filter(label =>
+      label.label_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      label.label_es.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      label.label_en.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [labels, searchTerm]
   );
+
+  const {
+    pageItems: paginatedLabels,
+    ...listPagination
+  } = useListPagination(filteredLabels, [searchTerm]);
 
   function startEdit(label) {
     setEditingId(label.id);
@@ -147,7 +156,8 @@ export function useAdvancedSettingsController() {
     setFormMode,
     newLabel,
     setNewLabel,
-    filteredLabels,
+    filteredLabels: paginatedLabels,
+    listPagination,
     startEdit,
     saveEdit,
     deleteLabel,

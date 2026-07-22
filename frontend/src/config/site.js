@@ -42,5 +42,8 @@ export function getAuthRedirectOrigin() {
 }
 
 export function getPasswordResetRedirectUrl() {
+  if (import.meta.env.DEV && typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin.replace(/\/$/, '')}/reset-password`;
+  }
   return `${getAuthRedirectOrigin()}/reset-password`;
 }

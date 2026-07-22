@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import PlanAgendaBoard from '../../components/PlanAgendaBoard';
 import PlanPeriodoPrint from '../../components/PlanPeriodoPrint';
 import PlanSessionsSummary from '../../components/PlanSessionsSummary';
@@ -59,6 +60,7 @@ export default function PlanificacionPeriodoView({
   printPayload,
   printingPlanId,
   selectClub,
+  listPagination,
 }) {
   const { t, language } = useLanguage();
 
@@ -124,6 +126,8 @@ export default function PlanificacionPeriodoView({
       ) : (
         <>
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} placeholder={t('searchPlans')} />
+
+          <ListPagination {...listPagination} />
 
           {showForm && canManage && (
             <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
@@ -376,6 +380,7 @@ export default function PlanificacionPeriodoView({
               })}
             </div>
           )}
+          {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
         </>
       )}
 

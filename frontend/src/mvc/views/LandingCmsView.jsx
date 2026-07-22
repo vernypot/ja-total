@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -282,6 +283,7 @@ export default function LandingCmsView({
   updateSectionStyle,
   setShowSectionForm,
   setShowItemForm,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -536,6 +538,8 @@ export default function LandingCmsView({
                   </div>
                 </div>
 
+                <ListPagination {...listPagination} />
+
                 {showItemForm && itemForm && (
                   <div style={{ padding: '16px', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', marginBottom: '16px' }}>
                     <h4 style={{ marginTop: 0 }}>{itemForm.id ? t('edit') : t('add')} · {itemForm.item_type}</h4>
@@ -599,6 +603,7 @@ export default function LandingCmsView({
                     ))}
                   </div>
                 )}
+                {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as EventosModel from '../models/eventos.model';
 import { getEventChurchTimezone } from '../../utils/eventTimezone';
 import {
@@ -40,6 +41,11 @@ export function useEventCheckinController() {
     () => EventosModel.sortEventAttendanceRows(rows),
     [rows]
   );
+
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(sortedRows, [eventoId]);
 
   const loadRegistry = useCallback(async () => {
     if (!eventoId) return;
@@ -156,7 +162,8 @@ export function useEventCheckinController() {
   return {
     eventoId,
     evento,
-    rows: sortedRows,
+    rows: paginatedRows,
+    listPagination,
     recordedCount,
     loading,
     error,

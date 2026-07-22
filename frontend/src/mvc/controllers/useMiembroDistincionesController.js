@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as DistincionesModel from '../models/distinciones.model';
@@ -40,6 +41,11 @@ export function useMiembroDistincionesController(miembroId) {
     () => catalog.filter(item => (item.estado || 'activo') === 'activo' && !assignedIds.has(item.id)),
     [catalog, assignedIds]
   );
+
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [miembroId]);
 
   async function load() {
     if (!miembroId) return;
@@ -139,7 +145,8 @@ export function useMiembroDistincionesController(miembroId) {
   }, [miembroId]);
 
   return {
-    assigned,
+    assigned: paginatedAssigned,
+    listPagination,
     assignable,
     memberClubs,
     error,

@@ -2,6 +2,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import { isNoticiaExpired } from '../models/noticias.model';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
@@ -35,6 +36,7 @@ export default function NoticiasView({
   toggleEstado,
   remove,
   formatDate,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -186,6 +188,8 @@ export default function NoticiasView({
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
 
+        <ListPagination {...listPagination} />
+
         {loading ? (
           <p>{t('loading')}</p>
         ) : !items.length ? (
@@ -248,6 +252,7 @@ export default function NoticiasView({
             ))}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

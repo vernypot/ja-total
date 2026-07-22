@@ -4,6 +4,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import { isEspecialidadAssignable } from '../models/especialidades.model';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -240,6 +241,7 @@ export default function EspecialidadesCatalogView({
   clearTipoFilter,
   showAllTypes,
   setShowAllTypes,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const [collapsedSections, setCollapsedSections] = useState({});
@@ -352,11 +354,13 @@ export default function EspecialidadesCatalogView({
         )}
 
         <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-          {t('specialtyListCount').replace('{{count}}', String(data.length))}
+          {t('specialtyListCount').replace('{{count}}', String(listPagination?.totalItems ?? data.length))}
           {effectiveTipoId && !showAllTypes && (
             <span> · {t('specialtyListFilteredByClub')}</span>
           )}
         </p>
+
+        <ListPagination {...listPagination} />
 
         {showForm && canManage && (
           <div style={{ padding: '15px', backgroundColor: '#f0f9ff', border: '2px solid #0891b2', borderRadius: '8px', marginBottom: '20px' }}>
@@ -443,6 +447,7 @@ export default function EspecialidadesCatalogView({
             ))}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

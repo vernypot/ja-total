@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMemberPortal } from '../../context/MemberPortalContext';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import * as EventosModel from '../models/eventos.model';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
@@ -90,12 +91,18 @@ export function useMemberPortalEventosController() {
     return rows;
   }, [rows, attendanceFilter]);
 
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(filteredRows, [attendanceFilter]);
+
   useEffect(() => {
     load();
   }, [session?.sessionToken]);
 
   return {
-    rows: filteredRows,
+    rows: paginatedRows,
+    listPagination,
     allRows: rows,
     attendedCount,
     attendanceFilter,

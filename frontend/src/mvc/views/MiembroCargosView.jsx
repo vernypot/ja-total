@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import ListPagination from '../../components/ListPagination';
 import FormField from '../../components/FormField';
 import DatePickerInput from '../../components/DatePickerInput';
 
@@ -102,6 +103,7 @@ export default function MiembroCargosView({
   closeAssignment,
   getCargoFromLink,
   getCargoPath,
+  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -234,6 +236,7 @@ export default function MiembroCargosView({
       )}
 
       <h4 style={{ marginTop: '24px' }}>{t('currentCargos')}</h4>
+      <ListPagination {...listPagination} />
       {active.length === 0 ? (
         <p className="text-muted">{t('noCurrentCargos')}</p>
       ) : (
@@ -253,6 +256,7 @@ export default function MiembroCargosView({
           ))}
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
 
       <h4 style={{ marginTop: '24px' }}>{t('cargoHistory')}</h4>
       {history.length === 0 ? (

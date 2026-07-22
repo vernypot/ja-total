@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ClubContext } from '../../context/ClubContext';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as CargosModel from '../models/cargos.model';
 
 export function useClubDirectivaController() {
@@ -16,6 +17,11 @@ export function useClubDirectivaController() {
   const [catalog, setCatalog] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(rows, [clubId]);
 
   async function load() {
     if (!clubId) {
@@ -67,7 +73,8 @@ export function useClubDirectivaController() {
 
   return {
     club,
-    rows,
+    rows: paginatedRows,
+    listPagination,
     error,
     loading,
     clubId,

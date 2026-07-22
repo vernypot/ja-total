@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as CargosModel from '../models/cargos.model';
@@ -43,6 +44,11 @@ export function useMiembroCargosController(miembroId) {
     () => CargosModel.splitMiembroCargos(assignments),
     [assignments]
   );
+
+  const {
+    pageItems: paginatedActive,
+    ...listPagination
+  } = useListPagination(active, [miembroId]);
 
   const ongoingCargoIds = useMemo(
     () => new Set(active.map(row => row.cargo_id || row.cargos?.id).filter(Boolean)),
@@ -178,7 +184,8 @@ export function useMiembroCargosController(miembroId) {
   }, [miembroId]);
 
   return {
-    active,
+    active: paginatedActive,
+    listPagination,
     history,
     assignableCargos,
     catalog,

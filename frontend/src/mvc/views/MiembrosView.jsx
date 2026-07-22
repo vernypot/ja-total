@@ -4,6 +4,7 @@ import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import { memberDisplayName } from '../../utils/memberDisplayName';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import MemberFiltersPanel from '../../components/MemberFiltersPanel';
 import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -203,6 +204,7 @@ export default function MiembrosView({
   filterRequisitos,
   filterEspecialidades,
   filterEventos,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -445,6 +447,8 @@ export default function MiembrosView({
         {bulkActionError && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{bulkActionError}</div>}
         {bulkActionMessage && <div className="alert alert-success" style={{ marginBottom: '15px' }}>{bulkActionMessage}</div>}
 
+        <ListPagination {...listPagination} />
+
         {canManage && data.length > 0 && (
           <div
             style={{
@@ -470,7 +474,7 @@ export default function MiembrosView({
                 />
                 {t('membersSelectedCount')
                   .replace('{selected}', String(selectedCount))
-                  .replace('{total}', String(data.length))}
+                  .replace('{total}', String(listPagination?.totalItems ?? data.length))}
               </label>
               {selectedCount > 0 && (
                 <button
@@ -572,6 +576,7 @@ export default function MiembrosView({
             ))}
           </div>
         )}
+        {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { useListPagination } from '../../hooks/useListPagination';
 import * as EventosModel from '../models/eventos.model';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
 
@@ -47,6 +48,11 @@ export function useMiembroEventosController(miembroId) {
     return rows;
   }, [rows, attendanceFilter]);
 
+  const {
+    pageItems: paginatedRows,
+    ...listPagination
+  } = useListPagination(filteredRows, [attendanceFilter]);
+
   async function updateAttendance(eventoMiembroId, estado) {
     if (!canManage) return;
     setError('');
@@ -76,7 +82,8 @@ export function useMiembroEventosController(miembroId) {
   }, [miembroId]);
 
   return {
-    rows: filteredRows,
+    rows: paginatedRows,
+    listPagination,
     allRows: rows,
     attendedCount,
     attendanceFilter,

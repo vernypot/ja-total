@@ -1,6 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
+import ListPagination from '../../components/ListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 
@@ -23,6 +24,7 @@ export default function ContactosView({
   cancelForm,
   toggleForm,
   miembroId,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
@@ -135,6 +137,8 @@ export default function ContactosView({
         <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
       </div>
 
+      <ListPagination {...listPagination} />
+
       {data.length === 0 ? (
         <p className="text-muted">{isSearching ? t('noSearchResults') : t('noContacts')}</p>
       ) : (
@@ -182,6 +186,7 @@ export default function ContactosView({
           ))}
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
     </div>
   );
 }

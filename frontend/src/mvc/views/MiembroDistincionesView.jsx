@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import ListPagination from '../../components/ListPagination';
 import FormField from '../../components/FormField';
 import DatePickerInput from '../../components/DatePickerInput';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -23,6 +24,7 @@ export default function MiembroDistincionesView({
   assignDistincion,
   unassignDistincion,
   getDistincionFromRow,
+  listPagination,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -141,6 +143,7 @@ export default function MiembroDistincionesView({
       )}
 
       <h4 style={{ marginTop: '24px' }}>{t('assignedDistinciones')}</h4>
+      <ListPagination {...listPagination} />
       {assigned.length === 0 ? (
         <p className="text-muted">{t('noAssignedDistinciones')}</p>
       ) : (
@@ -187,6 +190,7 @@ export default function MiembroDistincionesView({
           })}
         </div>
       )}
+      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       {confirmDialog}
     </div>
   );
