@@ -4,6 +4,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useMemberPortal } from '../../context/MemberPortalContext';
 import { parseTokenFromQrPayload } from '../models/carnet.model';
 import * as MemberPortalModel from '../models/memberPortal.model';
+import { PORTAL_PROFILE_PATH } from '../../utils/dashboardRoutes';
 
 function mapPortalLoginError(message, t) {
   const text = String(message || '');
@@ -29,7 +30,7 @@ export function useMemberPortalLoginController() {
   const [resolving, setResolving] = useState(false);
 
   const goToDashboard = useCallback(() => {
-    navigate('/dashboard/home', { replace: true });
+    navigate(PORTAL_PROFILE_PATH, { replace: true });
   }, [navigate]);
 
   const resolveToken = useCallback(async (rawToken) => {

@@ -417,6 +417,44 @@ BEGIN
       )
       INTO v_result;
 
+    WHEN 'distinciones' THEN
+      IF to_regclass('public.miembro_distincion') IS NULL THEN
+        v_result := json_build_object('assigned', '[]'::json);
+      ELSE
+        SELECT json_build_object(
+          'assigned', coalesce((
+            SELECT json_agg(row_data ORDER BY row_data->>'fecha_otorgada' DESC NULLS LAST)
+            FROM (
+              SELECT json_build_object(
+                'id', md.id,
+                'miembro_id', md.miembro_id,
+                'distincion_id', md.distincion_id,
+                'club_id', md.club_id,
+                'fecha_otorgada', md.fecha_otorgada,
+                'notas', md.notas,
+                'estado', md.estado,
+                'distinciones', json_build_object(
+                  'id', d.id,
+                  'nombre', d.nombre,
+                  'descripcion', d.descripcion,
+                  'orden', d.orden,
+                  'estado', d.estado
+                ),
+                'clubes', CASE
+                  WHEN cl.id IS NOT NULL THEN json_build_object('id', cl.id, 'nombre', cl.nombre)
+                  ELSE NULL
+                END
+              ) AS row_data
+              FROM public.miembro_distincion md
+              JOIN public.distinciones d ON d.id = md.distincion_id
+              LEFT JOIN public.clubes cl ON cl.id = md.club_id
+              WHERE md.miembro_id = v_miembro_id
+            ) rows
+          ), '[]'::json)
+        )
+        INTO v_result;
+      END IF;
+
     WHEN 'carnet' THEN
       SELECT json_build_object(
         'member', (

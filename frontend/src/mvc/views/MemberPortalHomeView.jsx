@@ -150,6 +150,7 @@ export default function MemberPortalHomeView({
   getConfirmacionFromRow,
   eventRequiresConfirmation,
   canMemberConfirmEvent,
+  embedded = false,
 }) {
   const eventCardProps = {
     t,
@@ -168,13 +169,15 @@ export default function MemberPortalHomeView({
   const hasPriorityContent = pendingConfirmations.length > 0 || classUpdates.length > 0;
 
   return (
-    <div className="portal-page home-dashboard portal-home">
-      <div className="portal-page-header portal-page-header--hide-mobile">
-        <div>
-          <h1>🏠 {t('portalHomeWelcome').replace('{name}', welcomeName)}</h1>
-          <p className="home-header-sub">{t('portalHomeSubtitle')}</p>
+    <div className={`portal-page home-dashboard portal-home${embedded ? ' portal-home--embedded' : ''}`}>
+      {!embedded && (
+        <div className="portal-page-header portal-page-header--hide-mobile">
+          <div>
+            <h1>🏠 {t('portalHomeWelcome').replace('{name}', welcomeName)}</h1>
+            <p className="home-header-sub">{t('portalHomeSubtitle')}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <div className="alert alert-error">{error}</div>}
       {loading && <p className="home-loading">{t('loading')}</p>}
