@@ -10,6 +10,7 @@ import * as CargosModel from '../models/cargos.model';
 import * as ClasesModel from '../models/clases.model';
 import * as CarnetModel from '../models/carnet.model';
 import * as EventosModel from '../models/eventos.model';
+import * as DistincionesModel from '../models/distinciones.model';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
 import { calcularEdad } from './useDatosPersonalesController';
 
@@ -311,6 +312,83 @@ export function useMemberPortalEspecialidadesController() {
     canManage: false,
     getEspecialidadFromLink: row => row.especialidades || null,
     getLinkEspecialidadId: row => row.especialidad_id || row.especialidades?.id,
+  };
+}
+
+export function useMemberPortalDistincionesController() {
+  const { t } = useLanguage();
+  const { session } = useMemberPortal();
+  const [assigned, setAssigned] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [hasTable, setHasTable] = useState(true);
+
+  async function load() {
+    if (!session?.sessionToken) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const { data: payload, error: tabError } = await MemberPortalModel.fetchPortalTab(
+      session.sessionToken,
+      'distinciones'
+    );
+
+    if (tabError) {
+      const msg = String(tabError.message || '');
+      if (msg.includes('unknown profile tab')) {
+        setHasTable(false);
+        setAssigned([]);
+        setError('');
+      } else {
+        setError(tabError.message);
+        setAssigned([]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setHasTable(true);
+    setAssigned(payload?.assigned || []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+  }, [session?.sessionToken]);
+
+  const {
+    pageItems: paginatedAssigned,
+    ...listPagination
+  } = useListPagination(assigned, [session?.sessionToken]);
+
+  return {
+    assigned: paginatedAssigned,
+    listPagination,
+    assignable: [],
+    memberClubs: [],
+    error,
+    fieldErrors: {},
+    loading,
+    showForm: false,
+    form: {
+      distincion_id: '',
+      club_id: '',
+      fecha_otorgada: '',
+      notas: '',
+    },
+    setForm: () => {},
+    canManage: false,
+    hasTable,
+    startAssign: () => {},
+    closeForm: () => {},
+    assignDistincion: async () => false,
+    unassignDistincion: async () => false,
+    getDistincionFromRow: DistincionesModel.getDistincionFromRow,
+    t,
   };
 }
 

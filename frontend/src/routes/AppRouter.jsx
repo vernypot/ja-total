@@ -45,7 +45,7 @@ import PortalOrStaffPage from "../components/PortalOrStaffPage";
 import NoticiasRoute from "../components/NoticiasRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
-import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
+import { DASHBOARD_HOME_PATH, PORTAL_PROFILE_PATH } from "../utils/dashboardRoutes";
 
 
 
@@ -61,7 +61,7 @@ export default function AppRouter() {
         <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/portal" element={<MemberPortalLogin />} />
-        <Route path="/portal/inicio" element={<Navigate to={DASHBOARD_HOME_PATH} replace />} />
+        <Route path="/portal/inicio" element={<Navigate to={PORTAL_PROFILE_PATH} replace />} />
         <Route path="/portal/perfil" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/portal/noticias" element={<Navigate to="/dashboard/noticias" replace />} />
         <Route path="/portal/eventos" element={<Navigate to="/dashboard/eventos" replace />} />

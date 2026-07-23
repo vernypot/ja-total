@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDashboardAuth } from "../hooks/useDashboardAuth";
@@ -23,6 +23,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
+  const userMenuRef = useRef(null);
   const userRole = getUserRole(user, userData);
   const memberName = session?.memberName || t('roleMember');
   const displayName = isPortalOnly ? memberName : (user?.email || '');
@@ -43,6 +44,19 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
 
     await logout();
   }
+
+  useEffect(() => {
+    if (!showMenu) return undefined;
+
+    function handlePointerDown(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showMenu]);
 
   return (
     <div className={`topbar${isPortalOnly ? ' topbar--portal' : ''}${showMenuButton ? ' topbar--with-menu' : ''}`}>
@@ -68,9 +82,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
       </div>
 
       <div className="topbar-right">
-        <ThemeSwitcher variant="compact" showHint={false} />
-        <LanguageSwitcher />
-        <div className="user-menu">
+        <div className="user-menu" ref={userMenuRef}>
           <button
             className="user-button"
             onClick={() => setShowMenu(!showMenu)}
@@ -93,6 +105,17 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
                 <div className="profile-info">
                   <div className="profile-email">{displayName}</div>
                   <div className="profile-role">{displayRole.toUpperCase()}</div>
+                </div>
+              </div>
+              <hr />
+              <div className="user-dropdown-preferences">
+                <div className="user-dropdown-preferences__group">
+                  <span className="user-dropdown-preferences__label">{t('uiThemeTitle')}</span>
+                  <ThemeSwitcher variant="compact" showHint={false} />
+                </div>
+                <div className="user-dropdown-preferences__group">
+                  <span className="user-dropdown-preferences__label">{t('pageHelpAdminLanguage')}</span>
+                  <LanguageSwitcher />
                 </div>
               </div>
               <hr />

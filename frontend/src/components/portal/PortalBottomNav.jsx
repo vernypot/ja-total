@@ -1,20 +1,26 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTheme } from '../../hooks/useTheme';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { isBlixLayoutTheme } from '../../constants/uiThemes';
 import BlixIcon from '../icons/BlixIcon';
-import { PORTAL_BOTTOM_NAV } from '../../utils/portalMobileNav';
+import { getPortalBottomNav } from '../../utils/portalMobileNav';
 
 export default function PortalBottomNav() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
   const { theme } = useTheme();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const useBlixIcons = isBlixLayoutTheme(theme);
+  const navItems = getPortalBottomNav(isMobile);
 
   return (
     <nav className="portal-bottom-nav no-print" aria-label={t('portalMobileNavAria')}>
-      <ul className="portal-bottom-nav__list">
-        {PORTAL_BOTTOM_NAV.map(item => {
+      <ul
+        className="portal-bottom-nav__list"
+        style={{ '--portal-nav-count': navItems.length }}
+      >
+        {navItems.map(item => {
           const active = item.isActive(pathname);
           function handleClick(event) {
             if (active) {

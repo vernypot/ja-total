@@ -1,4 +1,4 @@
-import { isDashboardHomePath } from './dashboardRoutes';
+import { isDashboardHomePath, PORTAL_PROFILE_PATH } from './dashboardRoutes';
 
 export const PORTAL_BOTTOM_NAV = [
   {
@@ -9,15 +9,17 @@ export const PORTAL_BOTTOM_NAV = [
     icon: '🏠',
     blixIcon: 'home',
     isActive: pathname => isDashboardHomePath(pathname),
+    mobileOnly: false,
   },
   {
     id: 'profile',
-    path: '/dashboard/profile',
+    path: PORTAL_PROFILE_PATH,
     labelKey: 'portalNavProfile',
     shortLabelKey: 'portalNavProfileShort',
     icon: '👤',
     blixIcon: 'user',
-    isActive: pathname => pathname.startsWith('/dashboard/profile'),
+    isActive: pathname => pathname.startsWith(PORTAL_PROFILE_PATH),
+    mobileOnly: false,
   },
   {
     id: 'noticias',
@@ -27,6 +29,7 @@ export const PORTAL_BOTTOM_NAV = [
     icon: '📰',
     blixIcon: 'blog',
     isActive: pathname => pathname.startsWith('/dashboard/noticias'),
+    mobileOnly: false,
   },
   {
     id: 'eventos',
@@ -36,6 +39,7 @@ export const PORTAL_BOTTOM_NAV = [
     icon: '📅',
     blixIcon: 'events',
     isActive: pathname => pathname.startsWith('/dashboard/eventos'),
+    mobileOnly: false,
   },
   {
     id: 'calendario',
@@ -45,18 +49,25 @@ export const PORTAL_BOTTOM_NAV = [
     icon: '🗓️',
     blixIcon: 'calendar',
     isActive: pathname => pathname.startsWith('/dashboard/calendario'),
+    mobileOnly: false,
   },
 ];
 
+export function getPortalBottomNav(isMobile = false) {
+  return PORTAL_BOTTOM_NAV.filter(item => !isMobile || item.id !== 'home');
+}
+
 const PORTAL_PROFILE_TAB_LABELS = {
+  inicio: 'portalNavHome',
+  eventos: 'tabEvents',
+  asistencia: 'tabAttendance',
+  clases: 'tabProgressiveClasses',
+  especialidades: 'tabSpecialties',
+  registro: 'tabRegistro',
   datos: 'tabData',
   'datos-medicos': 'tabMedicalData',
   contactos: 'tabContacts',
-  especialidades: 'tabSpecialties',
   cargos: 'tabCargos',
-  clases: 'tabClasses',
-  eventos: 'tabEvents',
-  asistencia: 'tabAttendance',
 };
 
 export function getPortalPageTitle(pathname, t) {

@@ -40,15 +40,3 @@
   line-height: 1;
 }
 
-@media (max-width: 768px) {
-  .topbar .language-switcher-btn-label {
-    display: none;
-  }
-
-  .topbar .language-switcher-btn {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border-radius: var(--radius-md);
-  }
-}
