@@ -448,15 +448,16 @@ export function useClasesProgresivasController() {
   }
 
   async function removeRequisito(claseId, requisitoId) {
-    if (!canManage) return;
+    if (!canManage) return false;
     setError('');
     const { error: deleteError } = await ClasesModel.deleteClaseRequisito(requisitoId);
     if (deleteError) {
       setError('Error deleting requirement: ' + deleteError.message);
-      return;
+      return false;
     }
     if (editingRequisitoId === requisitoId) setEditingRequisitoId(null);
     await loadRequisitos(claseId);
+    return true;
   }
 
   async function addSeccion(claseId) {

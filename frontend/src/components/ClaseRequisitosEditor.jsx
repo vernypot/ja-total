@@ -117,7 +117,7 @@ function RequisitoRow({
   startEditRequisito,
   cancelEditRequisito,
   saveRequisito,
-  removeRequisito,
+  onRequestRemoveRequisito,
   rowTagDraft,
   onRowTagDraftChange,
   onAddTag,
@@ -247,7 +247,7 @@ function RequisitoRow({
         </button>
         <button
           type="button"
-          onClick={() => removeRequisito(req.id)}
+          onClick={() => onRequestRemoveRequisito?.(req)}
           style={{ ...btnSmall, backgroundColor: '#dc2626', color: 'white' }}
         >
           ✕
@@ -299,6 +299,8 @@ export default function ClaseRequisitosEditor({
   const [collapsedSections, setCollapsedSections] = useState({});
   const [tagToDelete, setTagToDelete] = useState(null);
   const [deletingTag, setDeletingTag] = useState(false);
+  const [requisitoToDelete, setRequisitoToDelete] = useState(null);
+  const [deletingRequisito, setDeletingRequisito] = useState(false);
 
   const { grouped, ungrouped } = groupRequisitosBySeccion(requisitos, secciones, {
     includeEmptySections: true,
@@ -332,6 +334,20 @@ export default function ClaseRequisitosEditor({
     if (ok) setTagToDelete(null);
   }
 
+  async function handleConfirmDeleteRequisito() {
+    if (!requisitoToDelete || deletingRequisito) return;
+    setDeletingRequisito(true);
+    const ok = await removeRequisito?.(requisitoToDelete.id);
+    setDeletingRequisito(false);
+    if (ok !== false) setRequisitoToDelete(null);
+  }
+
+  function requisitoDeleteHighlight(req) {
+    if (!req) return '';
+    const prefix = req.numero != null ? `${req.numero}. ` : '';
+    return `${prefix}${req.descripcion || ''}`.trim();
+  }
+
   function renderRequisitoRow(req) {
     return (
       <RequisitoRow
@@ -345,7 +361,7 @@ export default function ClaseRequisitosEditor({
         startEditRequisito={startEditRequisito}
         cancelEditRequisito={cancelEditRequisito}
         saveRequisito={saveRequisito}
-        removeRequisito={removeRequisito}
+        onRequestRemoveRequisito={setRequisitoToDelete}
         rowTagDraft={rowTagDrafts[req.id] || ''}
         onRowTagDraftChange={requisitoRowTagProps.onRowTagDraftChange}
         onAddTag={requisitoRowTagProps.onAddTag}
@@ -644,6 +660,19 @@ export default function ClaseRequisitosEditor({
           />
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(requisitoToDelete)}
+        title={t('classReqDeleteConfirmTitle')}
+        message={t('classReqDeleteConfirmMessage')}
+        highlight={requisitoDeleteHighlight(requisitoToDelete)}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        confirming={deletingRequisito}
+        confirmingLabel={t('saving')}
+        onConfirm={handleConfirmDeleteRequisito}
+        onCancel={() => !deletingRequisito && setRequisitoToDelete(null)}
+      />
 
       <ConfirmDialog
         open={Boolean(tagToDelete)}
