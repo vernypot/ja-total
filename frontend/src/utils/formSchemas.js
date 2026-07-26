@@ -35,6 +35,16 @@ export const FORM_SCHEMAS = {
     ],
   },
 
+  eventManualAddMember: {
+    id: 'eventManualAddMember',
+    label: 'Manual event member add',
+    submitAction: 'saveManualAddMember',
+    fields: {
+      miembroId: [v.required()],
+      justificacion: [v.required(), v.minLength(3)],
+    },
+  },
+
   planPeriod: {
     id: 'planPeriod',
     label: 'Period plan',

@@ -68,7 +68,7 @@ export default function CarnetCard({
           <div className="carnet-photo-section">
             <div className="carnet-photo-wrap">
               {photoUrl ? (
-                <img src={photoUrl} alt={fullName} className="carnet-photo" />
+                <img src={photoUrl} alt={fullName} className="carnet-photo" loading="eager" decoding="sync" />
               ) : (
                 <div className="carnet-photo carnet-photo-empty">👤</div>
               )}

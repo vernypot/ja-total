@@ -22,7 +22,7 @@ export default function BloquesCompletadosApplyModal({
 
   if (!pending) return null;
 
-  const { summary, members, count, block } = pending;
+  const { summary, members, count, block, isPrintCarnet } = pending;
   const needsValidator = blockNeedsValidator(block);
 
   function handleConfirm() {
@@ -42,13 +42,15 @@ export default function BloquesCompletadosApplyModal({
         onClick={e => e.stopPropagation()}
       >
         <h3 id="bloques-apply-modal-title" className="bloques-apply-modal__title">
-          {t('completedBlocksApplyModalTitle')}
+          {isPrintCarnet ? t('completedBlocksPrintCarnetModalTitle') : t('completedBlocksApplyModalTitle')}
         </h3>
 
         <p className="bloques-apply-modal__hint">
-          {needsValidator
-            ? t('completedBlocksApplyModalRequisitoHint')
-            : t('completedBlocksApplyModalHint')}
+          {isPrintCarnet
+            ? t('completedBlocksPrintCarnetModalHint')
+            : needsValidator
+              ? t('completedBlocksApplyModalRequisitoHint')
+              : t('completedBlocksApplyModalHint')}
         </p>
 
         <div className="bloques-apply-modal__section">
@@ -102,7 +104,7 @@ export default function BloquesCompletadosApplyModal({
             onClick={handleConfirm}
             disabled={applying || (needsValidator && !validatedBy.trim())}
           >
-            {applying ? t('loading') : t('completedBlocksApplyModalConfirm')}
+            {applying ? t('loading') : isPrintCarnet ? t('completedBlocksPrintCarnetModalConfirm') : t('completedBlocksApplyModalConfirm')}
           </button>
         </div>
       </div>

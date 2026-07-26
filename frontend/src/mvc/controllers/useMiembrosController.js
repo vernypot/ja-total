@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useBulkCarnetPrint } from '../../hooks/useBulkCarnetPrint';
 import { getUserRole, canManageMembers } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
@@ -22,6 +24,15 @@ import {
 } from '../../utils/memberBulkUpload';
 
 export function useMiembrosController() {
+  const { language } = useLanguage();
+  const {
+    printCarnetsForMembers,
+    loading: bulkCarnetLoading,
+    members: bulkCarnetMembers,
+    tokens: bulkCarnetTokens,
+    club: bulkCarnetClub,
+    expirationLabel: bulkCarnetExpirationLabel,
+  } = useBulkCarnetPrint(language);
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const {
@@ -404,6 +415,40 @@ export function useMiembrosController() {
     load();
   }
 
+  async function bulkPrintCarnets(t) {
+    if (!canManage || selectedMemberIds.length === 0) return;
+
+    const printClubId = bulkClubId || clubId;
+    if (!printClubId) {
+      setBulkActionMessage('');
+      setBulkActionError(t('bulkPrintCarnetsNoClub'));
+      return;
+    }
+
+    const club = clubsData.find(c => c.id === printClubId);
+    const confirmed = window.confirm(
+      t('bulkConfirmPrintCarnets')
+        .replace('{count}', String(selectedMemberIds.length))
+        .replace('{club}', clubDisplayName(club))
+    );
+    if (!confirmed) return;
+
+    setBulkActionMessage('');
+    setBulkActionError('');
+
+    const result = await printCarnetsForMembers(selectedMemberIds, printClubId);
+    if (!result.ok) {
+      setBulkActionError(t(result.errorKey));
+      return;
+    }
+
+    let message = t('bulkPrintCarnetsReady').replace('{count}', String(result.count));
+    if (result.skipped > 0) {
+      message += ` ${t('bulkPrintCarnetsSkipped').replace('{count}', String(result.skipped))}`;
+    }
+    setBulkActionMessage(message);
+  }
+
   async function toggleEstado(miembro) {
     if (!canManage) {
       alert('Solo administradores pueden cambiar estado');
@@ -717,6 +762,12 @@ export function useMiembrosController() {
     bulkDeactivate: t => bulkSetEstado('inactivo', t),
     bulkAssignClub,
     bulkUnassignClub,
+    bulkPrintCarnets,
+    bulkCarnetLoading,
+    bulkCarnetMembers,
+    bulkCarnetTokens,
+    bulkCarnetClub,
+    bulkCarnetExpirationLabel,
     memberFilters,
     updateMemberFilters,
     clearMemberFilters,

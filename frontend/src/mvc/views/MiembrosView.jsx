@@ -8,7 +8,9 @@ import ListPagination from '../../components/ListPagination';
 import MemberFiltersPanel from '../../components/MemberFiltersPanel';
 import MemberPortalPinAdmin from '../../components/MemberPortalPinAdmin';
 import { PageHelpLink } from '../../components/PageHelp';
+import CarnetLetterBatch from '../../components/CarnetLetterBatch';
 import '../../styles/form.css';
+import '../../styles/carnet.css';
 
 const headerBtnStyle = {
   padding: '10px 15px',
@@ -194,6 +196,12 @@ export default function MiembrosView({
   bulkDeactivate,
   bulkAssignClub,
   bulkUnassignClub,
+  bulkPrintCarnets,
+  bulkCarnetLoading = false,
+  bulkCarnetMembers = [],
+  bulkCarnetTokens = {},
+  bulkCarnetClub = null,
+  bulkCarnetExpirationLabel = '',
   memberFilters,
   updateMemberFilters,
   clearMemberFilters,
@@ -537,9 +545,19 @@ export default function MiembrosView({
                     >
                       ✕ {t('bulkUnassignClub')}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => bulkPrintCarnets(t)}
+                      disabled={bulkUpdating || bulkCarnetLoading || !(bulkClubId || clubId)}
+                      className="btn btn-sm"
+                      style={{ backgroundColor: '#2563eb', color: 'white', border: 'none' }}
+                      title={!(bulkClubId || clubId) ? t('bulkPrintCarnetsNoClub') : undefined}
+                    >
+                      {bulkCarnetLoading ? `⏳ ${t('loadingCarnet')}` : `🖨 ${t('bulkPrintCarnets')}`}
+                    </button>
                   </>
                 )}
-                {bulkUpdating && (
+                {(bulkUpdating || bulkCarnetLoading) && (
                   <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{t('saving')}</span>
                 )}
               </div>
@@ -578,6 +596,18 @@ export default function MiembrosView({
         )}
         {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       </div>
+
+      {bulkCarnetMembers.length > 0 && bulkCarnetClub && (
+        <div className="carnet-print-area carnet-print-area--batch-letter">
+          <CarnetLetterBatch
+            members={bulkCarnetMembers}
+            club={bulkCarnetClub}
+            tokens={bulkCarnetTokens}
+            expirationLabel={bulkCarnetExpirationLabel}
+            t={t}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -32,8 +32,8 @@ export default function ClubCarnetsPrintView({
   effectiveIglesiaId,
 }) {
   const readyCount = members.length;
-  const letterPageCount = CarnetModel.chunkMembersForLetterPages(members).length;
-  const totalPrintPages = letterPageCount * 2;
+  const letterPageCount = CarnetModel.chunkMembersForCombinedSheets(members).length;
+  const totalPrintPages = letterPageCount;
 
   return (
     <div className="container carnet-screen">
