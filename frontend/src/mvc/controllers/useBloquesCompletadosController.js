@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useBulkCarnetPrint } from '../../hooks/useBulkCarnetPrint';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
@@ -13,7 +14,7 @@ import * as EspecialidadesModel from '../models/especialidades.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as EventosModel from '../models/eventos.model';
 
-const ACTION_TYPES = ['requisito', 'seccion', 'especialidad', 'investidura', 'asignar_clase'];
+const ACTION_TYPES = ['print_carnet', 'requisito', 'seccion', 'especialidad', 'investidura', 'asignar_clase'];
 
 function userDisplayName(userData) {
   if (!userData) return '';
@@ -66,7 +67,15 @@ export function useBloquesCompletadosController() {
   const { activeClub } = useContext(ClubContext);
   const { effectiveIglesiaId } = useScopedIglesia();
   const [params] = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const {
+    printCarnetsForMembers,
+    loading: bulkCarnetLoading,
+    members: bulkCarnetMembers,
+    tokens: bulkCarnetTokens,
+    club: bulkCarnetClub,
+    expirationLabel: bulkCarnetExpirationLabel,
+  } = useBulkCarnetPrint(language);
   const clubId = params.get('club') || activeClub?.id;
   const userRole = getUserRole(user, userData);
   const canManage = canManageChurchData(userRole);
@@ -256,6 +265,10 @@ export function useBloquesCompletadosController() {
 
   function validateBlock(block) {
     if (!block.memberIds.length) return t('completedBlocksNoMembers');
+    if (block.actionType === 'print_carnet') {
+      if (!clubId) return t('bulkPrintCarnetsNoClub');
+      return null;
+    }
     if (block.actionType === 'especialidad') {
       if (!block.especialidadId) return t('completedBlocksSelectEspecialidad');
       return null;
@@ -268,6 +281,9 @@ export function useBloquesCompletadosController() {
   }
 
   function blockSummary(block) {
+    if (block.actionType === 'print_carnet') {
+      return t('completedBlocksActionPrintCarnet');
+    }
     if (block.actionType === 'especialidad') {
       const esp = scopedEspecialidades.find(e => e.id === block.especialidadId);
       return esp?.nombre || t('completedBlocksActionEspecialidad');
@@ -313,6 +329,20 @@ export function useBloquesCompletadosController() {
     }
 
     setApplyError('');
+
+    if (block.actionType === 'print_carnet') {
+      setPendingApply({
+        block,
+        summary: blockSummary(block),
+        count: block.memberIds.length,
+        members: block.memberIds
+          .map(id => ({ id, name: EventosModel.memberDisplayName(membersById[id]) }))
+          .filter(row => row.name),
+        isPrintCarnet: true,
+      });
+      return;
+    }
+
     setValidatingApplyBlockId(block.id);
 
     (async () => {
@@ -363,8 +393,31 @@ export function useBloquesCompletadosController() {
 
   async function confirmApplyBlock(validatedByNombre) {
     if (!canManage || !pendingApply?.block) return;
-    const { block, assignmentByMemberId = {} } = pendingApply;
-    await executeApplyBlock(block, assignmentByMemberId, validatedByNombre);
+    const { block, isPrintCarnet } = pendingApply;
+
+    if (isPrintCarnet) {
+      setApplyingBlockId(block.id);
+      setApplyError('');
+      setApplyMessage('');
+      setPendingApply(null);
+
+      const result = await printCarnetsForMembers(block.memberIds, clubId);
+      setApplyingBlockId(null);
+
+      if (!result.ok) {
+        setApplyError(t(result.errorKey));
+        return;
+      }
+
+      let message = t('bulkPrintCarnetsReady').replace('{count}', String(result.count));
+      if (result.skipped > 0) {
+        message += ` ${t('bulkPrintCarnetsSkipped').replace('{count}', String(result.skipped))}`;
+      }
+      setApplyMessage(message);
+      return;
+    }
+
+    await executeApplyBlock(block, pendingApply.assignmentByMemberId || {}, validatedByNombre);
     setPendingApply(null);
   }
 
@@ -509,5 +562,10 @@ export function useBloquesCompletadosController() {
     requisitoLabel,
     defaultValidatorName,
     t,
+    bulkCarnetMembers,
+    bulkCarnetTokens,
+    bulkCarnetClub,
+    bulkCarnetExpirationLabel,
+    bulkCarnetLoading,
   };
 }

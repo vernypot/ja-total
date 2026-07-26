@@ -1,9 +1,8 @@
 import CarnetCard from './CarnetCard';
 import * as CarnetModel from '../mvc/models/carnet.model';
 
-function CarnetLetterSheet({
+function CarnetCombinedSheet({
   pageMembers,
-  side,
   pageIndex,
   totalPages,
   club,
@@ -11,30 +10,40 @@ function CarnetLetterSheet({
   expirationLabel,
   t,
 }) {
-  const slots = CarnetModel.buildLetterPageSlots(pageMembers);
-  const sideLabel = side === 'front' ? t('carnetLetterFronts') : t('carnetLetterBacks');
+  const slots = CarnetModel.buildCombinedSheetSlots(pageMembers);
 
   return (
-    <div className="carnet-letter-sheet" data-side={side}>
-      <div className="carnet-letter-sheet-label no-print">
-        {sideLabel} — {t('carnetLetterPage')} {pageIndex + 1}/{totalPages}
+    <div className="carnet-combined-sheet">
+      <div className="carnet-combined-sheet-label no-print">
+        {t('carnetCombinedSheetLabel')} {pageIndex + 1}/{totalPages}
       </div>
-      <div className="carnet-letter-grid">
+      <div className="carnet-combined-grid">
         {slots.map((member, slotIdx) => (
           <div
-            key={`${side}-${slotIdx}`}
-            className={`carnet-grid-slot${member ? '' : ' carnet-grid-slot--empty'}`}
+            key={slotIdx}
+            className={`carnet-pair-slot${member ? '' : ' carnet-pair-slot--empty'}`}
           >
             {member && (
-              <CarnetCard
-                member={member}
-                club={club}
-                medical={member.medical}
-                token={tokens[member.id]}
-                expirationLabel={expirationLabel}
-                t={t}
-                sides={side}
-              />
+              <>
+                <CarnetCard
+                  member={member}
+                  club={club}
+                  medical={member.medical}
+                  token={tokens[member.id]}
+                  expirationLabel={expirationLabel}
+                  t={t}
+                  sides="front"
+                />
+                <CarnetCard
+                  member={member}
+                  club={club}
+                  medical={member.medical}
+                  token={tokens[member.id]}
+                  expirationLabel={expirationLabel}
+                  t={t}
+                  sides="back"
+                />
+              </>
             )}
           </div>
         ))}
@@ -50,28 +59,14 @@ export default function CarnetLetterBatch({
   expirationLabel,
   t,
 }) {
-  const pages = CarnetModel.chunkMembersForLetterPages(members);
+  const pages = CarnetModel.chunkMembersForCombinedSheets(members);
 
   return (
     <>
       {pages.map((pageMembers, pageIndex) => (
-        <CarnetLetterSheet
-          key={`front-${pageIndex}`}
+        <CarnetCombinedSheet
+          key={`sheet-${pageIndex}`}
           pageMembers={pageMembers}
-          side="front"
-          pageIndex={pageIndex}
-          totalPages={pages.length}
-          club={club}
-          tokens={tokens}
-          expirationLabel={expirationLabel}
-          t={t}
-        />
-      ))}
-      {pages.map((pageMembers, pageIndex) => (
-        <CarnetLetterSheet
-          key={`back-${pageIndex}`}
-          pageMembers={pageMembers}
-          side="back"
           pageIndex={pageIndex}
           totalPages={pages.length}
           club={club}

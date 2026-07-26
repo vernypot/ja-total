@@ -5,6 +5,46 @@ import DatePickerInput from './DatePickerInput';
 
 const DRAG_TYPE = 'application/x-plan-requisito';
 
+const expandToggleBtnStyle = {
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  padding: '4px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '28px',
+  height: '28px',
+  flexShrink: 0,
+  borderRadius: '4px',
+  color: '#6b7280',
+};
+
+function expandChevronStyle(expanded) {
+  return {
+    fontSize: '18px',
+    lineHeight: 1,
+    fontWeight: 700,
+    transform: expanded ? 'rotate(90deg)' : 'none',
+    transition: 'transform 0.15s ease',
+  };
+}
+
+function ExpandToggle({ expanded, onToggle, t }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      aria-label={expanded ? t('collapse') : t('expand')}
+      title={expanded ? t('collapse') : t('expand')}
+      style={expandToggleBtnStyle}
+    >
+      <span aria-hidden style={expandChevronStyle(expanded)}>▸</span>
+    </button>
+  );
+}
+
 function requisitoLabel(req) {
   const num = req.numero != null ? `${req.numero}. ` : '';
   const cls = req.clases_progresivas?.nombre || req.clase_requisitos?.clases_progresivas?.nombre;
@@ -311,9 +351,10 @@ function ClasePoolGroup({
   total,
   canManage,
   onDragStart,
+  expanded,
+  onToggleExpanded,
   t,
 }) {
-  const [expanded, setExpanded] = useState(false);
   let lastParte = null;
 
   return (
@@ -325,41 +366,41 @@ function ClasePoolGroup({
         overflow: 'hidden',
       }}
     >
-      <button
-        type="button"
-        onClick={() => setExpanded(prev => !prev)}
-        aria-expanded={expanded}
+      <div
         style={{
           width: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '8px 10px',
-          border: 'none',
+          gap: '4px',
+          padding: '6px 8px',
           background: '#f9fafb',
-          cursor: 'pointer',
-          fontSize: '12px',
-          fontWeight: 700,
-          color: '#1e40af',
-          textAlign: 'left',
         }}
       >
-        <span
-          aria-hidden
+        <ExpandToggle expanded={expanded} onToggle={onToggleExpanded} t={t} />
+        <button
+          type="button"
+          onClick={onToggleExpanded}
+          aria-expanded={expanded}
           style={{
-            fontSize: '10px',
-            color: 'var(--color-text-muted)',
-            width: '12px',
-            flexShrink: 0,
-            transform: expanded ? 'rotate(90deg)' : 'none',
-            transition: 'transform 0.15s',
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '2px 0',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#1e40af',
+            textAlign: 'left',
           }}
         >
-          ▸
-        </span>
-        <span style={{ flex: 1, minWidth: 0 }}>{clase.nombre || t('progressiveClasses')}</span>
-        <span style={{ fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '11px', flexShrink: 0 }}>({total})</span>
-      </button>
+          <span style={{ flex: 1, minWidth: 0 }}>{clase.nombre || t('progressiveClasses')}</span>
+          <span style={{ fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '11px', flexShrink: 0 }}>({total})</span>
+        </button>
+      </div>
 
       {expanded && (
         <div style={{ padding: '8px 10px 4px', borderTop: '1px solid #e5e7eb' }}>
@@ -442,6 +483,8 @@ function UnassignedPool({
   draggingId,
   onDropOnPool,
   onDragStart,
+  expandedPoolGroups,
+  onTogglePoolGroup,
   t,
 }) {
   return (
@@ -459,6 +502,8 @@ function UnassignedPool({
               total={group.total}
               canManage={canManage}
               onDragStart={onDragStart}
+              expanded={Boolean(expandedPoolGroups[group.clase.id])}
+              onToggleExpanded={() => onTogglePoolGroup(group.clase.id)}
               t={t}
             />
           ))}
@@ -479,9 +524,10 @@ function MeetingColumn({
   onUnassign,
   onUpdateSesiones,
   onDragStart,
+  expanded,
+  onToggleExpanded,
   t,
 }) {
-  const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [savingMeta, setSavingMeta] = useState(false);
   const [draft, setDraft] = useState({
@@ -570,27 +616,8 @@ function MeetingColumn({
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-          <button
-            type="button"
-            onClick={() => setExpanded(prev => !prev)}
-            aria-expanded={expanded}
-            title={expanded ? t('collapse') : t('expand')}
-            style={{
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              padding: '2px 0',
-              fontSize: '10px',
-              color: 'var(--color-text-muted)',
-              width: '14px',
-              flexShrink: 0,
-              transform: expanded ? 'rotate(90deg)' : 'none',
-              transition: 'transform 0.15s',
-            }}
-          >
-            ▸
-          </button>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+          <ExpandToggle expanded={expanded} onToggle={onToggleExpanded} t={t} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '12px', fontWeight: 600, color: '#374151', lineHeight: 1.35 }}>
               {displayTitle}
@@ -815,6 +842,48 @@ export default function PlanAgendaBoard({
 }) {
   const [draggingId, setDraggingId] = useState('');
   const [pendingAssign, setPendingAssign] = useState(null);
+  const [expandedMeetings, setExpandedMeetings] = useState({});
+  const [expandedPoolGroups, setExpandedPoolGroups] = useState({});
+
+  useEffect(() => {
+    setExpandedMeetings(prev => {
+      const next = {};
+      for (const reunion of reuniones) {
+        next[reunion.id] = prev[reunion.id] ?? true;
+      }
+      return next;
+    });
+  }, [reuniones]);
+
+  useEffect(() => {
+    setExpandedPoolGroups(prev => {
+      const next = {};
+      for (const group of groupedUnassignedPool) {
+        next[group.clase.id] = prev[group.clase.id] ?? false;
+      }
+      return next;
+    });
+  }, [groupedUnassignedPool]);
+
+  const anyMeetingExpanded = reuniones.some(reunion => expandedMeetings[reunion.id] !== false);
+
+  function toggleMeetingExpanded(reunionId) {
+    setExpandedMeetings(prev => ({
+      ...prev,
+      [reunionId]: !(prev[reunionId] ?? true),
+    }));
+  }
+
+  function collapseAllMeetings() {
+    setExpandedMeetings(Object.fromEntries(reuniones.map(reunion => [reunion.id, false])));
+  }
+
+  function togglePoolGroup(claseId) {
+    setExpandedPoolGroups(prev => ({
+      ...prev,
+      [claseId]: !(prev[claseId] ?? false),
+    }));
+  }
 
   function handleDropOnMeeting(reunionId, requisitoId) {
     if (!canManage) return;
@@ -869,6 +938,8 @@ export default function PlanAgendaBoard({
             draggingId={draggingId}
             onDropOnPool={handleDropOnPool}
             onDragStart={setDraggingId}
+            expandedPoolGroups={expandedPoolGroups}
+            onTogglePoolGroup={togglePoolGroup}
             t={t}
           />
         </div>
@@ -877,14 +948,36 @@ export default function PlanAgendaBoard({
         )}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '12px',
-          alignItems: 'start',
-        }}
-      >
+      <div>
+        {reuniones.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <button
+              type="button"
+              onClick={collapseAllMeetings}
+              disabled={!anyMeetingExpanded}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: anyMeetingExpanded ? 'pointer' : 'not-allowed',
+                backgroundColor: '#fff',
+                color: anyMeetingExpanded ? '#374151' : '#9ca3af',
+              }}
+            >
+              {t('planCollapseAllBlocks')}
+            </button>
+          </div>
+        )}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '12px',
+            alignItems: 'start',
+          }}
+        >
         {reuniones.map(reunion => {
           const items = assignmentsByMeeting[reunion.id] || [];
           return (
@@ -900,10 +993,13 @@ export default function PlanAgendaBoard({
               onUnassign={id => onUnassign(reunion.id, id)}
               onUpdateSesiones={onUpdateAssignmentSesiones}
               onDragStart={setDraggingId}
+              expanded={expandedMeetings[reunion.id] !== false}
+              onToggleExpanded={() => toggleMeetingExpanded(reunion.id)}
               t={t}
             />
           );
         })}
+        </div>
       </div>
     </div>
     </>

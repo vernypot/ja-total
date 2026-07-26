@@ -58,6 +58,7 @@ function DropZone({ children, onDrop, emptyLabel, t }) {
 
 function ActionTypeSelect({ value, onChange, t, actionTypes }) {
   const labels = {
+    print_carnet: t('completedBlocksActionPrintCarnet'),
     requisito: t('completedBlocksActionRequisito'),
     seccion: t('completedBlocksActionSeccion'),
     especialidad: t('completedBlocksActionEspecialidad'),
@@ -139,7 +140,11 @@ function BlockCard({
         />
       </label>
 
-      {block.actionType === 'especialidad' ? (
+      {block.actionType === 'print_carnet' ? (
+        <p className="bloques-section-hint" style={{ margin: 0 }}>
+          {t('completedBlocksPrintCarnetHint')}
+        </p>
+      ) : block.actionType === 'especialidad' ? (
         <label className="bloques-field">
           <span className="bloques-field__label">{t('specialties')}</span>
           <select
@@ -244,7 +249,11 @@ function BlockCard({
           disabled={!block.memberIds.length || isApplying || isValidating}
           onClick={() => requestApplyBlock(block)}
         >
-          {isValidating ? t('loading') : isApplying ? t('loading') : t('completedBlocksApply')}
+          {isValidating || isApplying
+            ? t('loading')
+            : block.actionType === 'print_carnet'
+              ? t('bulkPrintCarnets')
+              : t('completedBlocksApply')}
         </button>
       )}
     </div>

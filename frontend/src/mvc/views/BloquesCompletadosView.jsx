@@ -3,9 +3,11 @@ import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import BloquesCompletadosBoard from '../../components/BloquesCompletadosBoard';
 import BloquesCompletadosApplyModal from '../../components/BloquesCompletadosApplyModal';
+import CarnetLetterBatch from '../../components/CarnetLetterBatch';
 import { PageHelpLink } from '../../components/PageHelp';
 import '../../styles/form.css';
 import '../../styles/bloques-completados.css';
+import '../../styles/carnet.css';
 
 export default function BloquesCompletadosView({
   canManage,
@@ -39,6 +41,11 @@ export default function BloquesCompletadosView({
   defaultValidatorName,
   actionTypes,
   listPagination,
+  bulkCarnetMembers = [],
+  bulkCarnetTokens = {},
+  bulkCarnetClub = null,
+  bulkCarnetExpirationLabel = '',
+  bulkCarnetLoading = false,
 }) {
   const { t } = useLanguage();
 
@@ -117,12 +124,24 @@ export default function BloquesCompletadosView({
 
       <BloquesCompletadosApplyModal
         pending={pendingApply}
-        applying={Boolean(applyingBlockId)}
+        applying={Boolean(applyingBlockId) || bulkCarnetLoading}
         defaultValidatorName={defaultValidatorName}
         onConfirm={confirmApplyBlock}
         onCancel={cancelApplyBlock}
         t={t}
       />
+
+      {bulkCarnetMembers.length > 0 && bulkCarnetClub && (
+        <div className="carnet-print-area carnet-print-area--batch-letter">
+          <CarnetLetterBatch
+            members={bulkCarnetMembers}
+            club={bulkCarnetClub}
+            tokens={bulkCarnetTokens}
+            expirationLabel={bulkCarnetExpirationLabel}
+            t={t}
+          />
+        </div>
+      )}
     </div>
   );
 }

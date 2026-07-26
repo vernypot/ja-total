@@ -298,6 +298,14 @@ export default function EventosView({
   toggleAttendeeEditSelection,
   selectAllAttendeeEdit,
   saveEventAttendees,
+  manualAddEventId,
+  manualAddForm,
+  setManualAddForm,
+  manualAddFieldErrors,
+  savingManualAdd,
+  openManualAddMember,
+  closeManualAddMember,
+  saveManualAddMember,
   startEvent,
   isEventoActive,
   isEventoEnded,
@@ -306,6 +314,7 @@ export default function EventosView({
   getCheckedInAtFromRow,
   getAsistenciaFromRow,
   getConfirmacionFromRow,
+  getManualAddJustificationFromRow,
   eventRequiresConfirmation,
   getTipoEventoNombre,
   memberDisplayName,
@@ -524,6 +533,9 @@ export default function EventosView({
                 const confirmedCount = rows.filter(row => getConfirmacionFromRow(row) === 'confirmado').length;
                 const tipoNombre = getTipoEventoNombre(evento);
                 const needsConfirmation = eventRequiresConfirmation(evento);
+                const assignedMemberIds = new Set(rows.map(row => row.miembro_id));
+                const availableManualAddMembers = clubMembers.filter(m => !assignedMemberIds.has(m.id));
+                const showingManualAdd = manualAddEventId === evento.id;
 
                 return (
                   <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : isEnded ? 0.92 : 0.85 }}>
@@ -742,6 +754,94 @@ export default function EventosView({
                             </EventActionButton>
                           </div>
                         )}
+                        {canManage && (isActive || isEnded) && (
+                          <div style={{ marginBottom: '12px', padding: '12px', border: '1px dashed #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                            {showingManualAdd ? (
+                              <form
+                                onSubmit={event => {
+                                  event.preventDefault();
+                                  saveManualAddMember(evento.id);
+                                }}
+                              >
+                                <h5 style={{ margin: '0 0 8px', fontSize: '13px' }}>{t('addMemberManually')}</h5>
+                                <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                                  {t('manualAddJustificationHint')}
+                                </p>
+                                {availableManualAddMembers.length === 0 ? (
+                                  <p className="text-muted" style={{ margin: 0 }}>{t('manualAddMemberNoneAvailable')}</p>
+                                ) : (
+                                  <>
+                                    <FormField
+                                      label={t('clubDirectivaMember')}
+                                      htmlFor={`manual-add-member-${evento.id}`}
+                                      error={manualAddFieldErrors.miembroId}
+                                      required
+                                    >
+                                      <select
+                                        id={`manual-add-member-${evento.id}`}
+                                        className="form-input"
+                                        value={manualAddForm.miembroId}
+                                        onChange={event => setManualAddForm(form => ({ ...form, miembroId: event.target.value }))}
+                                      >
+                                        <option value="">{t('selectMember')}</option>
+                                        {availableManualAddMembers.map(member => (
+                                          <option key={member.id} value={member.id}>
+                                            {memberDisplayName(member)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </FormField>
+                                    <FormField
+                                      label={t('manualAddJustificationLabel')}
+                                      htmlFor={`manual-add-just-${evento.id}`}
+                                      error={manualAddFieldErrors.justificacion}
+                                      required
+                                    >
+                                      <textarea
+                                        id={`manual-add-just-${evento.id}`}
+                                        className="form-input"
+                                        rows={3}
+                                        value={manualAddForm.justificacion}
+                                        onChange={event => setManualAddForm(form => ({ ...form, justificacion: event.target.value }))}
+                                        placeholder={t('manualAddJustificationPlaceholder')}
+                                      />
+                                    </FormField>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                      <button
+                                        type="submit"
+                                        disabled={savingManualAdd}
+                                        style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: savingManualAdd ? 'not-allowed' : 'pointer', opacity: savingManualAdd ? 0.7 : 1 }}
+                                      >
+                                        ✓ {t('addMemberManually')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={savingManualAdd}
+                                        onClick={closeManualAddMember}
+                                        style={{ padding: '8px 16px', backgroundColor: 'var(--color-btn-neutral)', color: 'white', border: 'none', borderRadius: '4px', cursor: savingManualAdd ? 'not-allowed' : 'pointer' }}
+                                      >
+                                        {t('cancel')}
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </form>
+                            ) : (
+                              <>
+                                <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                                  {t('manualAddJustificationHint')}
+                                </p>
+                                <EventActionButton
+                                  tone="info"
+                                  onClick={() => openManualAddMember(evento.id)}
+                                  disabled={availableManualAddMembers.length === 0}
+                                >
+                                  ➕ {t('addMemberManually')}
+                                </EventActionButton>
+                              </>
+                            )}
+                          </div>
+                        )}
                         {canManage && isActive && (
                           <div className="event-start-scan-cta">
                             <p>{t('startEventScanHint')}</p>
@@ -759,12 +859,18 @@ export default function EventosView({
                             {rows.map(row => {
                               const checkedInAt = getCheckedInAtFromRow(row);
                               const confirmacion = getConfirmacionFromRow(row);
+                              const manualJustification = getManualAddJustificationFromRow(row);
                               const memberName = memberDisplayName(row.miembros);
                               const eventName = evento.nombre || t('eventUntitled');
                               return (
                               <div key={row.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                                 <div>
                                   <span>{memberDisplayName(row.miembros)}</span>
+                                  {manualJustification && (
+                                    <div style={{ fontSize: '11px', color: '#854d0e', marginTop: '4px' }}>
+                                      {t('manualAddJustificationBadge')}: {manualJustification}
+                                    </div>
+                                  )}
                                   {checkedInAt && (
                                     <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                       {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}

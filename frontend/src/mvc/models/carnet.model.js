@@ -35,7 +35,27 @@ export function getCarnetAssetUrl(url) {
   return `${url}${sep}t=${Date.now()}`;
 }
 
-export function triggerCarnetPrint(onBeforePrint, { batch = false } = {}) {
+function waitForPrintImages(container, timeoutMs = 8000) {
+  if (!container) return Promise.resolve();
+  const images = Array.from(container.querySelectorAll('img'));
+  if (!images.length) return Promise.resolve();
+
+  return Promise.all(images.map(img => {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(resolve => {
+      const done = () => {
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+        resolve();
+      };
+      img.addEventListener('load', done);
+      img.addEventListener('error', done);
+      window.setTimeout(done, timeoutMs);
+    });
+  }));
+}
+
+export async function triggerCarnetPrint(onBeforePrint, { batch = false } = {}) {
   if (onBeforePrint) onBeforePrint();
   document.body.classList.add('carnet-printing');
   if (batch) document.body.classList.add('carnet-printing--batch');
@@ -44,16 +64,23 @@ export function triggerCarnetPrint(onBeforePrint, { batch = false } = {}) {
     window.removeEventListener('afterprint', cleanup);
   };
   window.addEventListener('afterprint', cleanup);
-  window.setTimeout(cleanup, 5000);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => window.print());
+  window.setTimeout(cleanup, 10000);
+
+  await new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
+
+  await waitForPrintImages(document.querySelector('.carnet-print-area'));
+  window.print();
 }
 
-/** CR-80 cards per US Letter sheet (3 columns × 3 rows). */
-export const CARNETS_PER_LETTER_PAGE = 9;
+/** Front+back pairs per landscape letter sheet (2 columns × 2 rows). */
+export const CARNETS_PER_COMBINED_SHEET = 4;
 
-export function chunkMembersForLetterPages(members, perPage = CARNETS_PER_LETTER_PAGE) {
+/** @deprecated Use CARNETS_PER_COMBINED_SHEET */
+export const CARNETS_PER_LETTER_PAGE = CARNETS_PER_COMBINED_SHEET;
+
+export function chunkMembersForCombinedSheets(members, perPage = CARNETS_PER_COMBINED_SHEET) {
   const pages = [];
   for (let i = 0; i < members.length; i += perPage) {
     pages.push(members.slice(i, i + perPage));
@@ -61,10 +88,18 @@ export function chunkMembersForLetterPages(members, perPage = CARNETS_PER_LETTER
   return pages;
 }
 
-export function buildLetterPageSlots(pageMembers, perPage = CARNETS_PER_LETTER_PAGE) {
+export function chunkMembersForLetterPages(members, perPage = CARNETS_PER_COMBINED_SHEET) {
+  return chunkMembersForCombinedSheets(members, perPage);
+}
+
+export function buildCombinedSheetSlots(pageMembers, perPage = CARNETS_PER_COMBINED_SHEET) {
   const slots = pageMembers.slice(0, perPage);
   while (slots.length < perPage) slots.push(null);
   return slots;
+}
+
+export function buildLetterPageSlots(pageMembers, perPage = CARNETS_PER_COMBINED_SHEET) {
+  return buildCombinedSheetSlots(pageMembers, perPage);
 }
 
 export async function getOrCreateProfileToken(miembroId) {
@@ -101,6 +136,54 @@ export async function fetchActiveClubCarnetMembers(clubId) {
     .sort((a, b) => memberFullName(a).localeCompare(memberFullName(b), undefined, { sensitivity: 'base' }));
 
   return { data: members, error: null };
+}
+
+export async function fetchCarnetMembersForSelection(memberIds, clubId) {
+  const uniqueIds = [...new Set((memberIds || []).filter(Boolean))];
+  if (!uniqueIds.length || !clubId) {
+    return { data: [], skipped: uniqueIds, error: null };
+  }
+
+  const { data: rows, error } = await sb
+    .from('miembro_club')
+    .select(`miembros(id, ${MIEMBRO_NAME_FIELDS}, estado, foto_url, miembro_datos_medicos(tipo_sangre, factor_rh))`)
+    .eq('club_id', clubId)
+    .in('miembro_id', uniqueIds);
+
+  if (error) return { data: [], skipped: uniqueIds, error };
+
+  const membersById = new Map();
+  for (const row of rows || []) {
+    const m = row.miembros;
+    if (!m?.id) continue;
+    const medicalRaw = m.miembro_datos_medicos;
+    const medical = Array.isArray(medicalRaw) ? medicalRaw[0] : medicalRaw;
+    membersById.set(m.id, {
+      id: m.id,
+      nombre: m.nombre,
+      apellido1: m.apellido1,
+      apellido2: m.apellido2,
+      nombre_opcional: m.nombre_opcional,
+      apellido_opcional: m.apellido_opcional,
+      estado: m.estado,
+      foto_url: m.foto_url,
+      medical: medical || null,
+    });
+  }
+
+  const data = [];
+  const skipped = [];
+  for (const id of uniqueIds) {
+    const m = membersById.get(id);
+    if (!m || m.estado !== 'activo' || !m.foto_url?.trim()) {
+      skipped.push(id);
+      continue;
+    }
+    data.push(m);
+  }
+
+  data.sort((a, b) => memberFullName(a).localeCompare(memberFullName(b), undefined, { sensitivity: 'base' }));
+  return { data, skipped, error: null };
 }
 
 export async function loadCarnetTokensForMembers(memberIds) {

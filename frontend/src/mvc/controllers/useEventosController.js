@@ -58,6 +58,10 @@ export function useEventosController() {
   const [savingEvent, setSavingEvent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [bulkUpdatingEventId, setBulkUpdatingEventId] = useState('');
+  const [manualAddEventId, setManualAddEventId] = useState('');
+  const [manualAddForm, setManualAddForm] = useState({ miembroId: '', justificacion: '' });
+  const [manualAddFieldErrors, setManualAddFieldErrors] = useState({});
+  const [savingManualAdd, setSavingManualAdd] = useState(false);
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -166,6 +170,7 @@ export function useEventosController() {
   async function toggleEventExpand(eventoId) {
     if (expandedEventId === eventoId) {
       setExpandedEventId('');
+      if (manualAddEventId === eventoId) closeManualAddMember();
       return;
     }
     if (editingEventId && editingEventId !== eventoId) closeEditForm();
@@ -497,6 +502,71 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
+  function mapManualAddError(message) {
+    const text = String(message || '');
+    if (text.includes('member already assigned')) return t('manualAddMemberAlreadyAssigned');
+    if (text.includes('justification required')) return t('manualAddJustificationRequired');
+    if (text.includes('member is not in this event club')) return t('manualAddMemberNotInClub');
+    if (text.includes('admin_add_evento_miembro_manual') || text.includes('justificacion_asignacion')) {
+      return t('manualAddMemberSchemaMissing');
+    }
+    return text || t('manualAddMemberFailed');
+  }
+
+  function openManualAddMember(eventoId) {
+    if (!canManage) return;
+    setManualAddEventId(eventoId);
+    setManualAddForm({ miembroId: '', justificacion: '' });
+    setManualAddFieldErrors({});
+    setError('');
+  }
+
+  function closeManualAddMember() {
+    setManualAddEventId('');
+    setManualAddForm({ miembroId: '', justificacion: '' });
+    setManualAddFieldErrors({});
+  }
+
+  async function saveManualAddMember(eventoId) {
+    if (!canManage) return false;
+
+    const validation = validateForm('eventManualAddMember', manualAddForm, t);
+    setManualAddFieldErrors(validation.fieldErrors || {});
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError || '');
+      return false;
+    }
+
+    const evento = events.find(e => e.id === eventoId);
+    const rows = assignments[eventoId] || await loadAssignments(eventoId);
+    if ((rows || []).some(row => row.miembro_id === manualAddForm.miembroId)) {
+      setError(t('manualAddMemberAlreadyAssigned'));
+      return false;
+    }
+
+    setSavingManualAdd(true);
+    setError('');
+    setManualAddFieldErrors({});
+
+    const { error: saveError } = await EventosModel.addMiembroToEventoManual(
+      eventoId,
+      manualAddForm.miembroId,
+      manualAddForm.justificacion,
+      { requiereConfirmacion: EventosModel.eventRequiresConfirmation(evento) }
+    );
+
+    setSavingManualAdd(false);
+
+    if (saveError) {
+      setError(mapManualAddError(saveError.message));
+      return false;
+    }
+
+    closeManualAddMember();
+    await loadAssignments(eventoId);
+    return true;
+  }
+
   async function confirmAllPending(eventoId) {
     if (!canManage) return;
 
@@ -556,6 +626,7 @@ export function useEventosController() {
     setExpandedEventId('');
     setAssignments({});
     closeAttendeeEditor();
+    closeManualAddMember();
     closeEditForm();
     loadEvents();
     loadMembersForClub(clubId);
@@ -628,6 +699,14 @@ export function useEventosController() {
     toggleAttendeeEditSelection,
     selectAllAttendeeEdit,
     saveEventAttendees,
+    manualAddEventId,
+    manualAddForm,
+    setManualAddForm,
+    manualAddFieldErrors,
+    savingManualAdd,
+    openManualAddMember,
+    closeManualAddMember,
+    saveManualAddMember,
     startEvent,
     sortEventAttendanceRows: EventosModel.sortEventAttendanceRows,
     isEventoActive: EventosModel.isEventoActive,
@@ -636,6 +715,7 @@ export function useEventosController() {
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
+    getManualAddJustificationFromRow: EventosModel.getManualAddJustificationFromRow,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     memberDisplayName: EventosModel.memberDisplayName,

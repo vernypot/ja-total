@@ -75,15 +75,17 @@ export default function MiembroCarnetView({
         <p className="text-muted" style={{ fontSize: '13px', marginTop: '10px' }}>{t('carnetPrintHint')}</p>
       </div>
 
-      <div className="carnet-print-area">
-        <CarnetCard
-          member={member}
-          club={selectedClub}
-          medical={medical}
-          token={token}
-          expirationLabel={expirationLabel}
-          t={t}
-        />
+      <div className="carnet-print-area carnet-print-area--single">
+        <div className="carnet-single-sheet">
+          <CarnetCard
+            member={member}
+            club={selectedClub}
+            medical={medical}
+            token={token}
+            expirationLabel={expirationLabel}
+            t={t}
+          />
+        </div>
       </div>
     </div>
   );

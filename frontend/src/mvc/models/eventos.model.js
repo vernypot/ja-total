@@ -78,6 +78,9 @@ const EVENTO_SELECTS = [
 ];
 
 const EVENTO_MIEMBRO_SELECTS = [
+  `id, evento_id, miembro_id, confirmacion_estado, confirmado_at, justificacion_asignacion, asignado_manualmente_at,
+   miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
+   evento_asistencia ( id, estado, updated_at, checked_in_at )`,
   `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
    miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
    evento_asistencia ( id, estado, updated_at, checked_in_at )`,
@@ -440,6 +443,57 @@ export async function assignMiembrosToEvento(eventoId, miembroIds, { requiereCon
   return sb.rpc('admin_assign_evento_miembros', {
     p_evento_id: eventoId,
     p_miembro_ids: miembroIds,
+  });
+}
+
+export function getManualAddJustificationFromRow(row) {
+  return row?.justificacion_asignacion?.trim() || '';
+}
+
+export async function addMiembroToEventoManual(eventoId, miembroId, justificacion, { requiereConfirmacion = true } = {}) {
+  const trimmed = justificacion?.trim();
+  if (!eventoId || !miembroId) {
+    return { data: null, error: { message: 'member required' } };
+  }
+  if (!trimmed) {
+    return { data: null, error: { message: 'justification required' } };
+  }
+
+  const confirmacionEstado = buildConfirmacionEstado(requiereConfirmacion);
+  const nowIso = new Date().toISOString();
+  const payload = {
+    evento_id: eventoId,
+    miembro_id: miembroId,
+    confirmacion_estado: confirmacionEstado,
+    confirmado_at: requiereConfirmacion ? null : nowIso,
+    justificacion_asignacion: trimmed,
+    asignado_manualmente_at: nowIso,
+  };
+
+  const direct = await sb.from('evento_miembro').insert(payload).select('id').single();
+  if (!direct.error) return direct;
+
+  if (!isRlsError(direct.error)) {
+    const msg = direct.error?.message || '';
+    if (isMissingColumnError(direct.error, 'justificacion_asignacion')
+      || msg.includes('admin_add_evento_miembro_manual')
+      || msg.includes('Could not find the function')) {
+      return sb.rpc('admin_add_evento_miembro_manual', {
+        p_evento_id: eventoId,
+        p_miembro_id: miembroId,
+        p_justificacion: trimmed,
+      });
+    }
+    if (msg.includes('duplicate key') || msg.includes('evento_miembro_evento_id_miembro_id_key')) {
+      return { data: null, error: { message: 'member already assigned' } };
+    }
+    return direct;
+  }
+
+  return sb.rpc('admin_add_evento_miembro_manual', {
+    p_evento_id: eventoId,
+    p_miembro_id: miembroId,
+    p_justificacion: trimmed,
   });
 }
 
