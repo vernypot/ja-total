@@ -32,6 +32,7 @@ export default function BloquesCompletadosView({
   applyError,
   scopedClases,
   scopedEspecialidades,
+  assignableEspecialidades = [],
   getRequisitosForBlock,
   getSeccionesForBlock,
   membersById,
@@ -109,6 +110,7 @@ export default function BloquesCompletadosView({
           validatingApplyBlockId={validatingApplyBlockId}
           scopedClases={scopedClases}
           scopedEspecialidades={scopedEspecialidades}
+          assignableEspecialidades={assignableEspecialidades}
           getRequisitosForBlock={getRequisitosForBlock}
           getSeccionesForBlock={getSeccionesForBlock}
           membersById={membersById}

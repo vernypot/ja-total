@@ -84,7 +84,7 @@ function BlockCard({
   index,
   canManage,
   scopedClases,
-  scopedEspecialidades,
+  assignableEspecialidades = [],
   getRequisitosForBlock,
   getSeccionesForBlock,
   membersById,
@@ -145,19 +145,29 @@ function BlockCard({
           {t('completedBlocksPrintCarnetHint')}
         </p>
       ) : block.actionType === 'especialidad' ? (
-        <label className="bloques-field">
-          <span className="bloques-field__label">{t('specialties')}</span>
-          <select
-            className="form-input bloques-select"
-            value={block.especialidadId}
-            onChange={(e) => updateBlock(block.id, { especialidadId: e.target.value })}
-          >
-            <option value="">{t('completedBlocksSelectEspecialidad')}</option>
-            {scopedEspecialidades.map(esp => (
-              <option key={esp.id} value={esp.id}>{esp.nombre}</option>
-            ))}
-          </select>
-        </label>
+        <div className="bloques-field">
+          <label className="bloques-field">
+            <span className="bloques-field__label">{t('specialties')}</span>
+            <select
+              className="form-input bloques-select"
+              value={block.especialidadId}
+              onChange={(e) => updateBlock(block.id, { especialidadId: e.target.value })}
+              disabled={assignableEspecialidades.length === 0}
+            >
+              <option value="">{t('completedBlocksSelectEspecialidad')}</option>
+              {assignableEspecialidades.map(esp => (
+                <option key={esp.id} value={esp.id}>
+                  {esp.nombre}{esp.club_tipo ? ` (${esp.club_tipo})` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          {assignableEspecialidades.length === 0 && (
+            <p className="bloques-section-hint" style={{ margin: '6px 0 0' }}>
+              {t('noAssignableHonors')}
+            </p>
+          )}
+        </div>
       ) : (
         <>
           <label className="bloques-field">
@@ -274,6 +284,7 @@ export default function BloquesCompletadosBoard({
   validatingApplyBlockId,
   scopedClases,
   scopedEspecialidades,
+  assignableEspecialidades = [],
   getRequisitosForBlock,
   getSeccionesForBlock,
   membersById,
@@ -328,7 +339,7 @@ export default function BloquesCompletadosBoard({
               index={index}
               canManage={canManage}
               scopedClases={scopedClases}
-              scopedEspecialidades={scopedEspecialidades}
+              assignableEspecialidades={assignableEspecialidades}
               getRequisitosForBlock={getRequisitosForBlock}
               getSeccionesForBlock={getSeccionesForBlock}
               membersById={membersById}
