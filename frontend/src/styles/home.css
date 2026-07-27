@@ -218,9 +218,10 @@
   margin-left: 0;
 }
 
-.portal-noticias-leido-hint {
-  margin: 0 0 12px;
-  font-size: 14px;
+.portal-news-actions--expanded {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
 .portal-noticia-leido--done {

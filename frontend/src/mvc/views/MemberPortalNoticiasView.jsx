@@ -28,10 +28,6 @@ export default function MemberPortalNoticiasView({
       {!loading && !news.length && <p className="text-muted">{t('homeNoNews')}</p>}
 
       {!loading && news.length > 0 && (
-        <p className="text-muted portal-noticias-leido-hint">{t('portalNoticiaLeidoHint')}</p>
-      )}
-
-      {!loading && news.length > 0 && (
         <div className="home-news-list" style={{ marginTop: '16px' }}>
           {news.map(item => (
             <article key={item.id} className="home-news-item" style={{ marginBottom: '12px', padding: '16px', backgroundColor: 'white', borderRadius: '8px' }}>

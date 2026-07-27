@@ -9,8 +9,18 @@ export function PortalNewsActions({
   t,
   onToggleExpand,
 }) {
+  if (!expanded) {
+    return (
+      <div className="portal-news-actions">
+        <button type="button" className="home-link-btn" onClick={onToggleExpand}>
+          {t('homeReadMore')}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="portal-news-actions">
+    <div className="portal-news-actions portal-news-actions--expanded">
       <NoticiaLeidoButton
         noticiaId={item.id}
         isLeida={isLeida}
@@ -19,7 +29,7 @@ export function PortalNewsActions({
         t={t}
       />
       <button type="button" className="home-link-btn" onClick={onToggleExpand}>
-        {expanded ? t('homeReadLess') : t('homeReadMore')}
+        {t('homeReadLess')}
       </button>
     </div>
   );

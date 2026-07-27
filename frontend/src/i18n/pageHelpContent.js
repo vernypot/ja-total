@@ -1346,7 +1346,7 @@ const PAGE_HELP = {
         'After the external draw, close the raffle, select winners, and add closing notes.',
       ],
       tips: [
-        'News-based raffles require members to tap Leído on each article in Noticias or the home feed.',
+        'News-based raffles require members to expand the article and tap Leído at the end.',
         'Login-period raffles use member portal login events — ensure usage tracking is enabled.',
         'Custom raffles let you drag members from the pool into the participant list.',
       ],
@@ -1362,7 +1362,7 @@ const PAGE_HELP = {
         'Tras el sorteo externo, cierre el sorteo, seleccione ganadores y agregue comentarios.',
       ],
       tips: [
-        'Los sorteos por noticia requieren que el miembro pulse Leído en cada artículo en Noticias o en el inicio.',
+        'Los sorteos por noticia requieren que el miembro expanda el artículo y pulse Leído al final.',
         'Los sorteos por ingreso usan eventos de login del portal — requiere estadísticas de uso activas.',
         'En sorteos personalizados puede arrastrar miembros del pool a la lista de participantes.',
       ],
