@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { formatCalendarPeriodLabel, formatEventTime } from '../../utils/calendar';
 import { formatEventLocalDate } from '../../utils/eventTimezone';
@@ -6,6 +7,12 @@ import { PageHelpLink } from '../../components/PageHelp';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
+import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
+import {
+  AttendanceControls,
+  ConfirmationControls,
+  EventActionButton,
+} from '../../components/EventAttendanceControls';
 import '../../styles/calendario.css';
 import '../../styles/eventAttendance.css';
 
@@ -209,15 +216,73 @@ function EventDetailModal({
   getConfirmacionFromRow,
   memberDisplayName,
   readOnly = false,
+  canManage = false,
+  setConfirmation,
+  setAttendance,
+  confirmAllPending,
+  bulkUpdatingEventId = '',
+  buildSelfEventRow,
+  updateSelfConfirmation,
+  savingSelfConfirmationId = null,
   updateConfirmation,
   savingConfirmationId = null,
   canMemberConfirmEvent,
 }) {
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
+
   if (!event) return null;
 
   const tipoNombre = getTipoEventoNombre(event);
   const needsConfirmation = eventRequiresConfirmation(event);
   const isFuture = isEventInFuture(event);
+  const eventName = event.nombre || t('eventUntitled');
+  const pendingCount = assignments.filter(row => getConfirmacionFromRow(row) === 'pendiente').length;
+  const selfRow = buildSelfEventRow?.(assignments, event) || null;
+
+  function buildConfirmBeforeConfirmation(memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'rechazado') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmRejectConfirmationTitle'),
+        message: t('confirmRejectConfirmationMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('approvalRequestReject'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function buildConfirmBeforeAttendance(memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'ausente') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmMarkAbsentTitle'),
+        message: t('confirmMarkAbsentMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('attendanceAbsent'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function confirmAllPendingForEvent() {
+    askConfirm({
+      title: t('confirmAllPendingTitle'),
+      message: t('confirmAllPendingConfirm'),
+      highlight: eventName,
+      confirmLabel: t('confirmAllPending'),
+      onConfirm: async () => { await confirmAllPending?.(event.id); },
+    });
+  }
   const dateLabel = event.fecha
     ? formatEventLocalDate(event.fecha, language, {
       timeZone: event.clubes?.iglesias?.timezone,
@@ -293,27 +358,82 @@ function EventDetailModal({
             </div>
           </div>
 
+          {canManage && !readOnly && updateSelfConfirmation && (
+            <LinkedMemberEventConfirmSection
+              evento={event}
+              selfRow={selfRow}
+              updateConfirmation={updateSelfConfirmation}
+              savingConfirmationId={savingSelfConfirmationId}
+              t={t}
+            />
+          )}
+
           {!readOnly && needsConfirmation && (
             <div className="calendario-event-detail-members">
-              <h4>{t('calendarAssignedMembers')}</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <h4 style={{ margin: 0 }}>{t('calendarAssignedMembers')}</h4>
+                {canManage && pendingCount > 0 && (
+                  <EventActionButton
+                    tone="success"
+                    disabled={bulkUpdatingEventId === event.id}
+                    onClick={confirmAllPendingForEvent}
+                  >
+                    {t('confirmAllPending')}
+                  </EventActionButton>
+                )}
+              </div>
               {loading ? (
                 <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>{t('loading')}</p>
               ) : assignments.length === 0 ? (
                 <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>{t('noMembersAssignedToEvent')}</p>
               ) : (
-                assignments.map(row => (
-                  <div key={row.id} className="calendario-event-detail-member">
-                    <span>{memberDisplayName(row.miembros)}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        {t('attendanceConfirmation')}: {confirmationLabel(getConfirmacionFromRow(row), t)}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        {t('attendanceList')}: {attendanceLabel(getAsistenciaFromRow(row), t)}
-                      </span>
+                assignments.map(row => {
+                  const confirmacion = getConfirmacionFromRow(row);
+                  const asistencia = getAsistenciaFromRow(row);
+                  const name = memberDisplayName(row.miembros);
+                  return (
+                    <div key={row.id} className="calendario-event-detail-member">
+                      <span>{name}</span>
+                      {canManage ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                          <div>
+                            <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
+                            <ConfirmationControls
+                              eventoMiembroId={row.id}
+                              eventoId={event.id}
+                              current={confirmacion}
+                              canManage={canManage}
+                              onSet={setConfirmation}
+                              confirmBeforeSet={buildConfirmBeforeConfirmation(name)}
+                              t={t}
+                            />
+                          </div>
+                          <div>
+                            <div className="event-attendance-row-label">{t('attendanceList')}</div>
+                            <AttendanceControls
+                              eventoMiembroId={row.id}
+                              eventoId={event.id}
+                              current={asistencia}
+                              canManage={canManage}
+                              onSet={setAttendance}
+                              confirmBeforeSet={buildConfirmBeforeAttendance(name)}
+                              t={t}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                            {t('attendanceConfirmation')}: {confirmationLabel(confirmacion, t)}
+                          </span>
+                          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                            {t('attendanceList')}: {attendanceLabel(asistencia, t)}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -411,6 +531,7 @@ function EventDetailModal({
           </div>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 }
@@ -456,6 +577,14 @@ export default function CalendarioClubView({
   getConfirmacionFromRow,
   memberDisplayName,
   readOnly = false,
+  canManage = false,
+  setConfirmation,
+  setAttendance,
+  confirmAllPending,
+  bulkUpdatingEventId = '',
+  buildSelfEventRow,
+  updateSelfConfirmation,
+  savingSelfConfirmationId = null,
 }) {
   const { t, language } = useLanguage();
 
@@ -632,6 +761,14 @@ export default function CalendarioClubView({
           getAsistenciaFromRow={getAsistenciaFromRow}
           getConfirmacionFromRow={getConfirmacionFromRow}
           memberDisplayName={memberDisplayName}
+          canManage={canManage}
+          setConfirmation={setConfirmation}
+          setAttendance={setAttendance}
+          confirmAllPending={confirmAllPending}
+          bulkUpdatingEventId={bulkUpdatingEventId}
+          buildSelfEventRow={buildSelfEventRow}
+          updateSelfConfirmation={updateSelfConfirmation}
+          savingSelfConfirmationId={savingSelfConfirmationId}
           updateConfirmation={updateConfirmation}
           savingConfirmationId={savingConfirmationId}
           canMemberConfirmEvent={canMemberConfirmEvent}
