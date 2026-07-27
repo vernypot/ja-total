@@ -1,14 +1,28 @@
 import { useLanguage } from '../hooks/useLanguage';
-import { NOTICIA_PLACEMENTS, normalizePlacements, togglePlacement } from '../constants/noticiaPlacements';
+import { NOTICIA_PLACEMENTS, normalizePlacements, togglePlacement, clearAllPlacements } from '../constants/noticiaPlacements';
 
 export default function NoticiaPlacementsField({ value, onChange }) {
   const { t } = useLanguage();
-  const selected = normalizePlacements(value);
+  const selected = normalizePlacements(value, { allowEmpty: true });
+  const allCleared = selected.length === 0;
 
   return (
     <fieldset className="noticia-fieldset">
       <legend>{t('noticiasFieldPlacements')}</legend>
       <p className="noticia-fieldset-hint">{t('noticiasFieldPlacementsHint')}</p>
+      <div className="noticia-placements-toolbar">
+        <button
+          type="button"
+          className={`btn btn-sm ${allCleared ? 'btn-secondary' : 'btn-secondary'}`}
+          onClick={() => onChange(clearAllPlacements())}
+          aria-pressed={allCleared}
+        >
+          {t('noticiasPlacementsClearAll')}
+        </button>
+        {allCleared && (
+          <span className="noticia-placements-none-hint">{t('noticiasPlacementsNoneHint')}</span>
+        )}
+      </div>
       <div className="noticia-choice-grid">
         {NOTICIA_PLACEMENTS.map(placement => (
           <label
@@ -32,7 +46,14 @@ export default function NoticiaPlacementsField({ value, onChange }) {
 }
 
 export function NoticiaPlacementBadges({ placements, t }) {
-  const selected = normalizePlacements(placements);
+  const selected = normalizePlacements(placements, { allowEmpty: true });
+  if (!selected.length) {
+    return (
+      <span className="noticia-placement-badge noticia-placement-badge--none">
+        {t('noticiasPlacementNone')}
+      </span>
+    );
+  }
   return (
     <>
       {selected.map(id => {

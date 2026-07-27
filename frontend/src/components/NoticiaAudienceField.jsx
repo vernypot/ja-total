@@ -1,4 +1,5 @@
 import { useLanguage } from '../hooks/useLanguage';
+import { clubDisplayName } from '../utils/club';
 import { NOTICIA_AUDIENCES, normalizeAudience, audienceRequiresClub } from '../constants/noticiaAudience';
 
 export default function NoticiaAudienceField({ value, clubId, clubs = [], onChange }) {
@@ -39,7 +40,7 @@ export default function NoticiaAudienceField({ value, clubId, clubs = [], onChan
           >
             <option value="">{t('noticiasFieldTargetClubPlaceholder')}</option>
             {clubs.map(club => (
-              <option key={club.id} value={club.id}>{club.nombre}</option>
+              <option key={club.id} value={club.id}>{clubDisplayName(club)}</option>
             ))}
           </select>
         </label>

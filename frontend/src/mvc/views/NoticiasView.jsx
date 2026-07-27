@@ -7,6 +7,8 @@ import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
 import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
+import NoticiaFeaturedImagesField from '../../components/NoticiaFeaturedImagesField';
+import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
 import { PageHelpLink } from '../../components/PageHelp';
 import DatePickerInput from '../../components/DatePickerInput';
 import '../../styles/form.css';
@@ -37,6 +39,10 @@ export default function NoticiasView({
   remove,
   formatDate,
   listPagination,
+  featuredImageUploading,
+  pendingFeaturedImageFiles,
+  handleFeaturedImageUpload,
+  handleFeaturedImageRemove,
 }) {
   const { t } = useLanguage();
 
@@ -107,6 +113,16 @@ export default function NoticiasView({
               onChange={value => setForm(f => ({ ...f, contenido: value }))}
               variant="content"
               editorKey={`contenido-${editingId || 'new'}`}
+            />
+            <NoticiaFeaturedImagesField
+              desktopUrl={form.imagen_destacada_url}
+              mobileUrl={form.imagen_destacada_mobile_url}
+              pendingDesktopFile={pendingFeaturedImageFiles.desktop}
+              pendingMobileFile={pendingFeaturedImageFiles.mobile}
+              uploadingVariant={featuredImageUploading}
+              onUpload={handleFeaturedImageUpload}
+              onRemove={handleFeaturedImageRemove}
+              t={t}
             />
             <NoticiaPlacementsField
               value={form.placements}
@@ -219,6 +235,13 @@ export default function NoticiasView({
                       className="noticia-html--title"
                       style={{ fontSize: '16px', display: 'block' }}
                     />
+                    {(item.imagen_destacada_url || item.imagen_destacada_mobile_url) && (
+                      <NoticiaFeaturedImage
+                        desktopUrl={item.imagen_destacada_url}
+                        mobileUrl={item.imagen_destacada_mobile_url}
+                        className="noticia-featured-image--list"
+                      />
+                    )}
                     {item.resumen && (
                       <NoticiaHtml
                         html={item.resumen}

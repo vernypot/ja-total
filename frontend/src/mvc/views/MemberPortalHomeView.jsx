@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import NoticiaHtml from '../../components/NoticiaHtml';
+import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
+import { PortalNewsActions } from '../../components/portal/PortalNewsActions';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
@@ -150,6 +152,9 @@ export default function MemberPortalHomeView({
   getConfirmacionFromRow,
   eventRequiresConfirmation,
   canMemberConfirmEvent,
+  isLeida,
+  markLeida,
+  markingId,
   embedded = false,
 }) {
   const eventCardProps = {
@@ -284,6 +289,10 @@ export default function MemberPortalHomeView({
                           ✕
                         </button>
                       </div>
+                      <NoticiaFeaturedImage
+                        desktopUrl={item.imagen_destacada_url}
+                        mobileUrl={item.imagen_destacada_mobile_url}
+                      />
                       <NoticiaHtml html={item.titulo} variant="title" as="h3" className="noticia-html--title" />
                       {item.resumen && (
                         <NoticiaHtml html={item.resumen} variant="summary" className="home-news-resumen noticia-html--summary" />
@@ -291,13 +300,15 @@ export default function MemberPortalHomeView({
                       {expandedNewsId === item.id && (
                         <NoticiaHtml html={item.contenido} variant="content" className="home-news-contenido noticia-html--content" />
                       )}
-                      <button
-                        type="button"
-                        className="home-link-btn"
-                        onClick={() => setExpandedNewsId(expandedNewsId === item.id ? '' : item.id)}
-                      >
-                        {expandedNewsId === item.id ? t('homeReadLess') : t('homeReadMore')}
-                      </button>
+                      <PortalNewsActions
+                        item={item}
+                        expanded={expandedNewsId === item.id}
+                        isLeida={isLeida(item.id)}
+                        markingId={markingId}
+                        onMarkLeida={markLeida}
+                        t={t}
+                        onToggleExpand={() => setExpandedNewsId(expandedNewsId === item.id ? '' : item.id)}
+                      />
                     </article>
                   ))}
                 </div>

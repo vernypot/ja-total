@@ -190,6 +190,39 @@ export const FORM_SCHEMAS = {
     },
   },
 
+  sorteo: {
+    id: 'sorteo',
+    label: 'Raffle',
+    submitAction: 'saveSorteo',
+    fields: {
+      titulo: [v.required()],
+      tipo: [v.required()],
+      cantidad_ganadores: [v.required(), v.minNumber(1)],
+    },
+    formRules: [
+      values => {
+        if (values.tipo === 'asistencia_evento' && !values.evento_id) {
+          return { field: 'evento_id', message: 'sorteoEventRequired' };
+        }
+        if (values.tipo === 'login_periodo') {
+          if (!values.login_desde_local) {
+            return { field: 'login_desde_local', message: 'sorteoLoginStartRequired' };
+          }
+          if (!values.login_hasta_local) {
+            return { field: 'login_hasta_local', message: 'sorteoLoginEndRequired' };
+          }
+        }
+        if (values.tipo === 'noticia_leida' && !values.noticia_id) {
+          return { field: 'noticia_id', message: 'sorteoNewsRequired' };
+        }
+        if (values.tipo === 'personalizado' && !(values.manualMemberIds || []).length) {
+          return { field: 'manualMemberIds', message: 'sorteoCustomParticipantsRequired' };
+        }
+        return null;
+      },
+    ],
+  },
+
   usuario: {
     id: 'usuario',
     label: 'User',

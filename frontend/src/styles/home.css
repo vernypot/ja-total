@@ -206,6 +206,32 @@
   color: var(--color-link-hover);
 }
 
+.portal-news-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.portal-noticia-leido-btn {
+  margin-left: 0;
+}
+
+.portal-noticias-leido-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.portal-noticia-leido--done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+}
+
 .home-sidebar-stack {
   display: flex;
   flex-direction: column;

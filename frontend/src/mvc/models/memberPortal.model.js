@@ -284,6 +284,23 @@ export async function fetchPortalNoticias(sessionToken, { placements = ['dashboa
   return { data: data || [], error: null };
 }
 
+export async function fetchPortalNoticiasLeidas(sessionToken) {
+  const { data, error } = await sb.rpc('member_portal_noticias_leidas', {
+    p_session_token: sessionToken,
+  });
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+}
+
+export async function markPortalNoticiaLeida(sessionToken, noticiaId) {
+  const { error } = await sb.rpc('member_portal_mark_noticia_leida', {
+    p_session_token: sessionToken,
+    p_noticia_id: noticiaId,
+  });
+  if (error) return { data: false, error };
+  return { data: true, error: null };
+}
+
 function normalizePortalEventRow(row) {
   if (!row || typeof row !== 'object') return row;
 
