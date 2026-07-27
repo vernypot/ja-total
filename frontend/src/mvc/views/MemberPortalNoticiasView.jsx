@@ -14,6 +14,7 @@ export default function MemberPortalNoticiasView({
   isLeida,
   markLeida,
   markingId,
+  speech,
 }) {
   return (
     <div className="portal-page">
@@ -26,10 +27,6 @@ export default function MemberPortalNoticiasView({
       {loading && <p>{t('loading')}</p>}
 
       {!loading && !news.length && <p className="text-muted">{t('homeNoNews')}</p>}
-
-      {!loading && news.length > 0 && (
-        <p className="text-muted portal-noticias-leido-hint">{t('portalNoticiaLeidoHint')}</p>
-      )}
 
       {!loading && news.length > 0 && (
         <div className="home-news-list" style={{ marginTop: '16px' }}>
@@ -56,7 +53,13 @@ export default function MemberPortalNoticiasView({
                 markingId={markingId}
                 onMarkLeida={markLeida}
                 t={t}
-                onToggleExpand={() => setExpandedNewsId(expandedNewsId === item.id ? '' : item.id)}
+                speech={speech}
+                onToggleExpand={() => {
+                  if (expandedNewsId === item.id && speech?.isSpeakingItem(item.id)) {
+                    speech.stop();
+                  }
+                  setExpandedNewsId(expandedNewsId === item.id ? '' : item.id);
+                }}
               />
             </article>
           ))}

@@ -214,13 +214,24 @@
   margin-top: 8px;
 }
 
-.portal-noticia-leido-btn {
+.portal-noticia-listen-btn {
   margin-left: 0;
 }
 
-.portal-noticias-leido-hint {
-  margin: 0 0 12px;
-  font-size: 14px;
+.portal-noticia-listen-btn.btn-outline {
+  background: #fff;
+  color: var(--color-primary, #2563eb);
+  border: 1px solid var(--color-primary, #2563eb);
+}
+
+.portal-noticia-listen-btn.btn-outline:hover {
+  background: #eff6ff;
+}
+
+.portal-news-actions--expanded {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
 .portal-noticia-leido--done {
