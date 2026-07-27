@@ -106,6 +106,12 @@ const ICONS = {
       <path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
   ),
+  chart: (
+    <>
+      <path d="M5 19V9M12 19V5M19 19v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </>
+  ),
   menu: (
     <>
       <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

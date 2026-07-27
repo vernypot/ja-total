@@ -155,6 +155,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
                   <NavLinkItem to="/dashboard/carnets-club" icon="idcard" className="admin-link" active={isActive('/dashboard/carnets-club')}>
                     {t('printClubCarnets')}
                   </NavLinkItem>
+                  <NavLinkItem to="/dashboard/usage-stats" icon="chart" className="admin-link" active={isActive('/dashboard/usage-stats')}>
+                    {t('usageStatsNav')}
+                  </NavLinkItem>
                   {superadmin && (
                     <NavLinkItem to="/dashboard/estructura" icon="globe" className="admin-link" active={isEstructuraActive}>
                       {t('orgStructureAdminLink')}
