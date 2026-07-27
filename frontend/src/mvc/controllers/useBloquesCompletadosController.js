@@ -10,6 +10,7 @@ import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
 import { applyMiembroClaseProgresoEstadoToDraft } from '../../constants/miembroClaseProgresoEstado';
 import * as ClasesModel from '../models/clases.model';
+import * as ClubesModel from '../models/clubes.model';
 import * as EspecialidadesModel from '../models/especialidades.model';
 import * as MiembrosModel from '../models/miembros.model';
 import * as EventosModel from '../models/eventos.model';
@@ -51,6 +52,37 @@ function requiresExistingClaseAssignment(actionType) {
   return actionType === 'requisito' || actionType === 'seccion';
 }
 
+function resolveClubTipoId(activeClub, clubId, clubs) {
+  if (clubId) {
+    const club = clubs.find(c => c.id === clubId);
+    if (club?.tipo_id) return club.tipo_id;
+  }
+  return activeClub?.tipoId || activeClub?.tipo_id || null;
+}
+
+function collectContextTipoIds({ clubId, clubs, members, activeClub }) {
+  const ids = new Set();
+
+  if (clubId) {
+    const club = clubs.find(c => c.id === clubId);
+    if (club?.tipo_id) ids.add(club.tipo_id);
+  } else {
+    for (const member of members) {
+      for (const memberClubId of member.clubIds || []) {
+        const club = clubs.find(c => c.id === memberClubId);
+        if (club?.tipo_id) ids.add(club.tipo_id);
+      }
+    }
+  }
+
+  if (!ids.size) {
+    const fallback = activeClub?.tipoId || activeClub?.tipo_id;
+    if (fallback) ids.add(fallback);
+  }
+
+  return Array.from(ids);
+}
+
 async function buildAssignmentMap(memberIds, claseId) {
   const { data, error } = await ClasesModel.fetchMiembroClaseAssignmentsForMembers(memberIds, claseId);
   if (error) throw error;
@@ -82,8 +114,10 @@ export function useBloquesCompletadosController() {
   const defaultValidatorName = userDisplayName(userData);
 
   const [members, setMembers] = useState([]);
+  const [clubs, setClubs] = useState([]);
   const [clases, setClases] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
+  const [requisitosByEsp, setRequisitosByEsp] = useState({});
   const [tiposClub, setTiposClub] = useState([]);
   const [requisitosByClase, setRequisitosByClase] = useState({});
   const [seccionesByClase, setSeccionesByClase] = useState({});
@@ -97,7 +131,15 @@ export function useBloquesCompletadosController() {
   const [pendingApply, setPendingApply] = useState(null);
   const [validatingApplyBlockId, setValidatingApplyBlockId] = useState(null);
 
-  const clubTipoId = activeClub?.tipo_id || null;
+  const clubTipoId = useMemo(
+    () => resolveClubTipoId(activeClub, clubId, clubs),
+    [activeClub, clubId, clubs],
+  );
+
+  const contextTipoIds = useMemo(
+    () => collectContextTipoIds({ clubId, clubs, members, activeClub }),
+    [clubId, clubs, members, activeClub],
+  );
 
   const filteredMembers = useMemo(() => {
     return filterBySearch(members, searchQuery, m => [
@@ -124,9 +166,14 @@ export function useBloquesCompletadosController() {
   }, [clases, clubTipoId, tiposClub]);
 
   const scopedEspecialidades = useMemo(() => {
-    if (!clubTipoId) return especialidades;
-    return EspecialidadesModel.filterEspecialidadesByTipo(especialidades, clubTipoId, tiposClub);
-  }, [especialidades, clubTipoId, tiposClub]);
+    if (!contextTipoIds.length) return especialidades;
+    return EspecialidadesModel.filterEspecialidadesByTipos(especialidades, contextTipoIds, tiposClub);
+  }, [especialidades, contextTipoIds, tiposClub]);
+
+  const assignableEspecialidades = useMemo(
+    () => EspecialidadesModel.filterAssignableEspecialidades(scopedEspecialidades, requisitosByEsp),
+    [scopedEspecialidades, requisitosByEsp],
+  );
 
   const assignedMemberIds = useMemo(() => {
     const ids = new Set();
@@ -168,6 +215,7 @@ export function useBloquesCompletadosController() {
 
     const [
       { data: memberRows, error: membersError },
+      { data: clubsRows, error: clubsError },
       { data: clasesRows, error: clasesError },
       { data: tiposRows },
       { data: espRows, error: espError },
@@ -176,6 +224,7 @@ export function useBloquesCompletadosController() {
         clubFilter: clubId || undefined,
         showInactive: false,
       }),
+      ClubesModel.fetchClubesByIglesia(effectiveIglesiaId),
       ClasesModel.fetchClasesProgresivas({ showInactive: false }),
       ClasesModel.fetchTiposClub(),
       EspecialidadesModel.fetchEspecialidadesCatalogSorted({ showInactive: false }),
@@ -183,6 +232,11 @@ export function useBloquesCompletadosController() {
 
     if (membersError) {
       setError(membersError.message);
+      setLoading(false);
+      return;
+    }
+    if (clubsError) {
+      setError(clubsError.message);
       setLoading(false);
       return;
     }
@@ -198,9 +252,28 @@ export function useBloquesCompletadosController() {
     }
 
     setMembers(memberRows || []);
+    setClubs(clubsRows || []);
     setClases(clasesRows || []);
     setTiposClub(tiposRows || []);
-    setEspecialidades(espRows?.data || []);
+
+    const espData = espRows || [];
+    setEspecialidades(espData);
+
+    const espIds = espData.map(e => e.id);
+    if (espIds.length) {
+      const { data: reqs } = await EspecialidadesModel.fetchRequisitosForEspecialidades(espIds, {
+        showInactive: true,
+      });
+      const map = {};
+      for (const r of reqs || []) {
+        if (!map[r.especialidad_id]) map[r.especialidad_id] = [];
+        map[r.especialidad_id].push(r);
+      }
+      setRequisitosByEsp(map);
+    } else {
+      setRequisitosByEsp({});
+    }
+
     setLoading(false);
   }
 
@@ -271,6 +344,9 @@ export function useBloquesCompletadosController() {
     }
     if (block.actionType === 'especialidad') {
       if (!block.especialidadId) return t('completedBlocksSelectEspecialidad');
+      if (!assignableEspecialidades.some(e => e.id === block.especialidadId)) {
+        return t('noAssignableHonors');
+      }
       return null;
     }
     if (!block.claseId) return t('completedBlocksSelectClase');
@@ -285,7 +361,8 @@ export function useBloquesCompletadosController() {
       return t('completedBlocksActionPrintCarnet');
     }
     if (block.actionType === 'especialidad') {
-      const esp = scopedEspecialidades.find(e => e.id === block.especialidadId);
+      const esp = assignableEspecialidades.find(e => e.id === block.especialidadId)
+        || scopedEspecialidades.find(e => e.id === block.especialidadId);
       return esp?.nombre || t('completedBlocksActionEspecialidad');
     }
     const clase = scopedClases.find(c => c.id === block.claseId);
@@ -553,6 +630,7 @@ export function useBloquesCompletadosController() {
     applyError,
     scopedClases,
     scopedEspecialidades,
+    assignableEspecialidades,
     getRequisitosForBlock,
     getSeccionesForBlock,
     membersById,

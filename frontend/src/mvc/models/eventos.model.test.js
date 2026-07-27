@@ -16,6 +16,7 @@ import {
   isEventoActive,
   isEventoEnded,
   isEventoIncludedInMemberStats,
+  isEventoExcludedFromAttendance,
   memberAttendedEvent,
   shouldCorrectLateCheckin,
   wasMemberCheckedInToEvent,
@@ -49,6 +50,12 @@ describe('isEventoIncludedInMemberStats', () => {
   it('excludes cancelled and inactive events', () => {
     expect(isEventoIncludedInMemberStats({ estado: 'cancelado' })).toBe(false);
     expect(isEventoIncludedInMemberStats({ estado: 'inactivo' })).toBe(false);
+  });
+
+  it('excludes events removed from attendance registry', () => {
+    expect(isEventoIncludedInMemberStats({ estado: 'activo', excluir_registro_asistencia: true })).toBe(false);
+    expect(isEventoExcludedFromAttendance({ excluir_registro_asistencia: true })).toBe(true);
+    expect(isEventoExcludedFromAttendance({ excluir_registro_asistencia: false })).toBe(false);
   });
 });
 
@@ -86,6 +93,24 @@ describe('computeMemberAttendanceStats', () => {
     expect(stats.pastAssigned).toBe(1);
     expect(stats.attended).toBe(1);
     expect(stats.onTime).toBe(1);
+  });
+
+  it('skips events excluded from attendance registry', () => {
+    const stats = computeMemberAttendanceStats([
+      {
+        eventos: {
+          fecha: '2020-01-01',
+          hora: '19:00:00',
+          estado: 'finalizado',
+          excluir_registro_asistencia: true,
+          clubes: { iglesias: { timezone: 'America/Bogota' } },
+        },
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+    ], helpers);
+
+    expect(stats.assigned).toBe(0);
+    expect(stats.attended).toBe(0);
   });
 });
 
@@ -283,6 +308,24 @@ describe('shouldCorrectLateCheckin', () => {
   });
 });
 
+describe('event attendance merge helpers', () => {
+  const events = [
+    { id: 'a', club_id: 'club-1', fecha: '2026-07-13', hora: '09:00:00', estado: 'activo', nombre: 'Morning block' },
+    { id: 'b', club_id: 'club-1', fecha: '2026-07-13', hora: '14:00:00', estado: 'activo', nombre: 'Afternoon block' },
+    { id: 'c', club_id: 'club-1', fecha: '2026-07-14', hora: '10:00:00', estado: 'activo', nombre: 'Other day' },
+    { id: 'd', club_id: 'club-1', fecha: '2026-07-13', hora: '16:00:00', estado: 'activo', nombre: 'Merged', asistencia_grupo_id: 'grupo-1' },
+    { id: 'e', club_id: 'club-1', fecha: '2026-07-13', hora: '17:00:00', estado: 'activo', nombre: 'Merged 2', asistencia_grupo_id: 'grupo-1' },
+  ];
+
+  it('finds same-day merge targets across grouped and ungrouped events', async () => {
+    const { getSameDateEventoMergeTargets, getGrupoSiblingEventos } = await import('./eventos.model');
+    const anchor = events[0];
+    expect(getSameDateEventoMergeTargets(events, anchor).map(e => e.id)).toEqual(['b', 'd', 'e']);
+    expect(getGrupoSiblingEventos(events, events[3]).map(e => e.id)).toEqual(['e']);
+    expect(getGrupoSiblingEventos(events, events[3]).length).toBe(1);
+  });
+});
+
 describe('computeCheckinAttendanceEstado', () => {
   const evento = { fecha: '2026-07-13', hora: '19:00:00' };
 
@@ -294,18 +337,37 @@ describe('computeCheckinAttendanceEstado', () => {
     )).toBe('a_tiempo');
   });
 
-  it('marks check-in within 15 minutes after start as on time', () => {
+  it('marks check-in within 3 minutes after scheduled start as on time', () => {
     expect(computeCheckinAttendanceEstado(
-      new Date('2026-07-14T00:10:00.000Z'),
+      new Date('2026-07-14T00:02:00.000Z'),
       evento,
       { timeZone: 'America/Bogota' }
     )).toBe('a_tiempo');
   });
 
-  it('marks check-in more than 15 minutes after start as late', () => {
+  it('marks check-in more than 3 minutes after scheduled start as late', () => {
     expect(computeCheckinAttendanceEstado(
-      new Date('2026-07-14T00:20:00.000Z'),
+      new Date('2026-07-14T00:05:00.000Z'),
       evento,
+      { timeZone: 'America/Bogota' }
+    )).toBe('tarde');
+  });
+
+  it('uses actividad_inicio_at when set', () => {
+    const withActivityStart = {
+      ...evento,
+      actividad_inicio_at: '2026-07-14T01:00:00.000Z',
+    };
+
+    expect(computeCheckinAttendanceEstado(
+      new Date('2026-07-14T01:02:00.000Z'),
+      withActivityStart,
+      { timeZone: 'America/Bogota' }
+    )).toBe('a_tiempo');
+
+    expect(computeCheckinAttendanceEstado(
+      new Date('2026-07-14T01:04:00.000Z'),
+      withActivityStart,
       { timeZone: 'America/Bogota' }
     )).toBe('tarde');
   });

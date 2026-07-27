@@ -93,7 +93,14 @@ function EventStatusBadge({ estado, t }) {
   );
 }
 
-function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors = {}, t }) {
+function EventDetailsFields({
+  eventForm,
+  setEventForm,
+  tiposEvento,
+  fieldErrors = {},
+  t,
+  showActivityStart = false,
+}) {
   return (
     <div className="event-form-fields">
       <div>
@@ -143,6 +150,23 @@ function EventDetailsFields({ eventForm, setEventForm, tiposEvento, fieldErrors 
           aria-invalid={Boolean(fieldErrors.hora)}
         />
       </FormField>
+      {showActivityStart && (
+        <div style={{ gridColumn: '1 / -1' }}>
+          <FormField label={t('eventActivityStartField')} htmlFor="event-actividad-inicio">
+            <input
+              id="event-actividad-inicio"
+              type="datetime-local"
+              value={eventForm.actividad_inicio_local || ''}
+              onChange={e => setEventForm({ ...eventForm, actividad_inicio_local: e.target.value })}
+              className="form-input"
+              style={{ margin: 0 }}
+            />
+            <p className="text-muted" style={{ margin: '6px 0 0', fontSize: '13px' }}>
+              {t('eventActivityStartFieldHint')}
+            </p>
+          </FormField>
+        </div>
+      )}
       <div style={{ gridColumn: '1 / -1' }}>
         <FormField label={t('eventPlace')} htmlFor="event-lugar" error={fieldErrors.lugar} required>
           <input
@@ -248,11 +272,81 @@ function EventConfirmationAndAttendeesFields({
   );
 }
 
+function EventMergeAttendanceModal({
+  mergeAnchorEvent,
+  mergeCandidates,
+  mergeTargetEventId,
+  setMergeTargetEventId,
+  mergingAttendance,
+  confirmMergeAttendance,
+  closeMergeAttendance,
+  formatEventTime,
+  t,
+}) {
+  if (!mergeAnchorEvent) return null;
+
+  return (
+    <div className="event-merge-modal-backdrop">
+      <div className="event-merge-modal card">
+        <h3 style={{ marginTop: 0 }}>{t('eventMergeTitle')}</h3>
+        <p className="text-muted" style={{ marginTop: 0 }}>{t('eventMergeHint')}</p>
+
+        <div className="event-merge-modal__anchor">
+          <span className="event-merge-modal__anchor-label">{t('eventMergeThisEvent')}</span>
+          <strong>{mergeAnchorEvent.nombre || t('eventUntitled')}</strong>
+          <span className="text-muted" style={{ marginLeft: '8px' }}>
+            {mergeAnchorEvent.fecha} · {formatEventTime(mergeAnchorEvent.hora)}
+          </span>
+        </div>
+
+        {mergeCandidates.length === 0 ? (
+          <p className="text-muted">{t('eventMergeNoTargets')}</p>
+        ) : (
+          <div className="event-merge-modal__list">
+            <p className="event-merge-modal__list-label">{t('eventMergeSelectTargetLabel')}</p>
+            {mergeCandidates.map(candidate => (
+              <label key={candidate.id} className="event-merge-modal__option">
+                <input
+                  type="radio"
+                  name="event-merge-target"
+                  checked={mergeTargetEventId === candidate.id}
+                  onChange={() => setMergeTargetEventId(candidate.id)}
+                />
+                <span>
+                  <strong>{candidate.nombre || t('eventUntitled')}</strong>
+                  <span className="text-muted" style={{ marginLeft: '8px' }}>
+                    {formatEventTime(candidate.hora)}
+                    {candidate.lugar ? ` · ${candidate.lugar}` : ''}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="event-merge-modal__actions">
+          <EventActionButton
+            tone="success"
+            onClick={confirmMergeAttendance}
+            disabled={!mergeTargetEventId || mergingAttendance || mergeCandidates.length === 0}
+          >
+            {mergingAttendance ? t('loading') : t('eventMergeConfirm')}
+          </EventActionButton>
+          <EventActionButton tone="muted" onClick={closeMergeAttendance} disabled={mergingAttendance}>
+            {t('cancel')}
+          </EventActionButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EventosView({
   clubs,
   clubId,
   activeClubData,
   events,
+  allClubEvents,
   tiposEvento,
   clubMembers,
   expandedEventId,
@@ -306,7 +400,9 @@ export default function EventosView({
   openManualAddMember,
   closeManualAddMember,
   saveManualAddMember,
-  startEvent,
+  initializeEvent,
+  scanAttendees,
+  initializingEventId,
   isEventoActive,
   isEventoEnded,
   sortEventAttendanceRows,
@@ -319,6 +415,22 @@ export default function EventosView({
   getTipoEventoNombre,
   memberDisplayName,
   formatEventTime,
+  formatEventTimestamp,
+  mergeAnchorEvent,
+  mergeCandidates,
+  mergeTargetEventId,
+  setMergeTargetEventId,
+  mergingAttendance,
+  openMergeAttendance,
+  closeMergeAttendance,
+  confirmMergeAttendance,
+  unmergeAttendance,
+  excludeFromAttendanceRegistry,
+  restoreToAttendanceRegistry,
+  canCombineEventoAttendance,
+  getGrupoSiblingEventos,
+  isEventoExcludedFromAttendance,
+  formatMergedEventoLabels,
   listPagination,
 }) {
   const { t } = useLanguage();
@@ -386,6 +498,26 @@ export default function EventosView({
       highlight: evento.nombre || t('eventUntitled'),
       confirmLabel: t('endEvent'),
       onConfirm: async () => { await endEvent(evento.id); },
+    });
+  }
+
+  function confirmExcludeFromAttendance(evento) {
+    askConfirm({
+      title: t('confirmExcludeFromAttendanceTitle'),
+      message: t('confirmExcludeFromAttendanceMessage'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('eventExcludeFromAttendanceAction'),
+      onConfirm: async () => { await excludeFromAttendanceRegistry(evento.id); },
+    });
+  }
+
+  function confirmRestoreToAttendance(evento) {
+    askConfirm({
+      title: t('confirmRestoreToAttendanceTitle'),
+      message: t('confirmRestoreToAttendanceMessage'),
+      highlight: evento.nombre || t('eventUntitled'),
+      confirmLabel: t('eventRestoreToAttendanceAction'),
+      onConfirm: async () => { await restoreToAttendanceRegistry(evento.id); },
     });
   }
 
@@ -536,6 +668,9 @@ export default function EventosView({
                 const assignedMemberIds = new Set(rows.map(row => row.miembro_id));
                 const availableManualAddMembers = clubMembers.filter(m => !assignedMemberIds.has(m.id));
                 const showingManualAdd = manualAddEventId === evento.id;
+                const grupoSiblings = getGrupoSiblingEventos(allClubEvents, evento);
+                const isExcluded = isEventoExcludedFromAttendance(evento);
+                const canCombineEvent = canManage && isActive && !isExcluded && canCombineEventoAttendance(allClubEvents, evento);
 
                 return (
                   <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : isEnded ? 0.92 : 0.85 }}>
@@ -563,7 +698,17 @@ export default function EventosView({
                             {tipoNombre && <> · {tipoNombre}</>}
                           </div>
                           <EventDescriptionToggle description={evento.descripcion} />
-                          {needsConfirmation && (
+                          {evento.asistencia_grupo_id && grupoSiblings.length > 0 && !isExcluded && (
+                            <div className="event-merge-badge">
+                              {t('eventMergedAttendanceBadge')}: {formatMergedEventoLabels([evento, ...grupoSiblings])}
+                            </div>
+                          )}
+                          {isExcluded && (
+                            <div className="event-excluded-badge">
+                              {t('eventExcludedFromAttendanceBadge')}
+                            </div>
+                          )}
+                          {needsConfirmation && !isExcluded && (
                             <div style={{ fontSize: '12px', color: '#854d0e', marginTop: '4px' }}>
                               {t('eventRequiresConfirmationBadge')}
                               {assignments[evento.id] && rows.length > 0 && (
@@ -571,7 +716,7 @@ export default function EventosView({
                               )}
                             </div>
                           )}
-                          {!needsConfirmation && (
+                          {!needsConfirmation && !isExcluded && (
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {rows.length > 0
                                 ? t('attendanceSummary')
@@ -580,7 +725,12 @@ export default function EventosView({
                                 : t('eventQrAttendanceHint')}
                             </div>
                           )}
-                          {needsConfirmation && assignments[evento.id] && rows.length > 0 && (
+                          {isExcluded && (
+                            <div style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>
+                              {t('eventExcludedFromAttendanceHint')}
+                            </div>
+                          )}
+                          {needsConfirmation && assignments[evento.id] && rows.length > 0 && !isExcluded && (
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                               {t('attendanceSummary')
                                 .replace('{assigned}', String(rows.length))
@@ -591,12 +741,52 @@ export default function EventosView({
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
                           {canManage && (
                             <>
-                              {isActive && (
+                              {isActive && !isExcluded && (
+                                <>
+                                  <EventActionButton
+                                    tone="primary"
+                                    onClick={() => initializeEvent(evento.id)}
+                                    disabled={Boolean(evento.actividad_inicio_at || evento.evento_asistencia_grupo?.actividad_inicio_at) || initializingEventId === evento.id}
+                                  >
+                                    ▶ {initializingEventId === evento.id ? t('loading') : t('initializeEvent')}
+                                  </EventActionButton>
+                                  <EventActionButton
+                                    tone="success"
+                                    onClick={() => scanAttendees(evento.id)}
+                                  >
+                                    ▶ {t('scanAttendees')}
+                                  </EventActionButton>
+                                  {canCombineEvent && (
+                                    <EventActionButton
+                                      tone="info"
+                                      onClick={() => openMergeAttendance(evento.id)}
+                                    >
+                                      🔗 {t('eventMergeAction')}
+                                    </EventActionButton>
+                                  )}
+                                  {evento.asistencia_grupo_id && (
+                                    <EventActionButton
+                                      tone="warning"
+                                      onClick={() => unmergeAttendance(evento.id)}
+                                    >
+                                      {t('eventUnmergeAction')}
+                                    </EventActionButton>
+                                  )}
+                                </>
+                              )}
+                              {isExcluded ? (
                                 <EventActionButton
                                   tone="success"
-                                  onClick={() => startEvent(evento.id)}
+                                  onClick={() => confirmRestoreToAttendance(evento)}
                                 >
-                                  ▶ {t('startEvent')}
+                                  ↩ {t('eventRestoreToAttendanceAction')}
+                                </EventActionButton>
+                              ) : (
+                                <EventActionButton
+                                  tone="warning"
+                                  onClick={() => confirmExcludeFromAttendance(evento)}
+                                >
+                                  ⊘ {t('eventExcludeFromAttendanceAction')}
                                 </EventActionButton>
                               )}
                               <EventActionButton
@@ -662,6 +852,7 @@ export default function EventosView({
                               tiposEvento={tiposEvento}
                               fieldErrors={fieldErrors}
                               t={t}
+                              showActivityStart
                             />
                           </FormSection>
 
@@ -719,6 +910,25 @@ export default function EventosView({
 
                     {expanded && (
                       <div className="event-attendance-panel">
+                        {isExcluded ? (
+                          <div className="event-excluded-panel">
+                            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+                              {t('eventExcludedFromAttendanceBadge')}
+                            </h4>
+                            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400e' }}>
+                              {t('eventExcludedFromAttendanceHint')}
+                            </p>
+                            {canManage && (
+                              <EventActionButton
+                                tone="success"
+                                onClick={() => confirmRestoreToAttendance(evento)}
+                              >
+                                ↩ {t('eventRestoreToAttendanceAction')}
+                              </EventActionButton>
+                            )}
+                          </div>
+                        ) : (
+                          <>
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>
                           {canManage ? t('manageAttendance') : t('attendanceList')}
                         </h4>
@@ -843,11 +1053,44 @@ export default function EventosView({
                           </div>
                         )}
                         {canManage && isActive && (
-                          <div className="event-start-scan-cta">
-                            <p>{t('startEventScanHint')}</p>
-                            <EventActionButton tone="success" onClick={() => startEvent(evento.id)}>
-                              ▶ {t('startEvent')}
-                            </EventActionButton>
+                          <div className="event-checkin-actions event-checkin-actions--inline">
+                            <div className="event-start-scan-cta">
+                              <p>{t('initializeEventHint')}</p>
+                              <EventActionButton
+                                tone="primary"
+                                onClick={() => initializeEvent(evento.id)}
+                                disabled={Boolean(evento.actividad_inicio_at || evento.evento_asistencia_grupo?.actividad_inicio_at) || initializingEventId === evento.id}
+                              >
+                                ▶ {initializingEventId === evento.id ? t('loading') : t('initializeEvent')}
+                              </EventActionButton>
+                              {evento.actividad_inicio_at && (
+                                <p className="text-muted" style={{ margin: '8px 0 0', fontSize: '13px' }}>
+                                  {t('eventInitializedAt')}: {formatEventTimestamp(evento.actividad_inicio_at)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="event-start-scan-cta">
+                              <p>{t('scanAttendeesHint')}</p>
+                              <EventActionButton tone="success" onClick={() => scanAttendees(evento.id)}>
+                                ▶ {t('scanAttendees')}
+                              </EventActionButton>
+                            </div>
+                            {canCombineEvent && (
+                              <div className="event-start-scan-cta">
+                                <p>{t('eventMergeHint')}</p>
+                                <EventActionButton tone="info" onClick={() => openMergeAttendance(evento.id)}>
+                                  🔗 {t('eventMergeAction')}
+                                </EventActionButton>
+                              </div>
+                            )}
+                            {evento.asistencia_grupo_id && (
+                              <div className="event-start-scan-cta">
+                                <p>{t('eventMergedAttendanceHint')}</p>
+                                <EventActionButton tone="warning" onClick={() => unmergeAttendance(evento.id)}>
+                                  {t('eventUnmergeAction')}
+                                </EventActionButton>
+                              </div>
+                            )}
                           </div>
                         )}
                         {rows.length === 0 ? (
@@ -910,6 +1153,8 @@ export default function EventosView({
                             );})}
                           </div>
                         )}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -920,6 +1165,17 @@ export default function EventosView({
           {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
         </div>
       )}
+      <EventMergeAttendanceModal
+        mergeAnchorEvent={mergeAnchorEvent}
+        mergeCandidates={mergeCandidates}
+        mergeTargetEventId={mergeTargetEventId}
+        setMergeTargetEventId={setMergeTargetEventId}
+        mergingAttendance={mergingAttendance}
+        confirmMergeAttendance={confirmMergeAttendance}
+        closeMergeAttendance={closeMergeAttendance}
+        formatEventTime={formatEventTime}
+        t={t}
+      />
       {confirmDialog}
     </div>
   );

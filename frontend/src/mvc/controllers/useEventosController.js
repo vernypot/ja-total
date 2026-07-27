@@ -24,6 +24,7 @@ const emptyForm = () => ({
   requiere_confirmacion: true,
   memberAssignmentMode: 'all',
   selectedMemberIds: [],
+  actividad_inicio_local: '',
 });
 
 export function useEventosController() {
@@ -62,6 +63,10 @@ export function useEventosController() {
   const [manualAddForm, setManualAddForm] = useState({ miembroId: '', justificacion: '' });
   const [manualAddFieldErrors, setManualAddFieldErrors] = useState({});
   const [savingManualAdd, setSavingManualAdd] = useState(false);
+  const [initializingEventId, setInitializingEventId] = useState('');
+  const [mergeAnchorEventId, setMergeAnchorEventId] = useState('');
+  const [mergeTargetEventId, setMergeTargetEventId] = useState('');
+  const [mergingAttendance, setMergingAttendance] = useState(false);
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -225,6 +230,10 @@ export function useEventosController() {
       requiere_confirmacion: EventosModel.eventRequiresConfirmation(evento),
       memberAssignmentMode: allAssigned || assignedIds.length === 0 ? 'all' : 'specific',
       selectedMemberIds: assignedIds.length ? assignedIds : allMemberIds,
+      actividad_inicio_local: EventosModel.isoToDatetimeLocalValue(
+        evento.actividad_inicio_at,
+        EventosModel.getEventChurchTimezone(evento) || churchTz.timeZone
+      ),
     });
   }
 
@@ -259,6 +268,12 @@ export function useEventosController() {
         descripcion: eventForm.descripcion,
         tipoEventoId: eventForm.tipo_evento_id || null,
         requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
+        actividadInicioAt: eventForm.actividad_inicio_local
+          ? EventosModel.datetimeLocalValueToIso(
+            eventForm.actividad_inicio_local,
+            EventosModel.getEventChurchTimezone(events.find(e => e.id === editingEventId)) || churchTz.timeZone
+          )
+          : null,
       });
 
       if (saveError) {
@@ -443,10 +458,159 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
-  function startEvent(eventoId) {
+  async function initializeEvent(eventoId) {
     if (!canManage || !eventoId) return;
+    setError('');
+
+    setInitializingEventId(eventoId);
+    const { error: initError } = await EventosModel.setEventoActividadInicio(eventoId);
+    setInitializingEventId('');
+
+    if (initError) {
+      setError('Error initializing event: ' + initError.message);
+      return;
+    }
+
+    await loadEvents();
+  }
+
+  async function scanAttendees(eventoId) {
+    if (!canManage || !eventoId) return;
+    setError('');
+
+    const { error: scanError } = await EventosModel.startEventoEscaneo(eventoId);
+    if (scanError) {
+      setError('Error starting scan session: ' + scanError.message);
+      return;
+    }
+
     navigate(`/dashboard/checkin?evento=${encodeURIComponent(eventoId)}&started=1`);
   }
+
+  function openMergeAttendance(eventoId) {
+    if (!canManage) return;
+    const evento = filteredEvents.find(e => e.id === eventoId);
+    if (!evento) return;
+    const targets = EventosModel.getSameDateEventoMergeTargets(filteredEvents, evento);
+    setMergeAnchorEventId(eventoId);
+    setMergeTargetEventId(targets[0]?.id || '');
+    setError('');
+  }
+
+  function closeMergeAttendance() {
+    setMergeAnchorEventId('');
+    setMergeTargetEventId('');
+  }
+
+  function mapMergeAttendanceError(message) {
+    const text = String(message || '');
+    if (text.includes('same club and date')) return t('eventMergeSameDateRequired');
+    if (text.includes('different attendance groups')) return t('eventMergeDifferentGroups');
+    if (text.includes('at least two events')) return t('eventMergeSelectTwo');
+    if (text.includes('admin_create_evento_asistencia_grupo') || text.includes('does not exist')) {
+      return t('eventMergeSchemaMissing');
+    }
+    return text || t('eventMergeFailed');
+  }
+
+  async function confirmMergeAttendance() {
+    if (!canManage || !mergeAnchorEventId || !mergeTargetEventId) {
+      setError(t('eventMergeSelectTarget'));
+      return;
+    }
+    if (mergeAnchorEventId === mergeTargetEventId) {
+      setError(t('eventMergeSelectTarget'));
+      return;
+    }
+
+    setMergingAttendance(true);
+    setError('');
+
+    const anchor = filteredEvents.find(e => e.id === mergeAnchorEventId);
+    const target = filteredEvents.find(e => e.id === mergeTargetEventId);
+    const ids = new Set([mergeAnchorEventId, mergeTargetEventId]);
+    if (anchor?.asistencia_grupo_id) {
+      for (const sibling of EventosModel.getGrupoSiblingEventos(filteredEvents, anchor)) {
+        ids.add(sibling.id);
+      }
+    }
+    if (target?.asistencia_grupo_id) {
+      for (const sibling of EventosModel.getGrupoSiblingEventos(filteredEvents, target)) {
+        ids.add(sibling.id);
+      }
+    }
+
+    const { error: mergeError } = await EventosModel.createEventoAsistenciaGrupo([...ids]);
+    setMergingAttendance(false);
+
+    if (mergeError) {
+      setError(mapMergeAttendanceError(mergeError.message));
+      return;
+    }
+
+    closeMergeAttendance();
+    await loadEvents();
+  }
+
+  async function unmergeAttendance(eventoId) {
+    if (!canManage || !eventoId) return;
+    setError('');
+
+    const { error: dissolveError } = await EventosModel.dissolveEventoAsistenciaGrupo(eventoId);
+    if (dissolveError) {
+      setError(mapMergeAttendanceError(dissolveError.message));
+      return;
+    }
+
+    await loadEvents();
+  }
+
+  function mapExcludeAttendanceError(message) {
+    const text = String(message || '');
+    if (text.includes('EVENTO_EXCLUIR_ASISTENCIA.sql')) return t('eventExcludeAttendanceSchemaMissing');
+    return text || t('eventExcludeAttendanceFailed');
+  }
+
+  async function excludeFromAttendanceRegistry(eventoId) {
+    if (!canManage || !eventoId) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoExcluirRegistroAsistencia(eventoId, true);
+    if (saveError) {
+      setError(mapExcludeAttendanceError(saveError.message));
+      return;
+    }
+
+    await loadEvents();
+  }
+
+  async function restoreToAttendanceRegistry(eventoId) {
+    if (!canManage || !eventoId) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoExcluirRegistroAsistencia(eventoId, false);
+    if (saveError) {
+      setError(mapExcludeAttendanceError(saveError.message));
+      return;
+    }
+
+    await loadEvents();
+  }
+
+  const mergeAnchorEvent = useMemo(
+    () => filteredEvents.find(e => e.id === mergeAnchorEventId) || null,
+    [filteredEvents, mergeAnchorEventId]
+  );
+
+  const mergeCandidates = useMemo(() => {
+    if (!mergeAnchorEvent) return [];
+    return EventosModel.getSameDateEventoMergeTargets(filteredEvents, mergeAnchorEvent);
+  }, [filteredEvents, mergeAnchorEvent]);
+
+  const grupoIndex = useMemo(
+    () => EventosModel.groupEventsByAsistenciaGrupo(filteredEvents),
+    [filteredEvents]
+  );
 
   async function openAttendeeEditor(eventoId) {
     if (!canManage) return;
@@ -646,11 +810,20 @@ export function useEventosController() {
     return EventosModel.formatEventLocalTime(hora, language);
   }
 
+  function formatEventTimestamp(iso) {
+    return EventosModel.formatEventTimestamp(
+      iso,
+      language,
+      churchTz.timeZone
+    );
+  }
+
   return {
     clubs,
     clubId,
     activeClubData,
     events: paginatedEvents,
+    allClubEvents: filteredEvents,
     listPagination,
     tiposEvento,
     clubMembers,
@@ -707,7 +880,27 @@ export function useEventosController() {
     openManualAddMember,
     closeManualAddMember,
     saveManualAddMember,
-    startEvent,
+    initializeEvent,
+    scanAttendees,
+    initializingEventId,
+    mergeAnchorEventId,
+    mergeAnchorEvent,
+    mergeCandidates,
+    mergeTargetEventId,
+    setMergeTargetEventId,
+    mergingAttendance,
+    openMergeAttendance,
+    closeMergeAttendance,
+    confirmMergeAttendance,
+    unmergeAttendance,
+    excludeFromAttendanceRegistry,
+    restoreToAttendanceRegistry,
+    canCombineEventoAttendance: EventosModel.canCombineEventoAttendance,
+    getGrupoSiblingEventos: EventosModel.getGrupoSiblingEventos,
+    isEventoExcludedFromAttendance: EventosModel.isEventoExcludedFromAttendance,
+    formatMergedEventoLabels: (items) => EventosModel.formatMergedEventoLabels(items, {
+      untitledLabel: t('eventUntitled'),
+    }),
     sortEventAttendanceRows: EventosModel.sortEventAttendanceRows,
     isEventoActive: EventosModel.isEventoActive,
     isEventoEnded: EventosModel.isEventoEnded,
@@ -720,5 +913,6 @@ export function useEventosController() {
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     memberDisplayName: EventosModel.memberDisplayName,
     formatEventTime,
+    formatEventTimestamp,
   };
 }

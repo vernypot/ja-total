@@ -3,9 +3,12 @@ import { memberDisplayName as resolveMemberDisplayName, MIEMBRO_NAME_FIELDS } fr
 import {
   compareEventsByLocalDateTime,
   computeCheckinAttendanceEstado,
+  CHECKIN_ON_TIME_GRACE_MINUTES,
   EVENT_TIMEZONE,
   formatEventLocalDate,
   formatEventLocalTime,
+  formatEventTimestamp,
+  getActivityStartInstant,
   getEventChurchTimezone,
   getEventStartInstant,
   getLocalTodayIso,
@@ -13,18 +16,25 @@ import {
   isEventInPast,
   isEventToday,
   isEventOpenForMemberConfirmation,
+  isoToDatetimeLocalValue,
+  datetimeLocalValueToIso,
   toLocalDateKey,
 } from '../../utils/eventTimezone';
 
 export {
+  CHECKIN_ON_TIME_GRACE_MINUTES,
   EVENT_TIMEZONE,
   compareEventsByLocalDateTime,
   computeCheckinAttendanceEstado,
   formatEventLocalDate,
   formatEventLocalTime,
+  formatEventTimestamp,
+  getActivityStartInstant,
   getEventChurchTimezone,
   getEventStartInstant,
   getLocalTodayIso,
+  isoToDatetimeLocalValue,
+  datetimeLocalValueToIso,
   isEventInFuture,
   isEventInPast,
   isEventToday,
@@ -47,8 +57,12 @@ export function isEventoEnded(evento) {
   return evento?.estado === EVENTO_ESTADO.FINALIZADO;
 }
 
+export function isEventoExcludedFromAttendance(evento) {
+  return Boolean(evento?.excluir_registro_asistencia);
+}
+
 export function isEventoIncludedInMemberStats(evento) {
-  if (!evento) return false;
+  if (!evento || isEventoExcludedFromAttendance(evento)) return false;
   const estado = evento.estado || EVENTO_ESTADO.ACTIVO;
   if (estado === EVENTO_ESTADO.CANCELADO || estado === EVENTO_ESTADO.INACTIVO) return false;
   return true;
@@ -69,7 +83,10 @@ function isMissingColumnError(error, column) {
 }
 
 const EVENTO_SELECTS = [
-  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
   'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre),tipos_evento(id,nombre)',
@@ -93,7 +110,7 @@ async function queryEventos(buildQuery) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await buildQuery(select);
     if (!error) return { data: data || [], error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone')) {
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: [], error };
@@ -115,7 +132,7 @@ export async function fetchEventoById(id) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await sb.from('eventos').select(select).eq('id', id).maybeSingle();
     if (!error) return { data, error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone')) {
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: null, error };
@@ -315,6 +332,7 @@ export async function updateEvento(eventoId, {
   descripcion,
   tipoEventoId,
   requiereConfirmacion,
+  actividadInicioAt,
 }) {
   const payload = { updated_at: new Date().toISOString() };
   if (nombre !== undefined) payload.nombre = nombre?.trim() || null;
@@ -324,6 +342,7 @@ export async function updateEvento(eventoId, {
   if (descripcion !== undefined) payload.descripcion = descripcion?.trim() || null;
   if (tipoEventoId !== undefined) payload.tipo_evento_id = tipoEventoId || null;
   if (requiereConfirmacion !== undefined) payload.requiere_confirmacion = Boolean(requiereConfirmacion);
+  if (actividadInicioAt !== undefined) payload.actividad_inicio_at = actividadInicioAt;
 
   const direct = await sb.from('eventos').update(payload).eq('id', eventoId);
   if (!direct.error) return direct;
@@ -331,11 +350,73 @@ export async function updateEvento(eventoId, {
     isMissingColumnError(direct.error, 'tipo_evento_id')
     || isMissingColumnError(direct.error, 'requiere_confirmacion')
     || isMissingColumnError(direct.error, 'descripcion')
+    || isMissingColumnError(direct.error, 'actividad_inicio_at')
   ) {
-    const { tipo_evento_id, requiere_confirmacion, descripcion: _descripcion, ...base } = payload;
+    const {
+      tipo_evento_id,
+      requiere_confirmacion,
+      descripcion: _descripcion,
+      actividad_inicio_at,
+      ...base
+    } = payload;
     return sb.from('eventos').update(base).eq('id', eventoId);
   }
   return direct;
+}
+
+export async function startEventoEscaneo(eventoId) {
+  const rpc = await sb.rpc('admin_start_evento_escaneo', { p_evento_id: eventoId });
+  if (!rpc.error) return rpc;
+
+  const msg = rpc.error?.message || '';
+  if (!msg.includes('admin_start_evento_escaneo') && !msg.includes('does not exist')) {
+    return rpc;
+  }
+
+  const fallback = await sb
+    .from('eventos')
+    .update({
+      escaneo_inicio_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', eventoId)
+    .eq('estado', EVENTO_ESTADO.ACTIVO)
+    .select('*')
+    .maybeSingle();
+
+  if (fallback.error && isMissingColumnError(fallback.error, 'escaneo_inicio_at')) {
+    return { data: null, error: rpc.error };
+  }
+  return fallback.error ? fallback : { data: fallback.data, error: null };
+}
+
+export async function setEventoActividadInicio(eventoId, actividadInicioAt = null) {
+  const rpc = await sb.rpc('admin_set_evento_actividad_inicio', {
+    p_evento_id: eventoId,
+    p_actividad_inicio_at: actividadInicioAt,
+  });
+  if (!rpc.error) return rpc;
+
+  const msg = rpc.error?.message || '';
+  if (!msg.includes('admin_set_evento_actividad_inicio') && !msg.includes('does not exist')) {
+    return rpc;
+  }
+
+  const at = actividadInicioAt || new Date().toISOString();
+  const fallback = await sb
+    .from('eventos')
+    .update({
+      actividad_inicio_at: at,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', eventoId)
+    .select('*')
+    .maybeSingle();
+
+  if (fallback.error && isMissingColumnError(fallback.error, 'actividad_inicio_at')) {
+    return { data: null, error: rpc.error };
+  }
+  return fallback.error ? fallback : { data: fallback.data, error: null };
 }
 
 export async function setEventoEstado(eventoId, estado) {
@@ -343,6 +424,98 @@ export async function setEventoEstado(eventoId, estado) {
     estado,
     updated_at: new Date().toISOString(),
   }).eq('id', eventoId);
+}
+
+export async function setEventoExcluirRegistroAsistencia(eventoId, excluded) {
+  const result = await sb.from('eventos').update({
+    excluir_registro_asistencia: Boolean(excluded),
+    updated_at: new Date().toISOString(),
+  }).eq('id', eventoId);
+
+  if (!result.error) return result;
+  if (isMissingColumnError(result.error, 'excluir_registro_asistencia')) {
+    return {
+      data: null,
+      error: { message: 'Run EVENTO_EXCLUIR_ASISTENCIA.sql in Supabase to enable attendance registry exclusion.' },
+    };
+  }
+  return result;
+}
+
+export function getGrupoSiblingEventos(allEvents, evento) {
+  if (!evento?.asistencia_grupo_id) return [];
+  return (allEvents || []).filter(e =>
+    e.asistencia_grupo_id === evento.asistencia_grupo_id && e.id !== evento.id
+  );
+}
+
+export function getSameDateEventoCandidates(allEvents, evento) {
+  return getSameDateEventoMergeTargets(allEvents, evento);
+}
+
+export function getSameDateEventoMergeTargets(allEvents, evento) {
+  if (!evento?.fecha || !evento?.club_id) return [];
+  return (allEvents || []).filter(e => {
+    if (e.id === evento.id) return false;
+    if (e.club_id !== evento.club_id || e.fecha !== evento.fecha) return false;
+    if (!isEventoActive(e) || isEventoExcludedFromAttendance(e)) return false;
+    if (isEventoExcludedFromAttendance(evento)) return false;
+    if (evento.asistencia_grupo_id && e.asistencia_grupo_id === evento.asistencia_grupo_id) return false;
+    if (e.asistencia_grupo_id && evento.asistencia_grupo_id && e.asistencia_grupo_id !== evento.asistencia_grupo_id) {
+      return false;
+    }
+    return true;
+  }).sort(compareEventsByLocalDateTime);
+}
+
+export function canCombineEventoAttendance(allEvents, evento) {
+  return getSameDateEventoMergeTargets(allEvents, evento).length > 0;
+}
+
+export function groupEventsByAsistenciaGrupo(events) {
+  const map = new Map();
+  for (const evento of events || []) {
+    const grupoId = evento.asistencia_grupo_id;
+    if (!grupoId) continue;
+    if (!map.has(grupoId)) map.set(grupoId, []);
+    map.get(grupoId).push(evento);
+  }
+  for (const list of map.values()) {
+    list.sort(compareEventsByLocalDateTime);
+  }
+  return map;
+}
+
+export function formatMergedEventoLabels(eventos, { untitledLabel = 'Event' } = {}) {
+  return (eventos || [])
+    .map(e => e.nombre || untitledLabel)
+    .join(', ');
+}
+
+export async function fetchEventosInAsistenciaGrupo(eventoId) {
+  const { data: evento, error: eventoError } = await fetchEventoById(eventoId);
+  if (eventoError) return { data: [], error: eventoError };
+  if (!evento?.asistencia_grupo_id) return { data: evento ? [evento] : [], error: null };
+
+  const { data, error } = await sb
+    .from('eventos')
+    .select('id, nombre, fecha, hora, lugar, estado, asistencia_grupo_id')
+    .eq('asistencia_grupo_id', evento.asistencia_grupo_id)
+    .order('hora', { ascending: true });
+
+  return { data: data || [], error };
+}
+
+export async function createEventoAsistenciaGrupo(eventoIds) {
+  const ids = [...new Set((eventoIds || []).filter(Boolean))];
+  if (ids.length < 2) {
+    return { data: null, error: new Error('Select at least two events to merge') };
+  }
+  return sb.rpc('admin_create_evento_asistencia_grupo', { p_evento_ids: ids });
+}
+
+export async function dissolveEventoAsistenciaGrupo(eventoId) {
+  return sb.rpc('admin_dissolve_evento_asistencia_grupo', { p_evento_id: eventoId });
 }
 
 async function fetchActiveClubMemberIds(clubId) {

@@ -88,10 +88,27 @@ export function filterEspecialidadesByTipo(especialidades, tipoId, tipos = []) {
 
 export function filterEspecialidadesByTipos(especialidades, tipoIds = [], tipos = []) {
   if (!tipoIds.length) return especialidades;
-  const tipoNames = tipos.filter(t => tipoIds.includes(t.id)).map(t => t.nombre);
-  return especialidades.filter(e =>
-    tipoIds.includes(e.tipo_id) || tipoNames.includes(e.club_tipo)
-  );
+
+  const tipoEntries = tipos
+    .filter(t => tipoIds.includes(t.id))
+    .map(t => ({ id: t.id, name: normalizeClubTipo(t.nombre) }))
+    .filter(t => t.id);
+
+  if (!tipoEntries.length) {
+    return especialidades.filter(e => tipoIds.includes(e.tipo_id));
+  }
+
+  return especialidades.filter(e => {
+    if (tipoIds.includes(e.tipo_id)) return true;
+    const clubTipo = normalizeClubTipo(e.club_tipo);
+    if (!clubTipo) return false;
+    return tipoEntries.some(({ name }) =>
+      !name
+      || clubTipo === name
+      || clubTipo.startsWith(name)
+      || name.startsWith(clubTipo)
+    );
+  });
 }
 
 export function countActiveRequisitos(requisitos = []) {
