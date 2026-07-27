@@ -18,7 +18,7 @@ export function useMemberPortalLoginController() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { session, isAuthenticated, ready, login } = useMemberPortal();
+  const { session, isAuthenticated, ready, login, loginQr } = useMemberPortal();
 
   const [token, setToken] = useState('');
   const [pin, setPin] = useState('');
@@ -67,8 +67,24 @@ export function useMemberPortalLoginController() {
       return;
     }
 
+    if (data.portalActivated && !data.needsPinSetup) {
+      setLoading(true);
+      setError('');
+      const { error: qrLoginError } = await loginQr(normalized);
+      setLoading(false);
+
+      if (qrLoginError) {
+        setStep('pin');
+        setError(mapPortalLoginError(qrLoginError.message, t));
+        return;
+      }
+
+      goToDashboard();
+      return;
+    }
+
     setStep('pin');
-  }, [goToDashboard, isAuthenticated, session?.miembroId, t]);
+  }, [goToDashboard, isAuthenticated, loginQr, session?.miembroId, t]);
 
   async function submitLogin(event) {
     event?.preventDefault();

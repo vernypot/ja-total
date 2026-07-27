@@ -7,6 +7,7 @@ import DashboardNoticiaBanner from '../components/DashboardNoticiaBanner';
 import RouteErrorBoundary from '../components/RouteErrorBoundary';
 import PortalBottomNav from '../components/portal/PortalBottomNav';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
+import { useAppUsageTracking } from '../hooks/useAppUsageTracking';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
@@ -15,6 +16,7 @@ import { isBlixLayoutTheme } from '../constants/uiThemes';
 
 export default function Dashboard() {
   const { isPortalOnly } = useDashboardAuth();
+  useAppUsageTracking(!isPortalOnly);
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();

@@ -23,6 +23,7 @@ const EMOJI_BY_ICON = {
   edit: '📝',
   web: '🌐',
   settings: '⚙️',
+  chart: '📊',
 };
 
 export default function NavLinkItem({ to, active, icon, className = '', onClick, children, reloadOnActive = true }) {

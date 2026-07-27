@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from 'react';
 import * as AuthModel from '../mvc/models/auth.model';
 import * as UsuariosModel from '../mvc/models/usuarios.model';
+import { endActiveStaffAppSession } from '../hooks/useAppUsageTracking';
 import { isSuperAdminEmail } from '../utils/permissions';
 
 export const AuthContext = createContext();
@@ -82,6 +83,7 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    await endActiveStaffAppSession();
     await AuthModel.signOut();
     setUser(null);
     setUserData(null);

@@ -36,6 +36,17 @@ export function MemberPortalProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const token = session?.sessionToken;
+    if (!token) return undefined;
+
+    const timer = window.setInterval(async () => {
+      await MemberPortalModel.verifyPortalSession(token);
+    }, 120_000);
+
+    return () => window.clearInterval(timer);
+  }, [session?.sessionToken]);
+
   const login = useCallback(async (token, pin) => {
     const { data, error } = await MemberPortalModel.loginPortal(token, pin);
     if (error) return { error };
