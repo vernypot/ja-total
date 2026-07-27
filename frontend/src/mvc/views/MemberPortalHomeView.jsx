@@ -155,6 +155,7 @@ export default function MemberPortalHomeView({
   isLeida,
   markLeida,
   markingId,
+  speech,
   embedded = false,
 }) {
   const eventCardProps = {
@@ -307,7 +308,13 @@ export default function MemberPortalHomeView({
                         markingId={markingId}
                         onMarkLeida={markLeida}
                         t={t}
-                        onToggleExpand={() => setExpandedNewsId(expandedNewsId === item.id ? '' : item.id)}
+                        speech={speech}
+                        onToggleExpand={() => {
+                          if (expandedNewsId === item.id && speech?.isSpeakingItem(item.id)) {
+                            speech.stop();
+                          }
+                          setExpandedNewsId(expandedNewsId === item.id ? '' : item.id);
+                        }}
                       />
                     </article>
                   ))}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useMemberPortal } from '../../context/MemberPortalContext';
 import { usePortalNoticiaLeida } from '../../hooks/usePortalNoticiaLeida';
+import { useNoticiaSpeech } from '../../hooks/useNoticiaSpeech';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import * as EventosModel from '../models/eventos.model';
 import * as ClasesModel from '../models/clases.model';
@@ -55,6 +56,7 @@ export function useMemberPortalHomeController() {
   const { session } = useMemberPortal();
   const miembroId = session?.miembroId;
   const { isLeida, markLeida, markingId } = usePortalNoticiaLeida(session?.sessionToken);
+  const speech = useNoticiaSpeech(language);
   const [profile, setProfile] = useState(null);
   const [news, setNews] = useState([]);
   const [eventRows, setEventRows] = useState([]);
@@ -271,5 +273,6 @@ export function useMemberPortalHomeController() {
     isLeida,
     markLeida,
     markingId,
+    speech,
   };
 }

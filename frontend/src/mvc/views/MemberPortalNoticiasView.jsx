@@ -14,6 +14,7 @@ export default function MemberPortalNoticiasView({
   isLeida,
   markLeida,
   markingId,
+  speech,
 }) {
   return (
     <div className="portal-page">
@@ -52,7 +53,13 @@ export default function MemberPortalNoticiasView({
                 markingId={markingId}
                 onMarkLeida={markLeida}
                 t={t}
-                onToggleExpand={() => setExpandedNewsId(expandedNewsId === item.id ? '' : item.id)}
+                speech={speech}
+                onToggleExpand={() => {
+                  if (expandedNewsId === item.id && speech?.isSpeakingItem(item.id)) {
+                    speech.stop();
+                  }
+                  setExpandedNewsId(expandedNewsId === item.id ? '' : item.id);
+                }}
               />
             </article>
           ))}

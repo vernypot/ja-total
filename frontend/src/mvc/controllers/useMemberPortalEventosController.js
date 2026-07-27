@@ -11,7 +11,30 @@ export function useMemberPortalEventosController() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [attendanceFilter, setAttendanceFilter] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('upcoming');
   const [savingConfirmationId, setSavingConfirmationId] = useState(null);
+
+  function eventFromRow(row) {
+    return EventosModel.getEventoFromRow(row);
+  }
+
+  function isUpcomingRow(row) {
+    const evento = eventFromRow(row);
+    if (!evento) return false;
+    return EventosModel.isEventInFuture(evento, new Date(), EventosModel.getEventChurchTimezone(evento));
+  }
+
+  function isPastRow(row) {
+    const evento = eventFromRow(row);
+    if (!evento) return false;
+    return EventosModel.isEventInPast(evento, new Date(), EventosModel.getEventChurchTimezone(evento));
+  }
+
+  const timeFilteredRows = useMemo(() => {
+    if (timeFilter === 'past') return rows.filter(isPastRow);
+    if (timeFilter === 'upcoming') return rows.filter(isUpcomingRow);
+    return rows;
+  }, [rows, timeFilter]);
 
   async function load({ silent = false } = {}) {
     if (!session?.sessionToken) {
@@ -80,21 +103,21 @@ export function useMemberPortalEventosController() {
   }
 
   const attendedCount = useMemo(
-    () => rows.filter(EventosModel.memberAttendedEvent).length,
-    [rows]
+    () => timeFilteredRows.filter(EventosModel.memberAttendedEvent).length,
+    [timeFilteredRows]
   );
 
   const filteredRows = useMemo(() => {
     if (attendanceFilter === 'attended') {
-      return rows.filter(EventosModel.memberAttendedEvent);
+      return timeFilteredRows.filter(EventosModel.memberAttendedEvent);
     }
-    return rows;
-  }, [rows, attendanceFilter]);
+    return timeFilteredRows;
+  }, [timeFilteredRows, attendanceFilter]);
 
   const {
     pageItems: paginatedRows,
     ...listPagination
-  } = useListPagination(filteredRows, [attendanceFilter]);
+  } = useListPagination(filteredRows, [attendanceFilter, timeFilter]);
 
   useEffect(() => {
     load();
@@ -103,10 +126,14 @@ export function useMemberPortalEventosController() {
   return {
     rows: paginatedRows,
     listPagination,
-    allRows: rows,
+    allRows: timeFilteredRows,
     attendedCount,
     attendanceFilter,
     setAttendanceFilter,
+    timeFilter,
+    setTimeFilter,
+    showTimeFilter: true,
+    totalEventCount: rows.length,
     error,
     loading,
     canManage: false,

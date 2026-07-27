@@ -158,6 +158,10 @@ export default function MiembroEventosView({
   attendedCount,
   attendanceFilter,
   setAttendanceFilter,
+  timeFilter = 'all',
+  setTimeFilter,
+  showTimeFilter = false,
+  totalEventCount = 0,
   error,
   loading,
   canManage,
@@ -256,12 +260,38 @@ export default function MiembroEventosView({
       <h3>{t('tabEvents')} <PageHelpLink pageId="memberEvents" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
 
-      {allRows.length > 0 && (
+      {(allRows.length > 0 || totalEventCount > 0) && (
         <div className="member-events-toolbar">
           <span className="member-events-attended-summary">
             {t('memberEventsAttendedSummary').replace('{count}', String(attendedCount))}
           </span>
-          <div className="member-events-filter">
+          <div className="member-events-filters">
+            {showTimeFilter && setTimeFilter && (
+              <div className="member-events-filter member-events-filter--time">
+                <button
+                  type="button"
+                  className={timeFilter === 'upcoming' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
+                  onClick={() => setTimeFilter('upcoming')}
+                >
+                  {t('memberEventsTimeFilterUpcoming')}
+                </button>
+                <button
+                  type="button"
+                  className={timeFilter === 'past' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
+                  onClick={() => setTimeFilter('past')}
+                >
+                  {t('memberEventsTimeFilterPast')}
+                </button>
+                <button
+                  type="button"
+                  className={timeFilter === 'all' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
+                  onClick={() => setTimeFilter('all')}
+                >
+                  {t('memberEventsTimeFilterAll')}
+                </button>
+              </div>
+            )}
+            <div className="member-events-filter">
             <button
               type="button"
               className={attendanceFilter === 'all' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary'}
@@ -276,14 +306,23 @@ export default function MiembroEventosView({
             >
               {t('memberEventsFilterAttended')}
             </button>
+            </div>
           </div>
         </div>
       )}
 
       <ListPagination {...listPagination} />
 
-      {allRows.length === 0 ? (
+      {totalEventCount === 0 ? (
         <p className="text-muted">{t('noMemberEvents')}</p>
+      ) : allRows.length === 0 ? (
+        <p className="text-muted">
+          {timeFilter === 'past'
+            ? t('noMemberEventsPast')
+            : timeFilter === 'upcoming'
+              ? t('noMemberEventsUpcoming')
+              : t('noMemberEvents')}
+        </p>
       ) : (
         <>
           {attendanceFilter === 'all' && attendedRows.length > 0 && (
