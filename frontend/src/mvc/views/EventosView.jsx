@@ -12,6 +12,7 @@ import {
 } from '../../components/EventAttendanceControls';
 import { clubDisplayName } from '../../utils/club';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
+import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
 import '../../styles/form.css';
 
 function FormSection({ title, children, className = '' }) {
@@ -432,6 +433,9 @@ export default function EventosView({
   isEventoExcludedFromAttendance,
   formatMergedEventoLabels,
   listPagination,
+  getSelfEventRow,
+  updateSelfConfirmation,
+  savingSelfConfirmationId,
 }) {
   const { t } = useLanguage();
   const { askConfirm, confirmDialog } = useConfirmDialog({
@@ -671,6 +675,7 @@ export default function EventosView({
                 const grupoSiblings = getGrupoSiblingEventos(allClubEvents, evento);
                 const isExcluded = isEventoExcludedFromAttendance(evento);
                 const canCombineEvent = canManage && isActive && !isExcluded && canCombineEventoAttendance(allClubEvents, evento);
+                const selfRow = getSelfEventRow?.(evento, rows) || null;
 
                 return (
                   <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : isEnded ? 0.92 : 0.85 }}>
@@ -839,6 +844,16 @@ export default function EventosView({
                           )}
                         </div>
                       </div>
+                      {canManage && updateSelfConfirmation && !isExcluded && (
+                        <LinkedMemberEventConfirmSection
+                          evento={evento}
+                          selfRow={selfRow}
+                          updateConfirmation={updateSelfConfirmation}
+                          savingConfirmationId={savingSelfConfirmationId}
+                          t={t}
+                          className="event-list-self-confirm"
+                        />
+                      )}
                     </div>
 
                     {isEditing && canManage && (

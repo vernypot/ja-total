@@ -13,6 +13,7 @@ import * as MiembrosModel from '../models/miembros.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
+import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
 
 const emptyForm = () => ({
   nombre: '',
@@ -35,6 +36,12 @@ export function useEventosController() {
   const churchTz = useChurchTimezone();
   const userRole = getUserRole(user, userData);
   const canManage = canManageClubs(userRole);
+  const {
+    linkedMiembroId,
+    buildSelfRow,
+    updateConfirmation: updateSelfConfirmationBase,
+    savingConfirmationId: savingSelfConfirmationId,
+  } = useLinkedMemberEventConfirmation();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const requestedClub = params.get('club');
@@ -59,6 +66,7 @@ export function useEventosController() {
   const [savingEvent, setSavingEvent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [bulkUpdatingEventId, setBulkUpdatingEventId] = useState('');
+  const [selfEventRowsByEventId, setSelfEventRowsByEventId] = useState({});
   const [manualAddEventId, setManualAddEventId] = useState('');
   const [manualAddForm, setManualAddForm] = useState({ miembroId: '', justificacion: '' });
   const [manualAddFieldErrors, setManualAddFieldErrors] = useState({});
@@ -144,9 +152,36 @@ export function useEventosController() {
     setEvents(data || []);
     setLoading(false);
 
-    if (canManage && data?.length) {
-      await loadAllAssignments(data);
+    const eventList = data || [];
+    if (canManage && eventList.length) {
+      await loadAllAssignments(eventList);
     }
+    await loadLinkedMemberEventRows(eventList);
+  }
+
+  async function loadLinkedMemberEventRows(eventList) {
+    if (!linkedMiembroId || !eventList?.length) {
+      setSelfEventRowsByEventId({});
+      return;
+    }
+
+    const { data, error: loadError } = await EventosModel.fetchMiembroEventos(linkedMiembroId);
+    if (loadError) return;
+
+    const eventIds = new Set(eventList.map(evento => evento.id));
+    const map = {};
+    for (const row of data || []) {
+      const eventoId = EventosModel.getEventoIdFromRow(row);
+      if (eventoId && eventIds.has(eventoId)) {
+        map[eventoId] = row;
+      }
+    }
+    setSelfEventRowsByEventId(map);
+  }
+
+  function getSelfEventRow(evento, assignmentRows = []) {
+    if (!evento?.id) return null;
+    return selfEventRowsByEventId[evento.id] || buildSelfRow(assignmentRows, evento);
   }
 
   async function loadAllAssignments(eventList) {
@@ -443,6 +478,21 @@ export function useEventosController() {
     }
 
     await loadAssignments(eventoId);
+  }
+
+  async function updateSelfConfirmation(eventoMiembroId, confirmacionEstado, eventoId = null) {
+    const targetEventoId = eventoId || expandedEventId;
+    const { error: saveError } = await updateSelfConfirmationBase(
+      eventoMiembroId,
+      confirmacionEstado,
+      eventoId
+    );
+    if (saveError) {
+      setError('Error saving confirmation: ' + saveError.message);
+      return;
+    }
+    if (targetEventoId) await loadAssignments(targetEventoId);
+    if (events.length) await loadLinkedMemberEventRows(events);
   }
 
   async function setAttendance(eventoMiembroId, estado, eventoId) {
@@ -789,6 +839,7 @@ export function useEventosController() {
   useEffect(() => {
     setExpandedEventId('');
     setAssignments({});
+    setSelfEventRowsByEventId({});
     closeAttendeeEditor();
     closeManualAddMember();
     closeEditForm();
@@ -914,5 +965,10 @@ export function useEventosController() {
     memberDisplayName: EventosModel.memberDisplayName,
     formatEventTime,
     formatEventTimestamp,
+    linkedMiembroId,
+    buildSelfEventRow: buildSelfRow,
+    getSelfEventRow,
+    updateSelfConfirmation,
+    savingSelfConfirmationId,
   };
 }

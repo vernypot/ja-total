@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
+import { getUserRole, canManageClubs } from '../../utils/permissions';
 import * as EventosModel from '../models/eventos.model';
 import * as ClubesModel from '../models/clubes.model';
 import {
@@ -14,9 +16,18 @@ import {
   visibleRangeForView,
 } from '../../utils/calendar';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
+import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
 import { clubDisplayName } from '../../utils/club';
 
 export function useCalendarioClubController() {
+  const { user, userData } = useContext(AuthContext);
+  const canManage = canManageClubs(getUserRole(user, userData));
+  const {
+    linkedMiembroId,
+    buildSelfRow,
+    updateConfirmation: updateSelfConfirmationBase,
+    savingConfirmationId: savingSelfConfirmationId,
+  } = useLinkedMemberEventConfirmation();
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
   const churchTz = useChurchTimezone();
@@ -35,6 +46,7 @@ export function useCalendarioClubController() {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [selectedEventAssignments, setSelectedEventAssignments] = useState([]);
   const [loadingEventDetail, setLoadingEventDetail] = useState(false);
+  const [bulkUpdatingEventId, setBulkUpdatingEventId] = useState('');
 
   const focusDate = useMemo(() => {
     const date = dateFromKey(focusDateKey);
@@ -142,6 +154,81 @@ export function useCalendarioClubController() {
 
   function closeEventDetail() {
     clearEventSelection();
+  }
+
+  async function reloadSelectedEventAssignments(eventId = selectedEventId) {
+    if (!eventId) return;
+
+    const { data, error: assignError } = await EventosModel.fetchEventoAssignments(eventId);
+    if (assignError) {
+      setError('Error loading event: ' + assignError.message);
+      return;
+    }
+    setSelectedEventAssignments(data || []);
+  }
+
+  async function setConfirmation(eventoMiembroId, confirmacionEstado, eventoId) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    if (saveError) {
+      setError('Error saving confirmation: ' + saveError.message);
+      return;
+    }
+
+    await reloadSelectedEventAssignments(eventoId);
+  }
+
+  async function setAttendance(eventoMiembroId, estado, eventoId) {
+    if (!canManage) return;
+    setError('');
+
+    const { error: saveError } = await EventosModel.setEventoAsistencia(eventoMiembroId, estado);
+    if (saveError) {
+      setError('Error saving attendance: ' + saveError.message);
+      return;
+    }
+
+    await reloadSelectedEventAssignments(eventoId);
+  }
+
+  async function confirmAllPending(eventoId) {
+    if (!canManage || !eventoId) return;
+
+    const rows = selectedEventId === eventoId
+      ? selectedEventAssignments
+      : (await EventosModel.fetchEventoAssignments(eventoId)).data || [];
+    const pending = rows.filter(row => EventosModel.getConfirmacionFromRow(row) === 'pendiente');
+    if (!pending.length) return;
+
+    setBulkUpdatingEventId(eventoId);
+    setError('');
+
+    for (const row of pending) {
+      const { error: saveError } = await EventosModel.setEventoConfirmacion(row.id, 'confirmado');
+      if (saveError) {
+        setError('Error saving confirmation: ' + saveError.message);
+        break;
+      }
+    }
+
+    setBulkUpdatingEventId('');
+    await reloadSelectedEventAssignments(eventoId);
+  }
+
+  async function updateSelfConfirmation(eventoMiembroId, confirmacionEstado, eventoId = null) {
+    const targetEventoId = eventoId || selectedEventId;
+    const { error: saveError } = await updateSelfConfirmationBase(
+      eventoMiembroId,
+      confirmacionEstado,
+      eventoId
+    );
+    if (saveError) {
+      setError('Error saving confirmation: ' + saveError.message);
+      return;
+    }
+    if (targetEventoId) await reloadSelectedEventAssignments(targetEventoId);
   }
 
   function openEventInEventsPage() {
@@ -254,5 +341,14 @@ export function useCalendarioClubController() {
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
     memberDisplayName: EventosModel.memberDisplayName,
+    canManage,
+    setConfirmation,
+    setAttendance,
+    confirmAllPending,
+    bulkUpdatingEventId,
+    linkedMiembroId,
+    buildSelfEventRow: buildSelfRow,
+    updateSelfConfirmation,
+    savingSelfConfirmationId,
   };
 }

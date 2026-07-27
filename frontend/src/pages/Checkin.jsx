@@ -4,7 +4,7 @@ import { PageHelpLink } from '../components/PageHelp';
 import ListPagination from '../components/ListPagination';
 import EventCheckinScanner from '../components/EventCheckinScanner';
 import EventDescriptionToggle from '../components/EventDescriptionToggle';
-import { AttendanceBadge, EventActionButton } from '../components/EventAttendanceControls';
+import { AttendanceControls, ConfirmationControls, EventActionButton } from '../components/EventAttendanceControls';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useEventCheckinController } from '../mvc/controllers/useEventCheckinController';
 import * as EventosModel from '../mvc/models/eventos.model';
@@ -93,7 +93,7 @@ function ScanAttendeesPanel({ onScan, startingScan, isActive, t }) {
 
 export default function Checkin() {
   const { t, language } = useLanguage();
-  const { askConfirm } = useConfirmDialog();
+  const { askConfirm, confirmDialog } = useConfirmDialog();
   const {
     eventoId,
     evento,
@@ -121,10 +121,48 @@ export default function Checkin() {
     grupoEventos,
     memberDisplayName,
     getAsistenciaFromRow,
+    getConfirmacionFromRow,
     getCheckedInAtFromRow,
     getTipoEventoNombre,
+    setConfirmation,
+    setAttendance,
+    needsConfirmation,
     listPagination,
   } = useEventCheckinController();
+
+  function buildConfirmBeforeConfirmation(eventName, memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'rechazado') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmRejectConfirmationTitle'),
+        message: t('confirmRejectConfirmationMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('approvalRequestReject'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  function buildConfirmBeforeAttendance(eventName, memberName) {
+    return (estado, proceed) => {
+      if (estado !== 'ausente') {
+        proceed();
+        return;
+      }
+      askConfirm({
+        title: t('confirmMarkAbsentTitle'),
+        message: t('confirmMarkAbsentMessage'),
+        highlight: memberName || eventName,
+        confirmLabel: t('attendanceAbsent'),
+        onConfirm: proceed,
+      });
+    };
+  }
+
+  const eventName = evento?.nombre || t('eventUntitled');
 
   function confirmEndEvent() {
     askConfirm({
@@ -285,11 +323,13 @@ export default function Checkin() {
               <div className="checkin-session-registry-list">
                 {rows.map(row => {
                   const asistencia = getAsistenciaFromRow(row);
+                  const confirmacion = getConfirmacionFromRow(row);
                   const checkedInAt = getCheckedInAtFromRow(row);
+                  const name = memberDisplayName(row.miembros);
                   return (
                     <div key={row.id} className="checkin-session-registry-item">
                       <div>
-                        <strong>{memberDisplayName(row.miembros)}</strong>
+                        <strong>{name}</strong>
                         {checkedInAt && (
                           <div className="checkin-session-registry-time">
                             {t('checkedInAt')}: {new Date(checkedInAt).toLocaleString()}
@@ -297,7 +337,34 @@ export default function Checkin() {
                           </div>
                         )}
                       </div>
-                      <AttendanceBadge estado={asistencia} t={t} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                        {needsConfirmation && (
+                          <div>
+                            <div className="event-attendance-row-label">{t('attendanceConfirmation')}</div>
+                            <ConfirmationControls
+                              eventoMiembroId={row.id}
+                              eventoId={eventoId}
+                              current={confirmacion}
+                              canManage={canManage}
+                              onSet={setConfirmation}
+                              confirmBeforeSet={buildConfirmBeforeConfirmation(eventName, name)}
+                              t={t}
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <div className="event-attendance-row-label">{t('attendanceList')}</div>
+                          <AttendanceControls
+                            eventoMiembroId={row.id}
+                            eventoId={eventoId}
+                            current={asistencia}
+                            canManage={canManage}
+                            onSet={setAttendance}
+                            confirmBeforeSet={buildConfirmBeforeAttendance(eventName, name)}
+                            t={t}
+                          />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -307,6 +374,7 @@ export default function Checkin() {
           </section>
         </>
       )}
+      {confirmDialog}
     </div>
   );
 }

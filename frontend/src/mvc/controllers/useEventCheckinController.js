@@ -255,6 +255,38 @@ export function useEventCheckinController() {
     navigate('/dashboard/eventos', { replace: true });
   }, [canManage, eventoId, navigate]);
 
+  const setConfirmation = useCallback(async (eventoMiembroId, confirmacionEstado) => {
+    if (!canManage) return;
+
+    setError('');
+    setNotice('');
+
+    const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    await loadRegistry();
+  }, [canManage, loadRegistry]);
+
+  const setAttendance = useCallback(async (eventoMiembroId, estado) => {
+    if (!canManage) return;
+
+    setError('');
+    setNotice('');
+
+    const { error: saveError } = await EventosModel.setEventoAsistencia(eventoMiembroId, estado);
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    await loadRegistry();
+  }, [canManage, loadRegistry]);
+
+  const needsConfirmation = evento ? EventosModel.eventRequiresConfirmation(evento) : false;
+
   const formatTimestamp = useCallback((iso) => (
     formatEventTimestamp(iso, language, getEventChurchTimezone(evento) || timeZone)
   ), [evento, language, timeZone]);
@@ -278,6 +310,9 @@ export function useEventCheckinController() {
     beginEvent,
     endEvent,
     checkin,
+    setConfirmation,
+    setAttendance,
+    needsConfirmation,
     activityStartDraft,
     setActivityStartDraft,
     markActivityStartedNow,
@@ -288,6 +323,7 @@ export function useEventCheckinController() {
     grupoEventos,
     memberDisplayName: EventosModel.memberDisplayName,
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
   };
