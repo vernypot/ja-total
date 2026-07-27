@@ -6,6 +6,9 @@ import { DEFAULT_CHURCH_TIMEZONE, normalizeChurchTimezone } from './churchTimezo
 
 export const EVENT_TIMEZONE = DEFAULT_CHURCH_TIMEZONE;
 
+/** Minutes after activity start (or scheduled start) that still count as on-time. */
+export const CHECKIN_ON_TIME_GRACE_MINUTES = 3;
+
 export function isValidWallClockDateKey(dateKey) {
   const normalized = String(dateKey || '').trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return false;
@@ -147,9 +150,79 @@ export function getEventStartInstant(evento, timeZone = DEFAULT_CHURCH_TIMEZONE)
   return wallClockToInstant(evento.fecha, evento.hora, zone);
 }
 
-export function computeCheckinAttendanceEstado(checkinAt, evento, { graceMinutes = 15, timeZone } = {}) {
+export function getActivityStartInstant(evento, timeZone = DEFAULT_CHURCH_TIMEZONE) {
+  const grupoStart = evento?.evento_asistencia_grupo?.actividad_inicio_at;
+  if (grupoStart) {
+    const activityStart = new Date(grupoStart);
+    if (!Number.isNaN(activityStart.getTime())) return activityStart;
+  }
+  if (evento?.actividad_inicio_at) {
+    const activityStart = new Date(evento.actividad_inicio_at);
+    if (!Number.isNaN(activityStart.getTime())) return activityStart;
+  }
+  return getEventStartInstant(evento, timeZone);
+}
+
+export function isoToDatetimeLocalValue(iso, timeZone = DEFAULT_CHURCH_TIMEZONE) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: normalizeChurchTimezone(timeZone),
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    const year = parts.find(part => part.type === 'year')?.value;
+    const month = parts.find(part => part.type === 'month')?.value;
+    const day = parts.find(part => part.type === 'day')?.value;
+    let hour = parts.find(part => part.type === 'hour')?.value;
+    const minute = parts.find(part => part.type === 'minute')?.value;
+    if (hour === '24') hour = '00';
+    if (!year || !month || !day || hour == null || !minute) return '';
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  } catch {
+    return '';
+  }
+}
+
+export function datetimeLocalValueToIso(value, timeZone = DEFAULT_CHURCH_TIMEZONE) {
+  if (!value) return null;
+  const match = String(value).trim().match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const instant = wallClockToInstant(match[1], `${match[2]}:${match[3]}:00`, timeZone);
+  if (!instant || Number.isNaN(instant.getTime())) return null;
+  return instant.toISOString();
+}
+
+export function formatEventTimestamp(iso, language = 'es', timeZone = DEFAULT_CHURCH_TIMEZONE) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const locale = language === 'en' ? 'en-US' : 'es-CO';
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      timeZone: normalizeChurchTimezone(timeZone),
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  } catch {
+    return date.toLocaleString();
+  }
+}
+
+export function computeCheckinAttendanceEstado(checkinAt, evento, {
+  graceMinutes = CHECKIN_ON_TIME_GRACE_MINUTES,
+  timeZone,
+} = {}) {
   const zone = timeZone || getEventChurchTimezone(evento);
-  const start = getEventStartInstant(evento, zone);
+  const start = getActivityStartInstant(evento, zone);
   if (!start) return 'a_tiempo';
 
   const checkin = checkinAt instanceof Date ? checkinAt : new Date(checkinAt);

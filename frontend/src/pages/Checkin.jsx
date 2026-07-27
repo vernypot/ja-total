@@ -10,6 +10,87 @@ import { useEventCheckinController } from '../mvc/controllers/useEventCheckinCon
 import * as EventosModel from '../mvc/models/eventos.model';
 import '../styles/eventAttendance.css';
 
+function InitializeEventPanel({
+  evento,
+  activityStartDraft,
+  setActivityStartDraft,
+  initializeEvent,
+  saveActivityStartManual,
+  savingActivityStart,
+  formatTimestamp,
+  canManage,
+  t,
+}) {
+  const initialized = Boolean(
+    evento?.actividad_inicio_at || evento?.evento_asistencia_grupo?.actividad_inicio_at
+  );
+  const initializedAt = evento?.actividad_inicio_at || evento?.evento_asistencia_grupo?.actividad_inicio_at;
+
+  return (
+    <section className="event-checkin-action card event-checkin-action--initialize">
+      <h2 style={{ marginTop: 0 }}>{t('initializeEvent')}</h2>
+      <p className="event-checkin-action__hint">{t('initializeEventHint')}</p>
+
+      {initialized ? (
+        <p className="event-checkin-action__status">
+          <strong>{t('eventInitializedAt')}:</strong> {formatTimestamp(initializedAt)}
+        </p>
+      ) : (
+        <p className="text-muted event-checkin-action__status">{t('activityStartNotSet')}</p>
+      )}
+
+      {canManage && (
+        <>
+          <EventActionButton
+            tone="primary"
+            onClick={initializeEvent}
+            disabled={initialized || savingActivityStart}
+          >
+            ▶ {savingActivityStart ? t('loading') : t('initializeEvent')}
+          </EventActionButton>
+          {initialized && (
+            <p className="text-muted" style={{ margin: '8px 0 0', fontSize: '13px' }}>
+              {t('eventAlreadyInitialized')}
+            </p>
+          )}
+          {!initialized && (
+            <details className="event-checkin-action__manual">
+              <summary>{t('eventActivityStartField')}</summary>
+              <div className="event-checkin-action__manual-body">
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  value={activityStartDraft}
+                  onChange={e => setActivityStartDraft(e.target.value)}
+                />
+                <EventActionButton
+                  tone="muted"
+                  onClick={saveActivityStartManual}
+                  disabled={!activityStartDraft || savingActivityStart}
+                >
+                  {savingActivityStart ? t('loading') : t('saveActivityStart')}
+                </EventActionButton>
+              </div>
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function ScanAttendeesPanel({ onScan, startingScan, isActive, t }) {
+  return (
+    <section className="event-checkin-action card event-checkin-action--scan">
+      <h2 style={{ marginTop: 0 }}>{t('scanAttendees')}</h2>
+      <p className="event-checkin-action__hint">{t('scanAttendeesHint')}</p>
+      <EventActionButton tone="success" onClick={onScan} disabled={!isActive || startingScan}>
+        ▶ {startingScan ? t('loading') : t('scanAttendees')}
+      </EventActionButton>
+    </section>
+  );
+}
+
 export default function Checkin() {
   const { t, language } = useLanguage();
   const { askConfirm } = useConfirmDialog();
@@ -25,10 +106,19 @@ export default function Checkin() {
     sessionStarted,
     isActive,
     isEnded,
+    isExcludedFromAttendance,
     scannerEnabled,
     beginEvent,
     endEvent,
     checkin,
+    activityStartDraft,
+    setActivityStartDraft,
+    markActivityStartedNow,
+    saveActivityStartManual,
+    savingActivityStart,
+    startingScan,
+    formatTimestamp,
+    grupoEventos,
     memberDisplayName,
     getAsistenciaFromRow,
     getCheckedInAtFromRow,
@@ -84,6 +174,24 @@ export default function Checkin() {
                   {t('clubLabel')}: {evento.clubes.nombre}
                 </p>
               )}
+              {evento.actividad_inicio_at && (
+                <p className="checkin-session-event-meta">
+                  {t('eventInitializedAt')}: {formatTimestamp(evento.actividad_inicio_at || evento.evento_asistencia_grupo?.actividad_inicio_at)}
+                </p>
+              )}
+              {(evento.escaneo_inicio_at || evento.evento_asistencia_grupo?.escaneo_inicio_at) && (
+                <p className="checkin-session-event-meta">
+                  {t('scanStartAt')}: {formatTimestamp(evento.escaneo_inicio_at || evento.evento_asistencia_grupo?.escaneo_inicio_at)}
+                </p>
+              )}
+              {grupoEventos.length > 1 && (
+                <>
+                  <p className="event-merge-badge checkin-session-event-meta">
+                    {t('eventMergedAttendanceBadge')}: {grupoEventos.map(e => e.nombre || t('eventUntitled')).join(', ')}
+                  </p>
+                  <p className="text-muted checkin-session-event-meta">{t('eventMergedAttendanceHint')}</p>
+                </>
+              )}
               <EventDescriptionToggle description={evento.descripcion} />
             </>
           )}
@@ -102,18 +210,46 @@ export default function Checkin() {
         <p>{t('loading')}</p>
       ) : !canManage ? (
         <div className="alert alert-warning">{t('checkinNoPermission')}</div>
+      ) : isExcludedFromAttendance ? (
+        <div className="alert alert-warning">{t('checkinExcludedFromAttendance')}</div>
       ) : isEnded ? (
         <div className="alert alert-warning">{t('eventEndedHint')}</div>
       ) : !sessionStarted ? (
-        <section className="event-start-scan-cta card">
-          <h2 style={{ marginTop: 0 }}>{t('startEvent')}</h2>
-          <p>{t('startEventScanHint')}</p>
-          <EventActionButton tone="success" onClick={beginEvent} disabled={!isActive}>
-            ▶ {t('startEvent')}
-          </EventActionButton>
-        </section>
+        <div className="event-checkin-actions">
+          <InitializeEventPanel
+            evento={evento}
+            activityStartDraft={activityStartDraft}
+            setActivityStartDraft={setActivityStartDraft}
+            initializeEvent={markActivityStartedNow}
+            saveActivityStartManual={saveActivityStartManual}
+            savingActivityStart={savingActivityStart}
+            formatTimestamp={formatTimestamp}
+            canManage={canManage}
+            t={t}
+          />
+          <ScanAttendeesPanel
+            onScan={beginEvent}
+            startingScan={startingScan}
+            isActive={isActive}
+            t={t}
+          />
+        </div>
       ) : (
         <>
+          {!evento?.actividad_inicio_at && (
+            <InitializeEventPanel
+              evento={evento}
+              activityStartDraft={activityStartDraft}
+              setActivityStartDraft={setActivityStartDraft}
+              initializeEvent={markActivityStartedNow}
+              saveActivityStartManual={saveActivityStartManual}
+              savingActivityStart={savingActivityStart}
+              formatTimestamp={formatTimestamp}
+              canManage={canManage}
+              t={t}
+            />
+          )}
+
           <div className="event-started-banner">
             {t('eventStartedBanner')}
           </div>
