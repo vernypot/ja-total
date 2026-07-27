@@ -1333,6 +1333,41 @@ const PAGE_HELP = {
       ],
     },
   },
+
+  sorteos: {
+    en: {
+      title: 'Raffles',
+      overview: 'Create participant lists for church raffles based on attendance, portal logins, news read confirmations, or a custom drag-and-drop pool. The app does not run the draw — export the list and record winners after an external tool picks them.',
+      steps: [
+        'Click New raffle and enter a title and number of winners (default 1).',
+        'Choose an eligibility type and fill in the event, login period, news item, or custom member list.',
+        'Review the eligible participant count before saving.',
+        'Open the raffle detail and copy the participant list for your external raffle.',
+        'After the external draw, close the raffle, select winners, and add closing notes.',
+      ],
+      tips: [
+        'News-based raffles require members to tap Leído on each article in Noticias or the home feed.',
+        'Login-period raffles use member portal login events — ensure usage tracking is enabled.',
+        'Custom raffles let you drag members from the pool into the participant list.',
+      ],
+    },
+    es: {
+      title: 'Sorteos',
+      overview: 'Cree listas de participantes según asistencia, ingresos al portal, noticias marcadas como leídas o una lista personalizada. La app no realiza el sorteo — exporte la lista y registre ganadores después.',
+      steps: [
+        'Haga clic en Nuevo sorteo e indique título y cantidad de ganadores (predeterminado 1).',
+        'Elija el tipo de elegibilidad y complete evento, período de ingreso, noticia o lista personalizada.',
+        'Revise la cantidad de participantes elegibles antes de guardar.',
+        'Abra el detalle del sorteo y copie la lista para su herramienta externa.',
+        'Tras el sorteo externo, cierre el sorteo, seleccione ganadores y agregue comentarios.',
+      ],
+      tips: [
+        'Los sorteos por noticia requieren que el miembro pulse Leído en cada artículo en Noticias o en el inicio.',
+        'Los sorteos por ingreso usan eventos de login del portal — requiere estadísticas de uso activas.',
+        'En sorteos personalizados puede arrastrar miembros del pool a la lista de participantes.',
+      ],
+    },
+  },
 };
 
 export function getPageHelpContent(pageId, language = 'es') {

@@ -466,9 +466,9 @@ DECLARE
   v_session_token TEXT;
   v_expires_at TIMESTAMPTZ := now() + INTERVAL '24 hours';
 BEGIN
-  INSERT INTO public.miembro_portal_sessions (miembro_id, expires_at, last_seen_at)
+  INSERT INTO public.miembro_portal_sessions AS mps (miembro_id, expires_at, last_seen_at)
   VALUES (p_miembro_id, v_expires_at, now())
-  RETURNING id, session_token, expires_at
+  RETURNING mps.id, mps.session_token, mps.expires_at
   INTO v_session_id, v_session_token, v_expires_at;
 
   INSERT INTO public.miembro_portal_login_events (miembro_id, session_id, auth_method)

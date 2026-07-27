@@ -112,6 +112,12 @@ const ICONS = {
       <path d="M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
   ),
+  ticket: (
+    <>
+      <path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1.5a2.5 2.5 0 0 0 0 3V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5a2.5 2.5 0 0 0 0-3V8z" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 7v10" stroke="currentColor" strokeWidth="2" strokeDasharray="2 2" />
+    </>
+  ),
   menu: (
     <>
       <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

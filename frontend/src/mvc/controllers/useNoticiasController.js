@@ -12,6 +12,7 @@ import * as IglesiasModel from '../models/iglesias.model';
 
 import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements } from '../../constants/noticiaPlacements';
 import { DEFAULT_NOTICIA_AUDIENCE, normalizeAudience } from '../../constants/noticiaAudience';
+import { NOTICIA_FEATURED_VARIANTS } from '../../constants/noticiaFeaturedImage';
 import * as ClubesModel from '../models/clubes.model';
 
 const emptyForm = () => ({
@@ -25,6 +26,13 @@ const emptyForm = () => ({
   placements: [...DEFAULT_NOTICIA_PLACEMENTS],
   audience: DEFAULT_NOTICIA_AUDIENCE,
   club_id: '',
+  imagen_destacada_url: '',
+  imagen_destacada_mobile_url: '',
+});
+
+const emptyPendingFeaturedImages = () => ({
+  desktop: null,
+  mobile: null,
 });
 
 export function useNoticiasController() {
@@ -46,6 +54,8 @@ export function useNoticiasController() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [featuredImageUploading, setFeaturedImageUploading] = useState('');
+  const [pendingFeaturedImageFiles, setPendingFeaturedImageFiles] = useState(emptyPendingFeaturedImages);
 
   const filteredItems = useMemo(
     () => filterBySearch(items, searchQuery, n => [
@@ -93,6 +103,7 @@ export function useNoticiasController() {
   function openCreateForm() {
     setEditingId('');
     setForm(emptyForm());
+    setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
     setShowForm(true);
   }
 
@@ -100,10 +111,12 @@ export function useNoticiasController() {
     setShowForm(false);
     setEditingId('');
     setForm(emptyForm());
+    setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
   }
 
   function startEdit(item) {
     setEditingId(item.id);
+    setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
     setForm({
       titulo: item.titulo || '',
       resumen: item.resumen || '',
@@ -112,11 +125,57 @@ export function useNoticiasController() {
       expira_en: item.expira_en || '',
       estado: item.estado || 'activo',
       categoria: item.categoria || '',
-      placements: normalizePlacements(item.placements),
+      placements: normalizePlacements(item.placements, { allowEmpty: true }),
       audience: normalizeAudience(item.audience),
       club_id: item.club_id || '',
+      imagen_destacada_url: item.imagen_destacada_url || '',
+      imagen_destacada_mobile_url: item.imagen_destacada_mobile_url || '',
     });
     setShowForm(true);
+  }
+
+  async function handleFeaturedImageUpload(variant, file) {
+    if (!file) return;
+
+    if (editingId) {
+      setFeaturedImageUploading(variant);
+      setError('');
+      const { data, error: uploadError } = await NoticiasModel.uploadNoticiaFeaturedImage(editingId, file, variant);
+      setFeaturedImageUploading('');
+      if (uploadError) {
+        setError(uploadError.message);
+        return;
+      }
+      const field = variant === NOTICIA_FEATURED_VARIANTS.MOBILE
+        ? 'imagen_destacada_mobile_url'
+        : 'imagen_destacada_url';
+      setForm(prev => ({ ...prev, [field]: data?.[field] || prev[field] }));
+      setPendingFeaturedImageFiles(prev => ({ ...prev, [variant]: null }));
+      return;
+    }
+
+    setPendingFeaturedImageFiles(prev => ({ ...prev, [variant]: file }));
+  }
+
+  async function handleFeaturedImageRemove(variant) {
+    const field = variant === NOTICIA_FEATURED_VARIANTS.MOBILE
+      ? 'imagen_destacada_mobile_url'
+      : 'imagen_destacada_url';
+    const currentUrl = form[field];
+
+    if (editingId && currentUrl) {
+      setFeaturedImageUploading(variant);
+      setError('');
+      const { error: removeError } = await NoticiasModel.removeNoticiaFeaturedImage(editingId, currentUrl, variant);
+      setFeaturedImageUploading('');
+      if (removeError) {
+        setError(removeError.message);
+        return;
+      }
+    }
+
+    setPendingFeaturedImageFiles(prev => ({ ...prev, [variant]: null }));
+    setForm(prev => ({ ...prev, [field]: '' }));
   }
 
   async function save() {
@@ -137,7 +196,7 @@ export function useNoticiasController() {
     setSaving(true);
     setError('');
 
-    const { error: saveError } = await NoticiasModel.saveNoticia({
+    const { data, error: saveError } = await NoticiasModel.saveNoticia({
       id: editingId || null,
       iglesiaId: effectiveIglesiaId,
       titulo: form.titulo,
@@ -150,12 +209,29 @@ export function useNoticiasController() {
       placements: form.placements,
       audience: form.audience,
       clubId: form.club_id || null,
+      imagenDestacadaUrl: form.imagen_destacada_url || null,
+      imagenDestacadaMobileUrl: form.imagen_destacada_mobile_url || null,
     });
 
     if (saveError) {
       setError(saveError.message);
       setSaving(false);
       return;
+    }
+
+    const savedId = data?.id || editingId;
+    for (const variant of [NOTICIA_FEATURED_VARIANTS.DESKTOP, NOTICIA_FEATURED_VARIANTS.MOBILE]) {
+      const pendingFile = pendingFeaturedImageFiles[variant];
+      if (!pendingFile || !savedId) continue;
+
+      setFeaturedImageUploading(variant);
+      const { error: uploadError } = await NoticiasModel.uploadNoticiaFeaturedImage(savedId, pendingFile, variant);
+      setFeaturedImageUploading('');
+      if (uploadError) {
+        setError(uploadError.message);
+        setSaving(false);
+        return;
+      }
     }
 
     closeForm();
@@ -217,5 +293,9 @@ export function useNoticiasController() {
     toggleEstado,
     remove,
     formatDate,
+    featuredImageUploading,
+    pendingFeaturedImageFiles,
+    handleFeaturedImageUpload,
+    handleFeaturedImageRemove,
   };
 }

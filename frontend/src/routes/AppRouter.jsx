@@ -20,6 +20,7 @@ import Especialidades from "../pages/Especialidades";
 import ClasesProgresivas from "../pages/ClasesProgresivas";
 import Usuarios from "../pages/Usuarios";
 import UsuarioUsage from "../pages/UsuarioUsage";
+import Sorteos from "../pages/Sorteos";
 import LabelSettings from "../pages/LabelSettings";
 import AdvancedSettings from "../pages/AdvancedSettings";
 import PlanificacionPeriodo from "../pages/PlanificacionPeriodo";
@@ -112,6 +113,7 @@ export default function AppRouter() {
           <Route path="clases-progresivas" element={<StaffOnlyRoute element={<SuperAdminRoute element={<ClasesProgresivas />} />} />} />
           <Route path="usuarios" element={<StaffOnlyRoute element={<SuperAdminRoute element={<Usuarios />} />} />} />
           <Route path="usage-stats" element={<StaffOnlyRoute element={<AdminRoute element={<UsuarioUsage />} />} />} />
+          <Route path="sorteos" element={<StaffOnlyRoute element={<AdminRoute element={<Sorteos />} />} />} />
           <Route path="label-settings" element={<StaffOnlyRoute element={<SuperAdminRoute element={<LabelSettings />} />} />} />
           <Route path="advanced-settings" element={<StaffOnlyRoute element={<SuperAdminRoute element={<AdvancedSettings />} />} />} />
           <Route path="landing-cms" element={<StaffOnlyRoute element={<SuperAdminRoute element={<LandingCms />} />} />} />

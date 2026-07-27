@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import NoticiaHtml from '../../components/NoticiaHtml';
+import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
 import { PageHelpLink } from '../../components/PageHelp';
 import AdminPendingApprovalsPanel from '../../components/AdminPendingApprovalsPanel';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
@@ -155,6 +156,10 @@ function HomePanels({
                         <span>{formatNewsDate(item.publicado_en)}</span>
                         {item.estado !== 'activo' && <span>{t('inactive')}</span>}
                       </div>
+                      <NoticiaFeaturedImage
+                        desktopUrl={item.imagen_destacada_url}
+                        mobileUrl={item.imagen_destacada_mobile_url}
+                      />
                       <NoticiaHtml
                         html={item.titulo}
                         variant="title"

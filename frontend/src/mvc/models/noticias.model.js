@@ -1,6 +1,16 @@
 import { sb } from '../../services/supabase';
 import { sanitizeNoticiaFields, stripHtmlTags } from '../../utils/sanitizeHtml';
-import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements } from '../../constants/noticiaPlacements';
+import {
+  validateImageFile,
+  extensionForImageFile,
+  isRlsError,
+} from '../../utils/assets';
+import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements, NOTICIA_PLACEMENT_IDS } from '../../constants/noticiaPlacements';
+import {
+  NOTICIA_FEATURED_VARIANTS,
+  noticiaFeaturedImageColumn,
+  noticiaFeaturedStorageStem,
+} from '../../constants/noticiaFeaturedImage';
 import {
   DEFAULT_NOTICIA_AUDIENCE,
   normalizeAudience,
@@ -8,12 +18,10 @@ import {
   filterNoticiasByAudience,
 } from '../../constants/noticiaAudience';
 
-function isRlsError(error) {
-  const msg = error?.message || '';
-  return msg.includes('row-level security') || msg.includes('permission denied');
-}
+const NOTICIA_IMAGES_BUCKET = 'noticia-imagenes';
 
-const NOTICIA_SELECT_WITH_EXPIRA = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
+const NOTICIA_SELECT_WITH_IMAGE = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,imagen_destacada_url,imagen_destacada_mobile_url,created_at,updated_at,clubes(id,nombre,tipos_club(id,nombre))';
+const NOTICIA_SELECT_WITH_EXPIRA = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre,tipos_club(id,nombre))';
 const NOTICIA_SELECT_LEGACY = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
 
 function isMissingColumnError(error, column) {
@@ -46,19 +54,26 @@ export function isNoticiaExpired(noticia, referenceDate) {
   return Boolean(expiraEn && expiraEn < today);
 }
 
+function normalizePlacementsForSave(placements) {
+  if (!Array.isArray(placements)) return [...DEFAULT_NOTICIA_PLACEMENTS];
+  return placements.filter(p => NOTICIA_PLACEMENT_IDS.includes(p));
+}
+
 function normalizeNoticiaRow(row) {
   if (!row) return row;
   return {
     ...row,
     expira_en: normalizeExpiraEn(row.expira_en),
-    placements: normalizePlacements(row.placements),
+    placements: normalizePlacements(row.placements, { allowEmpty: true }),
     audience: normalizeAudience(row.audience),
     club_nombre: row.clubes?.nombre || row.club_nombre || '',
+    imagen_destacada_url: row.imagen_destacada_url || '',
+    imagen_destacada_mobile_url: row.imagen_destacada_mobile_url || '',
   };
 }
 
 async function queryNoticias(buildQuery) {
-  for (const select of [NOTICIA_SELECT_WITH_EXPIRA, NOTICIA_SELECT_LEGACY]) {
+  for (const select of [NOTICIA_SELECT_WITH_IMAGE, NOTICIA_SELECT_WITH_EXPIRA, NOTICIA_SELECT_LEGACY]) {
     const result = await buildQuery(select);
     if (!result.error) {
       if (result.data) {
@@ -68,7 +83,13 @@ async function queryNoticias(buildQuery) {
       }
       return result;
     }
-    if (!isMissingColumnError(result.error, 'expira_en')) return result;
+    if (
+      !isMissingColumnError(result.error, 'expira_en')
+      && !isMissingColumnError(result.error, 'imagen_destacada_url')
+      && !isMissingColumnError(result.error, 'imagen_destacada_mobile_url')
+    ) {
+      return result;
+    }
   }
   return { data: [], error: null };
 }
@@ -219,13 +240,15 @@ export async function saveNoticia({
   placements = DEFAULT_NOTICIA_PLACEMENTS,
   audience = DEFAULT_NOTICIA_AUDIENCE,
   clubId = null,
+  imagenDestacadaUrl = null,
+  imagenDestacadaMobileUrl = null,
 }) {
   const clean = sanitizeNoticiaFields({ titulo, resumen, contenido });
   if (!stripHtmlTags(clean.titulo) || !stripHtmlTags(clean.contenido)) {
     return { data: null, error: new Error('Title and content are required.') };
   }
 
-  const normalizedPlacements = normalizePlacements(placements);
+  const normalizedPlacements = normalizePlacementsForSave(placements);
   const normalizedAudience = normalizeAudience(audience);
 
   if (audienceRequiresClub(normalizedAudience) && !clubId) {
@@ -233,6 +256,8 @@ export async function saveNoticia({
   }
 
   const normalizedExpira = normalizeExpiraEn(expiraEn);
+  const normalizedImageUrl = imagenDestacadaUrl?.trim() || null;
+  const normalizedMobileImageUrl = imagenDestacadaMobileUrl?.trim() || null;
 
   const payload = {
     iglesia_id: iglesiaId,
@@ -246,6 +271,8 @@ export async function saveNoticia({
     placements: normalizedPlacements,
     audience: normalizedAudience,
     club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
+    imagen_destacada_url: normalizedImageUrl,
+    imagen_destacada_mobile_url: normalizedMobileImageUrl,
   };
 
   const saveDirect = async (body) => {
@@ -257,9 +284,14 @@ export async function saveNoticia({
 
   let direct = await saveDirect(payload);
   if (!direct.error) return direct;
-  if (isMissingColumnError(direct.error, 'expira_en')) {
-    const { expira_en: _ignored, ...withoutExpira } = payload;
-    direct = await saveDirect(withoutExpira);
+  if (isMissingColumnError(direct.error, 'expira_en') || isMissingColumnError(direct.error, 'imagen_destacada_url') || isMissingColumnError(direct.error, 'imagen_destacada_mobile_url')) {
+    const {
+      expira_en: _expira,
+      imagen_destacada_url: _img,
+      imagen_destacada_mobile_url: _mobileImg,
+      ...legacyPayload
+    } = payload;
+    direct = await saveDirect(legacyPayload);
     if (!direct.error) return direct;
   }
   if (!isRlsError(direct.error)) return direct;
@@ -277,15 +309,24 @@ export async function saveNoticia({
     p_audience: normalizedAudience,
     p_club_id: audienceRequiresClub(normalizedAudience) ? clubId : null,
     p_expira_en: normalizedExpira,
+    p_imagen_destacada_url: normalizedImageUrl,
+    p_imagen_destacada_mobile_url: normalizedMobileImageUrl,
   };
 
   const rpc = await sb.rpc('admin_save_noticia', rpcArgs);
-  if (!rpc.error) return rpc;
+  if (!rpc.error) return { data: { id: rpc.data }, error: null };
 
   const rpcMsg = rpc.error?.message || '';
-  if (rpcMsg.includes('p_expira_en') || rpcMsg.includes('admin_save_noticia')) {
-    const { p_expira_en: _ignored, ...legacyRpcArgs } = rpcArgs;
-    return sb.rpc('admin_save_noticia', legacyRpcArgs);
+  if (rpcMsg.includes('p_expira_en') || rpcMsg.includes('p_imagen_destacada_url') || rpcMsg.includes('p_imagen_destacada_mobile_url') || rpcMsg.includes('admin_save_noticia')) {
+    const {
+      p_expira_en: _expira,
+      p_imagen_destacada_url: _img,
+      p_imagen_destacada_mobile_url: _mobileImg,
+      ...legacyRpcArgs
+    } = rpcArgs;
+    const legacyRpc = await sb.rpc('admin_save_noticia', legacyRpcArgs);
+    if (!legacyRpc.error) return { data: { id: legacyRpc.data }, error: null };
+    return legacyRpc;
   }
 
   return rpc;
@@ -315,11 +356,92 @@ export async function setNoticiaEstado(id, estado) {
     p_publicado_en: row.publicado_en,
     p_estado: estado,
     p_categoria: row.categoria || null,
-    p_placements: normalizePlacements(row.placements),
+    p_placements: normalizePlacements(row.placements, { allowEmpty: true }),
     p_audience: normalizeAudience(row.audience),
     p_club_id: row.club_id || null,
     p_expira_en: row.expira_en || null,
+    p_imagen_destacada_url: row.imagen_destacada_url || null,
+    p_imagen_destacada_mobile_url: row.imagen_destacada_mobile_url || null,
   });
+}
+
+async function uploadFeaturedImageToStorage(path, file) {
+  let { error } = await sb.storage
+    .from(NOTICIA_IMAGES_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (error && isRlsError(error)) {
+    ({ error } = await sb.storage
+      .from(NOTICIA_IMAGES_BUCKET)
+      .upload(path, file, { contentType: file.type }));
+  }
+
+  return error;
+}
+
+function publicUrlForFeaturedImage(path) {
+  const { data } = sb.storage.from(NOTICIA_IMAGES_BUCKET).getPublicUrl(path);
+  return data?.publicUrl || null;
+}
+
+async function setNoticiaFeaturedImageUrl(noticiaId, variant, imageUrl) {
+  const column = noticiaFeaturedImageColumn(variant);
+  const rpc = await sb.rpc('admin_update_noticia_featured_image', {
+    p_noticia_id: noticiaId,
+    p_variant: variant,
+    p_image_url: imageUrl,
+  });
+  if (!rpc.error) return rpc;
+
+  const direct = await sb.from('noticias').update({ [column]: imageUrl }).eq('id', noticiaId);
+  if (!direct.error) return direct;
+  if (!isRlsError(direct.error)) return direct;
+  return rpc;
+}
+
+function featuredImageResponseKey(variant) {
+  return variant === NOTICIA_FEATURED_VARIANTS.MOBILE
+    ? 'imagen_destacada_mobile_url'
+    : 'imagen_destacada_url';
+}
+
+export async function uploadNoticiaFeaturedImage(noticiaId, file, variant = NOTICIA_FEATURED_VARIANTS.DESKTOP) {
+  const validationError = validateImageFile(file);
+  if (validationError) return { data: null, error: new Error(validationError) };
+
+  const ext = extensionForImageFile(file);
+  const path = `noticias/${noticiaId}/${noticiaFeaturedStorageStem(variant)}.${ext}`;
+  const uploadError = await uploadFeaturedImageToStorage(path, file);
+  if (uploadError) return { data: null, error: uploadError, errorStage: 'storage' };
+
+  const imageUrl = publicUrlForFeaturedImage(path);
+  if (!imageUrl) return { data: null, error: new Error('Unable to resolve image URL'), errorStage: 'storage' };
+
+  const updateResult = await setNoticiaFeaturedImageUrl(noticiaId, variant, imageUrl);
+  if (updateResult.error) {
+    return { data: null, error: updateResult.error, errorStage: 'database' };
+  }
+
+  return { data: { [featuredImageResponseKey(variant)]: imageUrl }, error: null };
+}
+
+export async function removeNoticiaFeaturedImage(noticiaId, currentImageUrl, variant = NOTICIA_FEATURED_VARIANTS.DESKTOP) {
+  if (currentImageUrl) {
+    try {
+      const marker = '/noticia-imagenes/';
+      const idx = currentImageUrl.indexOf(marker);
+      if (idx >= 0) {
+        const storagePath = currentImageUrl.slice(idx + marker.length).split('?')[0];
+        if (storagePath) {
+          await sb.storage.from(NOTICIA_IMAGES_BUCKET).remove([storagePath]);
+        }
+      }
+    } catch {
+      // ignore storage cleanup errors
+    }
+  }
+
+  return setNoticiaFeaturedImageUrl(noticiaId, variant, null);
 }
 
 export function formatNoticiaDate(dateStr, language = 'es') {
