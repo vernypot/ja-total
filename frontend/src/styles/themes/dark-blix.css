@@ -22,11 +22,11 @@ html[data-ui-theme='dark'] {
   --blix-radius-tile: 6px;
   --blix-radius-sharp: 0;
 
-  --brand-primary: var(--blix-primary-lighter);
-  --brand-primary-dark: var(--blix-primary-dark);
-  --brand-primary-light: var(--blix-primary);
-  --brand-trust: var(--blix-primary-lighter);
-  --brand-trust-dark: var(--blix-primary-dark);
+  --brand-primary: #9aa8ff;
+  --brand-primary-dark: #556afb;
+  --brand-primary-light: #7586fe;
+  --brand-trust: #9aa8ff;
+  --brand-trust-dark: #556afb;
   --brand-turquoise: var(--blix-accent);
   --brand-bg: var(--blix-chrome);
   --brand-base: var(--blix-chrome-elevated);
@@ -34,11 +34,12 @@ html[data-ui-theme='dark'] {
 
   --color-text-primary: var(--blix-text);
   --color-text-secondary: var(--blix-link);
-  --color-link: var(--blix-primary);
-  --color-link-hover: var(--blix-accent);
-  --primary: var(--blix-primary-lighter);
+  --color-text-muted: #b0bac5;
+  --color-link: #9aa8ff;
+  --color-link-hover: #c4cbff;
+  --primary: #9aa8ff;
   --primary-dark: var(--blix-primary-dark);
-  --primary-light: var(--blix-primary);
+  --primary-light: #7586fe;
   --info-light: rgba(117, 134, 254, 0.15);
 
   --font-primary: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -57,8 +58,8 @@ html[data-ui-theme='dark'] {
   --gray-100: var(--blix-surface);
   --gray-200: var(--blix-border);
   --gray-300: #475569;
-  --gray-400: #64748b;
-  --gray-500: #94a3b8;
+  --gray-400: #94a3b8;
+  --gray-500: #a8b4c4;
   --gray-600: #cbd5e1;
   --gray-700: #e2e8f0;
   --gray-800: #f1f5f9;
@@ -243,7 +244,7 @@ html[data-ui-theme='dark'] .admin-section {
 }
 
 html[data-ui-theme='dark'] .admin-section h4 {
-  color: rgba(255, 255, 255, 0.5);
+  color: #b8c5d6;
   font-weight: 400;
   letter-spacing: 0.08em;
 }
@@ -405,7 +406,7 @@ html[data-ui-theme='dark'] .portal-bottom-nav {
 }
 
 html[data-ui-theme='dark'] .portal-bottom-nav__link {
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.78);
   border-radius: var(--blix-radius-tile);
   font-weight: 400;
   font-size: 10px;

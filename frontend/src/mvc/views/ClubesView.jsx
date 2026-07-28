@@ -6,6 +6,7 @@ import { PageHelpLink } from '../../components/PageHelp';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import LogoAssetField from '../../components/LogoAssetField';
+import HorizontalScrollRow from '../../components/HorizontalScrollRow';
 import FormField from '../../components/FormField';
 import { ChurchOrgPath } from '../../components/ChurchOrgFields';
 import { iglesiaHierarchyLabel } from '../../mvc/models/iglesias.model';
@@ -174,30 +175,12 @@ export default function ClubesView({
               return (
                 <div
                   key={c.id}
-                  style={{
-                    padding: '15px',
-                    border: isActive ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    backgroundColor: isActive ? '#dbeafe' : '#fff',
-                    transition: 'all 0.2s',
-                  }}
-                  className="hover-shadow"
+                  className={`club-list-item hover-shadow${isActive ? ' club-list-item--active' : ''}`}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      gap: '16px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: 1, minWidth: '240px' }}>
+                  <div className="club-list-item__head">
+                  <div className="club-list-item__body">
                     {showRowLogos && (
-                      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                      <div className="club-list-item__logos">
                         <LogoAssetField
                           label={tipoNombre
                             ? t('clubTypeLogoNamed').replace('{type}', tipoNombre)
@@ -228,18 +211,11 @@ export default function ClubesView({
                         />
                       </div>
                     )}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="club-list-item__meta">
+                      <div className="club-list-item__title-row">
                         <strong>{c.nombre}</strong>
                         {tipoNombre && (
-                          <span style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold',
-                            padding: '3px 8px',
-                            borderRadius: '999px',
-                            backgroundColor: '#e0e7ff',
-                            color: '#3730a3',
-                          }}>
+                          <span className="club-list-item__type-badge">
                             {tipoNombre}
                           </span>
                         )}
@@ -249,7 +225,7 @@ export default function ClubesView({
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
+                  <HorizontalScrollRow className="club-list-item__actions">
                     <button
                       type="button"
                       onClick={() => toggleRowLogos(c.id)}
@@ -260,6 +236,7 @@ export default function ClubesView({
                       {showRowLogos ? `🖼️ ${t('hideClubLogos')}` : `🖼️ ${t('showClubLogos')}`}
                     </button>
                     <button
+                      type="button"
                       onClick={() => selectClub(c)}
                       style={{
                         padding: '6px 12px',
@@ -273,16 +250,16 @@ export default function ClubesView({
                     >
                       ★ {t('select')}
                     </button>
-                    <button onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
-                    <button onClick={() => navigateToUnidades(c.id)} className="btn btn-sm btn-edit">🧩 {t('unidadBtn')}</button>
-                    <button onClick={() => navigateToDirectiva(c.id)} className="btn btn-sm btn-edit">🎖️ {t('directivaBtn')}</button>
-                    <button onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
+                    <button type="button" onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
+                    <button type="button" onClick={() => navigateToUnidades(c.id)} className="btn btn-sm btn-edit">🧩 {t('unidadBtn')}</button>
+                    <button type="button" onClick={() => navigateToDirectiva(c.id)} className="btn btn-sm btn-edit">🎖️ {t('directivaBtn')}</button>
+                    <button type="button" onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
                     {canManage && (
-                      <button onClick={() => toggleEstado(c)} className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
+                      <button type="button" onClick={() => toggleEstado(c)} className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
                         {c.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
                       </button>
                     )}
-                  </div>
+                  </HorizontalScrollRow>
                   </div>
                   <div className="club-row-footer">
                     <span>{memberCountLabel}</span>

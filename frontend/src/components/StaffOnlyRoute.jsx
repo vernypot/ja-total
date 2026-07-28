@@ -4,11 +4,11 @@ import { DASHBOARD_HOME_PATH } from '../utils/dashboardRoutes';
 import DashboardRouteLoading from './DashboardRouteLoading';
 
 export default function StaffOnlyRoute({ element }) {
-  const { loading, isStaff, isPortalOnly } = useDashboardAuth();
+  const { loading, isStaff, isMemberView } = useDashboardAuth();
 
   if (loading) return <DashboardRouteLoading />;
 
-  if (isPortalOnly) {
+  if (isMemberView) {
     return <Navigate to={DASHBOARD_HOME_PATH} replace />;
   }
 

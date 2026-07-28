@@ -35,7 +35,7 @@ export default function Breadcrumb() {
   const location = useLocation();
   const { t } = useLanguage();
   const { user, userData } = useContext(AuthContext);
-  const { isPortalOnly } = useDashboardAuth();
+  const { isMemberView } = useDashboardAuth();
   const { activeIglesia } = useContext(IglesiaContext);
   const { activeClub } = useContext(ClubContext);
   const [iglesiaNombre, setIglesiaNombre] = useState('');
@@ -69,7 +69,7 @@ export default function Breadcrumb() {
     : null;
   const onPortalProfile = location.pathname.startsWith('/dashboard/profile');
 
-  if (isPortalOnly) {
+  if (isMemberView) {
     if (onHomePage) return null;
 
     return (

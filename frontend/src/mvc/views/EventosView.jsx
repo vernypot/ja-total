@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import ListSearchInput from '../../components/ListSearchInput';
@@ -12,7 +13,10 @@ import {
 } from '../../components/EventAttendanceControls';
 import { clubDisplayName } from '../../utils/club';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
+import HorizontalScrollRow from '../../components/HorizontalScrollRow';
+import EventListActionsModal, { EventListOverflowTrigger } from '../../components/EventListActionsModal';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
+import * as EventosModel from '../models/eventos.model';
 import '../../styles/form.css';
 
 function FormSection({ title, children, className = '' }) {
@@ -438,6 +442,7 @@ export default function EventosView({
   savingSelfConfirmationId,
 }) {
   const { t } = useLanguage();
+  const [overflowMenuEventId, setOverflowMenuEventId] = useState(null);
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
@@ -676,13 +681,27 @@ export default function EventosView({
                 const isExcluded = isEventoExcludedFromAttendance(evento);
                 const canCombineEvent = canManage && isActive && !isExcluded && canCombineEventoAttendance(allClubEvents, evento);
                 const selfRow = getSelfEventRow?.(evento, rows) || null;
+                const showSelfConfirmInRow = Boolean(
+                  updateSelfConfirmation
+                  && !isExcluded
+                  && selfRow
+                  && EventosModel.eventRequiresConfirmation(evento)
+                  && EventosModel.canMemberConfirmEvent(selfRow)
+                );
 
                 return (
-                  <div key={evento.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', opacity: isActive ? 1 : isEnded ? 0.92 : 0.85 }}>
-                    <div style={{ padding: '14px 16px', backgroundColor: expanded || editingAttendees || isEditing ? '#f0f9ff' : '#fff' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div
+                    key={evento.id}
+                    className={[
+                      'event-list-card',
+                      !isActive && !isEnded ? 'event-list-card--inactive' : '',
+                      isEnded ? 'event-list-card--ended' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
+                    <div className={`event-list-card__summary${expanded || editingAttendees || isEditing ? ' is-active' : ''}`}>
+                      <div className="event-list-card__header">
+                        <div className="event-list-card__info">
+                          <div className="event-list-card__title-row">
                             <strong>{evento.nombre || t('eventUntitled')}</strong>
                             <EventStatusBadge estado={evento.estado} t={t} />
                             {isFuture && isActive && (
@@ -698,7 +717,7 @@ export default function EventosView({
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                          <div className="event-list-card__meta">
                             {evento.fecha} · {formatEventTime(evento.hora)} · {evento.lugar}
                             {tipoNombre && <> · {tipoNombre}</>}
                           </div>
@@ -714,7 +733,7 @@ export default function EventosView({
                             </div>
                           )}
                           {needsConfirmation && !isExcluded && (
-                            <div style={{ fontSize: '12px', color: '#854d0e', marginTop: '4px' }}>
+                            <div className="event-list-card__hint event-list-card__hint--confirm">
                               {t('eventRequiresConfirmationBadge')}
                               {assignments[evento.id] && rows.length > 0 && (
                                 <> · {t('confirmationSummary').replace('{confirmed}', String(confirmedCount)).replace('{assigned}', String(rows.length))}</>
@@ -722,7 +741,7 @@ export default function EventosView({
                             </div>
                           )}
                           {!needsConfirmation && !isExcluded && (
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            <div className="event-list-card__hint event-list-card__hint--muted">
                               {rows.length > 0
                                 ? t('attendanceSummary')
                                   .replace('{assigned}', String(rows.length))
@@ -731,120 +750,69 @@ export default function EventosView({
                             </div>
                           )}
                           {isExcluded && (
-                            <div style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>
+                            <div className="event-list-card__hint event-list-card__hint--warn">
                               {t('eventExcludedFromAttendanceHint')}
                             </div>
                           )}
                           {needsConfirmation && assignments[evento.id] && rows.length > 0 && !isExcluded && (
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            <div className="event-list-card__hint event-list-card__hint--muted">
                               {t('attendanceSummary')
                                 .replace('{assigned}', String(rows.length))
                                 .replace('{recorded}', String(recordedCount))}
                             </div>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
-                          {canManage && (
+                        <HorizontalScrollRow className="event-list-card__actions">
+                          {canManage && isActive && !isExcluded && (
                             <>
-                              {isActive && !isExcluded && (
-                                <>
-                                  <EventActionButton
-                                    tone="primary"
-                                    onClick={() => initializeEvent(evento.id)}
-                                    disabled={Boolean(evento.actividad_inicio_at || evento.evento_asistencia_grupo?.actividad_inicio_at) || initializingEventId === evento.id}
-                                  >
-                                    ▶ {initializingEventId === evento.id ? t('loading') : t('initializeEvent')}
-                                  </EventActionButton>
-                                  <EventActionButton
-                                    tone="success"
-                                    onClick={() => scanAttendees(evento.id)}
-                                  >
-                                    ▶ {t('scanAttendees')}
-                                  </EventActionButton>
-                                  {canCombineEvent && (
-                                    <EventActionButton
-                                      tone="info"
-                                      onClick={() => openMergeAttendance(evento.id)}
-                                    >
-                                      🔗 {t('eventMergeAction')}
-                                    </EventActionButton>
-                                  )}
-                                  {evento.asistencia_grupo_id && (
-                                    <EventActionButton
-                                      tone="warning"
-                                      onClick={() => unmergeAttendance(evento.id)}
-                                    >
-                                      {t('eventUnmergeAction')}
-                                    </EventActionButton>
-                                  )}
-                                </>
-                              )}
-                              {isExcluded ? (
+                              <EventActionButton
+                                tone="primary"
+                                onClick={() => initializeEvent(evento.id)}
+                                disabled={Boolean(evento.actividad_inicio_at || evento.evento_asistencia_grupo?.actividad_inicio_at) || initializingEventId === evento.id}
+                              >
+                                ▶ {initializingEventId === evento.id ? t('loading') : t('initializeEvent')}
+                              </EventActionButton>
+                              <EventActionButton
+                                tone="success"
+                                onClick={() => scanAttendees(evento.id)}
+                              >
+                                ▶ {t('scanAttendees')}
+                              </EventActionButton>
+                              {canCombineEvent && (
                                 <EventActionButton
-                                  tone="success"
-                                  onClick={() => confirmRestoreToAttendance(evento)}
+                                  tone="info"
+                                  onClick={() => openMergeAttendance(evento.id)}
                                 >
-                                  ↩ {t('eventRestoreToAttendanceAction')}
+                                  🔗 {t('eventMergeAction')}
                                 </EventActionButton>
-                              ) : (
+                              )}
+                              {evento.asistencia_grupo_id && (
                                 <EventActionButton
                                   tone="warning"
-                                  onClick={() => confirmExcludeFromAttendance(evento)}
+                                  onClick={() => unmergeAttendance(evento.id)}
                                 >
-                                  ⊘ {t('eventExcludeFromAttendanceAction')}
-                                </EventActionButton>
-                              )}
-                              <EventActionButton
-                                tone={isEditing ? 'muted' : 'primary'}
-                                onClick={() => (isEditing ? closeEditForm() : openEditForm(evento))}
-                              >
-                                {isEditing ? t('cancel') : `✏️ ${t('edit')}`}
-                              </EventActionButton>
-                              <EventActionButton
-                                tone={expanded ? 'muted' : 'info'}
-                                onClick={() => toggleEventExpand(evento.id)}
-                              >
-                                {expanded ? t('hideAttendanceList') : t('manageAttendance')}
-                              </EventActionButton>
-                              {isActive && (
-                                <>
-                                  <EventActionButton tone="muted" onClick={() => confirmEndEvent(evento)}>
-                                    ⏹ {t('endEvent')}
-                                  </EventActionButton>
-                                  <EventActionButton tone="warning" onClick={() => confirmCancelEvent(evento)}>
-                                    {t('cancelEvent')}
-                                  </EventActionButton>
-                                  <EventActionButton tone="danger" onClick={() => confirmDeactivateEvent(evento)}>
-                                    {t('deactivate')}
-                                  </EventActionButton>
-                                </>
-                              )}
-                              {!isActive && (
-                                <EventActionButton tone="success" onClick={() => reactivateEvent(evento.id)}>
-                                  {t('activate')}
-                                </EventActionButton>
-                              )}
-                              {isFuture && needsConfirmation && isActive && (
-                                <EventActionButton
-                                  tone={editingAttendees ? 'muted' : 'info'}
-                                  onClick={() => (editingAttendees ? closeAttendeeEditor() : openAttendeeEditor(evento.id))}
-                                >
-                                  {editingAttendees ? t('cancel') : t('updateAttendees')}
+                                  {t('eventUnmergeAction')}
                                 </EventActionButton>
                               )}
                             </>
                           )}
-                          {!canManage && (
-                            <EventActionButton
-                              tone={expanded ? 'muted' : 'primary'}
-                              onClick={() => toggleEventExpand(evento.id)}
-                            >
-                              {expanded ? t('hideAttendanceList') : t('showAttendanceList')}
+                          {canManage && isActive && (
+                            <EventActionButton tone="muted" onClick={() => confirmEndEvent(evento)}>
+                              ⏹ {t('endEvent')}
                             </EventActionButton>
                           )}
-                        </div>
+                          {canManage && !isActive && (
+                            <EventActionButton tone="success" onClick={() => reactivateEvent(evento.id)}>
+                              {t('activate')}
+                            </EventActionButton>
+                          )}
+                          <EventListOverflowTrigger
+                            t={t}
+                            onClick={() => setOverflowMenuEventId(evento.id)}
+                          />
+                        </HorizontalScrollRow>
                       </div>
-                      {updateSelfConfirmation && !isExcluded && selfRow && (
+                      {showSelfConfirmInRow && (
                         <LinkedMemberEventConfirmSection
                           evento={evento}
                           selfRow={selfRow}
@@ -854,6 +822,31 @@ export default function EventosView({
                           className="event-list-self-confirm"
                         />
                       )}
+                      <EventListActionsModal
+                        open={overflowMenuEventId === evento.id}
+                        onClose={() => setOverflowMenuEventId(null)}
+                        evento={evento}
+                        t={t}
+                        canManage={canManage}
+                        isActive={isActive}
+                        isExcluded={isExcluded}
+                        isFuture={isFuture}
+                        needsConfirmation={needsConfirmation}
+                        isEditing={isEditing}
+                        expanded={expanded}
+                        editingAttendees={editingAttendees}
+                        selfRow={selfRow}
+                        updateSelfConfirmation={updateSelfConfirmation}
+                        savingSelfConfirmationId={savingSelfConfirmationId}
+                        onEdit={() => (isEditing ? closeEditForm() : openEditForm(evento))}
+                        onManageAttendance={() => toggleEventExpand(evento.id)}
+                        onUpdateAttendees={() => (editingAttendees ? closeAttendeeEditor() : openAttendeeEditor(evento.id))}
+                        onExclude={() => confirmExcludeFromAttendance(evento)}
+                        onRestore={() => confirmRestoreToAttendance(evento)}
+                        onCancelEvent={() => confirmCancelEvent(evento)}
+                        onDeactivate={() => confirmDeactivateEvent(evento)}
+                        onShowAttendanceList={!canManage ? () => toggleEventExpand(evento.id) : undefined}
+                      />
                     </div>
 
                     {isEditing && canManage && (
@@ -953,7 +946,7 @@ export default function EventosView({
                           </p>
                         )}
                         {canManage && rows.length > 0 && (
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                          <HorizontalScrollRow className="event-list-bulk-actions" style={{ marginBottom: '12px' }}>
                             {needsConfirmation && (
                               <EventActionButton
                                 tone="success"
@@ -977,7 +970,7 @@ export default function EventosView({
                             >
                               {t('markAllAbsent')}
                             </EventActionButton>
-                          </div>
+                          </HorizontalScrollRow>
                         )}
                         {canManage && (isActive || isEnded) && (
                           <div style={{ marginBottom: '12px', padding: '12px', border: '1px dashed #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>

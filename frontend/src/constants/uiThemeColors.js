@@ -53,7 +53,7 @@ export const THEME_COLOR_DEFAULTS = {
     sidebar: '#0f172a',
     header: '#0f172a',
     border: '#334155',
-    link: '#7586fe',
+    link: '#9aa8ff',
   },
 };
 

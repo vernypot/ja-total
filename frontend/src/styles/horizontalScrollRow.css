@@ -1,0 +1,169 @@
+.horizontal-scroll-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.horizontal-scroll-row__track {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+
+.horizontal-scroll-row__track > * {
+  flex-shrink: 0;
+}
+
+.horizontal-scroll-row__arrow {
+  flex: 0 0 32px;
+  align-self: center;
+  display: none;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--gray-300, #d1d5db);
+  border-radius: 999px;
+  background: var(--white, #fff);
+  color: var(--color-text-primary, #111827);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08));
+  cursor: pointer;
+  z-index: 2;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.horizontal-scroll-row__arrow span {
+  display: block;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+  transform: translateY(-1px);
+  pointer-events: none;
+}
+
+.horizontal-scroll-row__arrow:hover:not(:disabled) {
+  background: var(--gray-50, #f9fafb);
+}
+
+.horizontal-scroll-row__arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.horizontal-scroll-row--scrollable .horizontal-scroll-row__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .horizontal-scroll-row__track.member-list-item__main {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .horizontal-scroll-row__track.member-list-item__main .member-list-item__identity {
+    flex: 0 0 auto;
+    min-width: max(160px, 42vw);
+  }
+
+  .horizontal-scroll-row__track.member-list-item__main .member-list-item__actions {
+    flex: 0 0 auto;
+  }
+
+  .horizontal-scroll-row__track.list-item,
+  .horizontal-scroll-row__track.event-attendance-list-item,
+  .horizontal-scroll-row__track.member-list-item__main,
+  .horizontal-scroll-row__track.noticia-list-item-row,
+  .horizontal-scroll-row__track.checkin-session-registry-item {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .horizontal-scroll-row__track.list-item {
+    gap: 12px;
+  }
+
+  .horizontal-scroll-row__track.list-item .list-item-content,
+  .horizontal-scroll-row__track.list-item .list-item-actions,
+  .horizontal-scroll-row__track.event-attendance-list-item > *,
+  .horizontal-scroll-row__track.member-list-item__main > *,
+  .horizontal-scroll-row__track.noticia-list-item-row > * {
+    flex: 0 0 auto;
+  }
+
+  .horizontal-scroll-row__track.event-list-card__actions,
+  .horizontal-scroll-row__track.event-list-bulk-actions,
+  .horizontal-scroll-row__track.member-list-item__actions,
+  .horizontal-scroll-row__track.club-list-item__actions,
+  .horizontal-scroll-row__track.member-events-filter,
+  .horizontal-scroll-row__track.member-events-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    width: 0;
+    max-width: 100%;
+  }
+
+  .club-list-item__head > .horizontal-scroll-row {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .horizontal-scroll-row__track.event-list-card__actions .event-action-btn,
+  .horizontal-scroll-row__track.event-list-bulk-actions .event-action-btn,
+  .horizontal-scroll-row__track.member-list-item__actions .btn,
+  .horizontal-scroll-row__track.club-list-item__actions .btn,
+  .horizontal-scroll-row__track.club-list-item__actions button,
+  .horizontal-scroll-row__track.list-item-actions .btn,
+  .horizontal-scroll-row__track .event-action-btn,
+  .horizontal-scroll-row__track .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    width: auto;
+    max-width: none;
+  }
+
+  .horizontal-scroll-row__track.event-attendance-list-item {
+    gap: 12px;
+  }
+
+  .horizontal-scroll-row__track.event-attendance-list-item > div:last-child {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 769px) {
+  .horizontal-scroll-row__arrow {
+    display: none !important;
+  }
+
+  .horizontal-scroll-row__track {
+    flex: 1 1 auto;
+    width: auto;
+    overflow-x: visible;
+  }
+
+  .horizontal-scroll-row--scrollable .horizontal-scroll-row__track {
+    overflow-x: auto;
+  }
+}

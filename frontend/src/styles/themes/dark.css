@@ -10,20 +10,25 @@ html[data-ui-theme='dark'] {
 
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #cbd5e1;
-  --color-text-muted: #94a3b8;
+  --color-text-muted: #b0bac5;
   --color-text-inverse: #ffffff;
   --color-text-inverse-muted: #e2e8f0;
-  --color-link: #5eead4;
-  --color-link-hover: #99f6e4;
-  --color-focus-ring: #2dd4bf;
-  --color-focus-ring-shadow: rgba(45, 212, 191, 0.3);
-  --color-on-primary: #ffffff;
+  --color-link: #9aa8ff;
+  --color-link-hover: #c4cbff;
+  --color-focus-ring: #5eead4;
+  --color-focus-ring-shadow: rgba(94, 234, 212, 0.35);
+  --color-on-primary: #0f172a;
   --color-badge-info: #93c5fd;
-  --color-badge-warning: #fcd34d;
+  --color-badge-warning: #fde68a;
   --color-badge-success: #86efac;
   --color-badge-danger: #fca5a5;
   --color-badge-neutral: #cbd5e1;
-  --color-btn-neutral: #475569;
+  --color-btn-neutral: #52667a;
+
+  --color-alert-error: #fecaca;
+  --color-alert-success: #bbf7d0;
+  --color-alert-warning: #fde68a;
+  --color-alert-info: #bfdbfe;
 
   --success-light: rgba(74, 222, 128, 0.15);
   --warning-light: rgba(251, 191, 36, 0.15);
@@ -38,7 +43,7 @@ html[data-ui-theme='dark'] {
   --gray-200: #475569;
   --gray-300: #64748b;
   --gray-400: #94a3b8;
-  --gray-500: #94a3b8;
+  --gray-500: #a8b4c4;
   --gray-600: #cbd5e1;
   --gray-700: #e2e8f0;
   --gray-800: #f1f5f9;
@@ -198,7 +203,7 @@ html[data-ui-theme='dark'] .landing-page {
   --lp-cream: #0f172a;
   --lp-white: #1e293b;
   --lp-text: #f1f5f9;
-  --lp-muted: #94a3b8;
+  --lp-muted: #b0bac5;
   --lp-navy: #f1f5f9;
   --lp-navy-dark: #020617;
   --lp-on-dark: #f8fafc;

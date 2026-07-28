@@ -5,6 +5,12 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { validateForm } from '../../utils/validateForm';
 import * as AuthModel from '../models/auth.model';
 import { DASHBOARD_HOME_PATH } from '../../utils/dashboardRoutes';
+import {
+  LOGIN_ENTRIES,
+  VIEW_MODES,
+  setStoredLoginEntry,
+  setStoredViewMode,
+} from '../../utils/dashboardViewMode';
 
 export function useLoginController() {
   const { user, setUser } = useContext(AuthContext);
@@ -48,6 +54,8 @@ export function useLoginController() {
       }
 
       setUser(data.user);
+      setStoredLoginEntry(LOGIN_ENTRIES.STAFF);
+      setStoredViewMode(VIEW_MODES.ADMIN);
       navigate(DASHBOARD_HOME_PATH);
     } catch {
       setError('An unexpected error occurred. Please try again.');

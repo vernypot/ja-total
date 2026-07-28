@@ -38,6 +38,7 @@ export function useHomeController() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [eventAttendanceAlerts, setEventAttendanceAlerts] = useState([]);
   const [expandedNewsId, setExpandedNewsId] = useState('');
+  const [expandedEventId, setExpandedEventId] = useState('');
   const [reviewingSolicitudId, setReviewingSolicitudId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -239,6 +240,10 @@ export function useHomeController() {
     setExpandedNewsId(prev => (prev === id ? '' : id));
   }
 
+  function toggleEventExpand(id) {
+    setExpandedEventId(prev => (prev === id ? '' : id));
+  }
+
   function selectIglesia(iglesiaId) {
     const iglesia = iglesias.find(item => item.id === iglesiaId);
     updateActiveIglesia(iglesiaId, iglesia?.timezone);
@@ -279,6 +284,7 @@ export function useHomeController() {
     reviewSolicitud,
     formatRequestedDate,
     expandedNewsId,
+    expandedEventId,
     loading,
     error,
     canManage,
@@ -292,6 +298,7 @@ export function useHomeController() {
     formatSolicitudTarget,
     goToIglesias,
     toggleNewsExpand,
+    toggleEventExpand,
     selectIglesia,
     getClubName: evento => evento?.clubes?.nombre || '',
     formatEventDate: dateStr => churchTz.formatEventLocalDate(dateStr, language),

@@ -12,7 +12,7 @@ import { BRAND_MARK } from '../constants/brand';
 export default function Sidebar({ drawerOpen = false, isMobile = false, inert = false, onCloseDrawer }) {
   const { user, userData } = useContext(AuthContext);
   const { t } = useLanguage();
-  const { isPortalOnly } = useDashboardAuth();
+  const { isMemberView } = useDashboardAuth();
   const userRole = getUserRole(user, userData);
   const superadmin = isSuperAdmin(userRole);
   const adminOrAbove = isAdminOrAbove(userRole);
@@ -24,7 +24,7 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
   const sidebarClassName = [
     'sidebar',
     drawerOpen ? 'sidebar--drawer-open' : '',
-    isPortalOnly ? 'sidebar--portal' : '',
+    isMemberView ? 'sidebar--portal' : '',
   ].filter(Boolean).join(' ');
 
   const handleNavClick = (event) => {
@@ -59,7 +59,7 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
       </div>
 
       <nav className="sidebar-nav sidebar-nav--underline" onClick={handleNavClick}>
-        {isPortalOnly ? (
+        {isMemberView ? (
           <>
             <NavLinkItem to={DASHBOARD_HOME_PATH} icon="home" active={isDashboardHomePath(location.pathname)}>
               {t('home')}

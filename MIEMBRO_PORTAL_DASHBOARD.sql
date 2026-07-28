@@ -40,15 +40,22 @@ BEGIN
         json_build_object(
           'id', c.id,
           'nombre', c.nombre,
+          'tipo_id', c.tipo_id,
+          'tipo_nombre', tc.nombre,
+          'tipos_club', CASE
+            WHEN tc.id IS NOT NULL THEN json_build_object('id', tc.id, 'nombre', tc.nombre)
+            ELSE NULL
+          END,
           'iglesia_id', i.id,
           'iglesia_nombre', i.nombre,
           'timezone', i.timezone
         )
-        ORDER BY i.nombre, c.nombre
+        ORDER BY i.nombre, tc.nombre NULLS LAST, c.nombre
       )
       FROM public.miembro_club mc
       JOIN public.clubes c ON c.id = mc.club_id
       JOIN public.iglesias i ON i.id = c.iglesia_id
+      LEFT JOIN public.tipos_club tc ON tc.id = c.tipo_id
       WHERE mc.miembro_id = m.id
         AND c.estado = 'activo'
     ), '[]'::json),

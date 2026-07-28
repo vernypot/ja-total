@@ -163,6 +163,16 @@ export async function fetchClubById(clubId) {
     .single();
 }
 
+export async function fetchClubesByIds(clubIds) {
+  const ids = [...new Set((clubIds || []).filter(Boolean))];
+  if (!ids.length) return { data: [], error: null };
+
+  return sb
+    .from('clubes')
+    .select('id, nombre, tipo_id, tipos_club(id, nombre)')
+    .in('id', ids);
+}
+
 export async function fetchTiposClub() {
   return sb.from('tipos_club').select('id, nombre, logo_url');
 }

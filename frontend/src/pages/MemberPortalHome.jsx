@@ -6,10 +6,10 @@ import { useMemberPortalHomeController } from '../mvc/controllers/useMemberPorta
 import MemberPortalHomeView from '../mvc/views/MemberPortalHomeView';
 
 export default function MemberPortalHome({ embedded = false }) {
-  const { isPortalOnly } = useDashboardAuth();
+  const { isMemberView } = useDashboardAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  if (isPortalOnly && isMobile && !embedded) {
+  if (isMemberView && isMobile && !embedded) {
     return <Navigate to={getPortalLandingPath(true)} replace />;
   }
 

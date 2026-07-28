@@ -1,6 +1,7 @@
 import PasswordReset from '../../components/PasswordReset';
 import BackLink from '../../components/BackLink';
 import ThemeSwitcher from '../../components/ThemeSwitcher';
+import DashboardViewModeSwitch from '../../components/DashboardViewModeSwitch';
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel, roleLabel } from '../../i18n/helpers';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -55,6 +56,8 @@ export default function UserProfileView({
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+
+      <DashboardViewModeSwitch variant="profile" />
 
       {userData && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

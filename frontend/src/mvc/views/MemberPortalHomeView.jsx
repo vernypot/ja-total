@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
-import NoticiaHtml from '../../components/NoticiaHtml';
-import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
-import { PortalNewsActions } from '../../components/portal/PortalNewsActions';
+import { useState } from 'react';
+import PortalNewsListItem from '../../components/PortalNewsListItem';
+import HomeUpcomingEventRow, { homeEventDayParts } from '../../components/HomeUpcomingEventRow';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
-import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import { confirmationLabel } from '../../i18n/helpers';
+import { useLanguage } from '../../hooks/useLanguage';
 import '../../styles/home.css';
 import '../../styles/eventAttendance.css';
 
@@ -29,7 +29,10 @@ function SectionHeader({ title, actionLabel, actionTo, onClear, clearLabel }) {
 
 function EventRowCard({
   row,
+  expanded,
+  onToggle,
   t,
+  language,
   formatEventDate,
   formatEventTime,
   eventDisplayName,
@@ -44,50 +47,50 @@ function EventRowCard({
   const evento = getEventoFromRow(row);
   if (!evento) return null;
 
-  const day = evento.fecha?.slice(8, 10) || '--';
   const confirmacion = getConfirmacionFromRow(row);
   const needsConfirmation = eventRequiresConfirmation(evento);
   const showConfirmControls = canMemberConfirmEvent(row);
   const memberResponded = confirmacion !== 'pendiente';
 
+  const statusContent = !memberResponded && needsConfirmation && !showConfirmControls ? (
+    <span className="portal-home-event-status">
+      {confirmationLabel(confirmacion, t)}
+    </span>
+  ) : null;
+
+  const actions = showConfirmControls ? (
+    <MemberEventConfirmBlock
+      row={row}
+      updateConfirmation={updateConfirmation}
+      savingConfirmationId={savingConfirmationId}
+      t={t}
+      className="portal-home-event-actions"
+    />
+  ) : !showConfirmControls && memberResponded ? (
+    <MemberEventConfirmationStatus
+      row={row}
+      updateConfirmation={updateConfirmation}
+      savingConfirmationId={savingConfirmationId}
+      t={t}
+      variant="home"
+    />
+  ) : null;
+
   return (
-    <article className="portal-home-event-card">
-      <div className="home-event-badge">
-        <span>{day}</span>
-      </div>
-      <div className="home-item-main">
-        <strong>{eventDisplayName(evento)}</strong>
-        <span>
-          {getClubName(evento)}
-          {evento.lugar ? ` · ${evento.lugar}` : ''}
-        </span>
-        <span>{formatEventDate(evento.fecha)} · {formatEventTime(evento.hora)}</span>
-        <EventDescriptionToggle description={evento.descripcion} />
-        {!memberResponded && needsConfirmation && !showConfirmControls && (
-          <span className="portal-home-event-status">
-            {confirmationLabel(confirmacion, t)}
-          </span>
-        )}
-      </div>
-      {showConfirmControls && (
-        <MemberEventConfirmBlock
-          row={row}
-          updateConfirmation={updateConfirmation}
-          savingConfirmationId={savingConfirmationId}
-          t={t}
-          className="portal-home-event-actions"
-        />
-      )}
-      {!showConfirmControls && memberResponded && (
-        <MemberEventConfirmationStatus
-          row={row}
-          updateConfirmation={updateConfirmation}
-          savingConfirmationId={savingConfirmationId}
-          t={t}
-          variant="home"
-        />
-      )}
-    </article>
+    <HomeUpcomingEventRow
+      evento={evento}
+      expanded={expanded}
+      onToggle={onToggle}
+      variant="portal"
+      t={t}
+      formatEventDate={formatEventDate}
+      formatEventTime={formatEventTime}
+      eventDisplayName={eventDisplayName}
+      eventDayParts={dateStr => homeEventDayParts(dateStr, language)}
+      getClubName={getClubName}
+      statusContent={statusContent}
+      actions={actions}
+    />
   );
 }
 
@@ -158,8 +161,11 @@ export default function MemberPortalHomeView({
   speech,
   embedded = false,
 }) {
+  const { language } = useLanguage();
+  const [expandedEventId, setExpandedEventId] = useState('');
   const eventCardProps = {
     t,
+    language,
     formatEventDate,
     formatEventTime,
     eventDisplayName,
@@ -173,6 +179,17 @@ export default function MemberPortalHomeView({
   };
 
   const hasPriorityContent = pendingConfirmations.length > 0 || classUpdates.length > 0;
+
+  function toggleNewsExpand(itemId) {
+    if (expandedNewsId === itemId && speech?.isSpeakingItem(itemId)) {
+      speech.stop();
+    }
+    setExpandedNewsId(expandedNewsId === itemId ? '' : itemId);
+  }
+
+  function toggleEventExpand(eventId) {
+    setExpandedEventId(current => (current === eventId ? '' : eventId));
+  }
 
   return (
     <div className={`portal-page home-dashboard portal-home${embedded ? ' portal-home--embedded' : ''}`}>
@@ -210,13 +227,18 @@ export default function MemberPortalHomeView({
                 actionTo="/dashboard/eventos"
               />
               <div className="portal-home-card-list">
-                {pendingConfirmations.map(row => (
-                  <EventRowCard
-                    key={row.id || row.evento_id}
-                    row={row}
-                    {...eventCardProps}
-                  />
-                ))}
+                {pendingConfirmations.map(row => {
+                  const eventId = row.id || row.evento_id || getEventoFromRow(row)?.id;
+                  return (
+                    <EventRowCard
+                      key={eventId}
+                      row={row}
+                      expanded={expandedEventId === eventId}
+                      onToggle={() => toggleEventExpand(eventId)}
+                      {...eventCardProps}
+                    />
+                  );
+                })}
               </div>
             </section>
           )}
@@ -253,13 +275,18 @@ export default function MemberPortalHomeView({
               {!upcomingEvents.length ? (
                 <p className="home-empty">{t('portalHomeNoUpcomingMeetings')}</p>
               ) : (
-                upcomingEvents.map(row => (
-                  <EventRowCard
-                    key={row.id || row.evento_id}
-                    row={row}
-                    {...eventCardProps}
-                  />
-                ))
+                upcomingEvents.map(row => {
+                  const eventId = row.id || row.evento_id || getEventoFromRow(row)?.id;
+                  return (
+                    <EventRowCard
+                      key={eventId}
+                      row={row}
+                      expanded={expandedEventId === eventId}
+                      onToggle={() => toggleEventExpand(eventId)}
+                      {...eventCardProps}
+                    />
+                  );
+                })
               )}
             </div>
           </section>
@@ -278,9 +305,18 @@ export default function MemberPortalHomeView({
               ) : (
                 <div className="home-news-list">
                   {news.map(item => (
-                    <article key={item.id} className="home-news-item">
-                      <div className="home-news-meta">
-                        <span>{formatNewsDate(item.publicado_en)}</span>
+                    <PortalNewsListItem
+                      key={item.id}
+                      item={item}
+                      expanded={expandedNewsId === item.id}
+                      onToggleExpand={() => toggleNewsExpand(item.id)}
+                      formatNewsDate={formatNewsDate}
+                      isLeida={isLeida}
+                      markingId={markingId}
+                      onMarkLeida={markLeida}
+                      t={t}
+                      speech={speech}
+                      metaExtra={(
                         <button
                           type="button"
                           className="portal-home-dismiss-btn portal-home-dismiss-btn--inline"
@@ -289,34 +325,8 @@ export default function MemberPortalHomeView({
                         >
                           ✕
                         </button>
-                      </div>
-                      <NoticiaFeaturedImage
-                        desktopUrl={item.imagen_destacada_url}
-                        mobileUrl={item.imagen_destacada_mobile_url}
-                      />
-                      <NoticiaHtml html={item.titulo} variant="title" as="h3" className="noticia-html--title" />
-                      {item.resumen && (
-                        <NoticiaHtml html={item.resumen} variant="summary" className="home-news-resumen noticia-html--summary" />
                       )}
-                      {expandedNewsId === item.id && (
-                        <NoticiaHtml html={item.contenido} variant="content" className="home-news-contenido noticia-html--content" />
-                      )}
-                      <PortalNewsActions
-                        item={item}
-                        expanded={expandedNewsId === item.id}
-                        isLeida={isLeida(item.id)}
-                        markingId={markingId}
-                        onMarkLeida={markLeida}
-                        t={t}
-                        speech={speech}
-                        onToggleExpand={() => {
-                          if (expandedNewsId === item.id && speech?.isSpeakingItem(item.id)) {
-                            speech.stop();
-                          }
-                          setExpandedNewsId(expandedNewsId === item.id ? '' : item.id);
-                        }}
-                      />
-                    </article>
+                    />
                   ))}
                 </div>
               )}

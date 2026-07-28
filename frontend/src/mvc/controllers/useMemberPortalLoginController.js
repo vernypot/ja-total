@@ -5,6 +5,12 @@ import { useMemberPortal } from '../../context/MemberPortalContext';
 import { parseTokenFromQrPayload } from '../models/carnet.model';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import { PORTAL_PROFILE_PATH } from '../../utils/dashboardRoutes';
+import {
+  LOGIN_ENTRIES,
+  VIEW_MODES,
+  setStoredLoginEntry,
+  setStoredViewMode,
+} from '../../utils/dashboardViewMode';
 
 function mapPortalLoginError(message, t) {
   const text = String(message || '');
@@ -30,6 +36,8 @@ export function useMemberPortalLoginController() {
   const [resolving, setResolving] = useState(false);
 
   const goToDashboard = useCallback(() => {
+    setStoredLoginEntry(LOGIN_ENTRIES.PORTAL);
+    setStoredViewMode(VIEW_MODES.MEMBER);
     navigate(PORTAL_PROFILE_PATH, { replace: true });
   }, [navigate]);
 

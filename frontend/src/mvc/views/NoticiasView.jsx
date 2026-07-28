@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useNoticiaSpeech } from '../../hooks/useNoticiaSpeech';
 import { estadoLabel } from '../../i18n/helpers';
 import { isNoticiaExpired } from '../models/noticias.model';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
-import NoticiaHtml from '../../components/NoticiaHtml';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
+import NoticiaListReadSection from '../../components/NoticiaListReadSection';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
 import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
 import NoticiaFeaturedImagesField from '../../components/NoticiaFeaturedImagesField';
@@ -12,6 +14,7 @@ import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
 import { PageHelpLink } from '../../components/PageHelp';
 import DatePickerInput from '../../components/DatePickerInput';
 import '../../styles/form.css';
+import '../../styles/home.css';
 import '../../styles/noticias.css';
 
 export default function NoticiasView({
@@ -44,7 +47,16 @@ export default function NoticiasView({
   handleFeaturedImageUpload,
   handleFeaturedImageRemove,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const speech = useNoticiaSpeech(language);
+  const [expandedNewsId, setExpandedNewsId] = useState('');
+
+  function toggleNewsExpand(itemId) {
+    if (expandedNewsId === itemId && speech?.isSpeakingItem(itemId)) {
+      speech.stop();
+    }
+    setExpandedNewsId(current => (current === itemId ? '' : itemId));
+  }
 
   if (!effectiveIglesiaId) {
     return (
@@ -228,13 +240,6 @@ export default function NoticiasView({
                         <span className="noticia-expired-badge">{t('noticiasExpired')}</span>
                       )}
                     </div>
-                    <NoticiaHtml
-                      html={item.titulo}
-                      variant="title"
-                      as="strong"
-                      className="noticia-html--title"
-                      style={{ fontSize: '16px', display: 'block' }}
-                    />
                     {(item.imagen_destacada_url || item.imagen_destacada_mobile_url) && (
                       <NoticiaFeaturedImage
                         desktopUrl={item.imagen_destacada_url}
@@ -242,14 +247,16 @@ export default function NoticiasView({
                         className="noticia-featured-image--list"
                       />
                     )}
-                    {item.resumen && (
-                      <NoticiaHtml
-                        html={item.resumen}
-                        variant="summary"
-                        className="noticia-html--summary"
-                        style={{ margin: '6px 0 0' }}
-                      />
-                    )}
+                    <NoticiaListReadSection
+                      item={item}
+                      expanded={expandedNewsId === item.id}
+                      onOpen={() => toggleNewsExpand(item.id)}
+                      onClose={() => toggleNewsExpand(item.id)}
+                      t={t}
+                      speech={speech}
+                      summaryClassName="noticia-html--summary"
+                      contentClassName="noticia-html--content"
+                    />
                     <div className="noticia-item-badges">
                       <NoticiaAudienceBadge
                         audience={item.audience}

@@ -48,6 +48,7 @@ import NoticiasRoute from "../components/NoticiasRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
 import { DASHBOARD_HOME_PATH, PORTAL_PROFILE_PATH } from "../utils/dashboardRoutes";
+import { DashboardViewModeProvider } from "../context/DashboardViewModeContext";
 
 
 
@@ -55,6 +56,7 @@ import { DASHBOARD_HOME_PATH, PORTAL_PROFILE_PATH } from "../utils/dashboardRout
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <DashboardViewModeProvider>
       <RecoveryRedirect />
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -130,6 +132,7 @@ export default function AppRouter() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </DashboardViewModeProvider>
     </BrowserRouter>
   );
 }
