@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS public.miembro_portal_card_scans (
   scan_context TEXT NOT NULL DEFAULT 'portal_login'
 );
 
+COMMENT ON TABLE public.miembro_portal_card_scans IS
+  'Successful member portal logins via carnet (recorded when a session starts, not on scan attempts).';
+
 CREATE INDEX IF NOT EXISTS idx_miembro_portal_card_scans_miembro
   ON public.miembro_portal_card_scans(miembro_id, scanned_at DESC);
 
@@ -424,11 +427,13 @@ BEGIN
         SELECT 1
         FROM public.miembro_portal_login_events e
         WHERE e.miembro_id = m.id
+          AND e.logged_in_at >= v_since
       )
       OR EXISTS (
         SELECT 1
-        FROM public.miembro_portal_card_scans cs
-        WHERE cs.miembro_id = m.id
+        FROM public.miembro_portal_sessions s
+        WHERE s.miembro_id = m.id
+          AND s.created_at >= v_since
       )
     )
     AND (
@@ -473,6 +478,11 @@ BEGIN
 
   INSERT INTO public.miembro_portal_login_events (miembro_id, session_id, auth_method)
   VALUES (p_miembro_id, v_session_id, coalesce(nullif(trim(p_auth_method), ''), 'pin'));
+
+  PERFORM public.record_miembro_portal_card_scan(
+    p_miembro_id,
+    'portal_login'
+  );
 
   RETURN QUERY SELECT v_session_token, v_expires_at, v_session_id;
 END;
@@ -524,10 +534,6 @@ BEGIN
     AND t.activo = true
     AND m.estado = 'activo'
   LIMIT 1;
-
-  IF v_miembro_id IS NOT NULL THEN
-    PERFORM public.record_miembro_portal_card_scan(v_miembro_id, 'portal_login');
-  END IF;
 
   RETURN QUERY
   SELECT
@@ -725,8 +731,6 @@ BEGIN
   IF v_miembro_id IS NULL THEN
     RAISE EXCEPTION 'first login requires PIN';
   END IF;
-
-  PERFORM public.record_miembro_portal_card_scan(v_miembro_id, 'portal_login');
 
   SELECT s.session_token, s.expires_at
   INTO v_session_token, v_expires_at

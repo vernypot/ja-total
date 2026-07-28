@@ -68,6 +68,50 @@ picture,
   padding: var(--pad-page-y) var(--pad-page-x);
 }
 
+/* Desktop: sidebar and main content scroll independently */
+@media (min-width: 769px) {
+  .layout {
+    height: var(--app-height);
+    max-height: var(--app-height);
+    overflow: hidden;
+  }
+
+  .layout > .sidebar,
+  .layout > .main {
+    min-height: 0;
+  }
+
+  .layout .sidebar {
+    height: 100%;
+    max-height: var(--app-height);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .layout .main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: var(--app-height);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .layout .main > .topbar,
+  .layout .main > .portal-bottom-nav {
+    flex-shrink: 0;
+  }
+
+  .layout .content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .container {
   width: 100%;
   padding-inline: 0;

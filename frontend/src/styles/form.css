@@ -84,6 +84,10 @@
   transition: all var(--transition-fast);
 }
 
+.list-item:nth-child(even) {
+  background-color: var(--listing-zebra-bg);
+}
+
 .list-item:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--primary);
@@ -320,6 +324,10 @@
   border-radius: 8px;
   background-color: #fff;
   transition: all 0.2s;
+}
+
+.member-list-item:nth-child(even):not(.member-list-item--selected) {
+  background-color: var(--listing-zebra-bg);
 }
 
 .member-list-item--selected {

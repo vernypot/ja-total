@@ -587,6 +587,42 @@ export async function setEventoConfirmacion(eventoMiembroId, confirmacionEstado)
   });
 }
 
+function isMissingLinkedUsuarioConfirmRpc(error) {
+  const msg = error?.message || '';
+  return msg.includes('usuario_set_linked_miembro_evento_confirmacion')
+    || msg.includes('Could not find the function')
+    || error?.code === 'PGRST202';
+}
+
+export async function setLinkedUsuarioEventoConfirmacion(
+  eventoMiembroId,
+  confirmacionEstado,
+  eventoId = null
+) {
+  if (!eventoMiembroId && !eventoId) {
+    return { data: null, error: { message: 'event reference required' } };
+  }
+
+  const params = {
+    p_confirmacion_estado: confirmacionEstado,
+  };
+
+  if (eventoMiembroId) {
+    params.p_evento_miembro_id = eventoMiembroId;
+  } else {
+    params.p_evento_id = eventoId;
+  }
+
+  const result = await sb.rpc('usuario_set_linked_miembro_evento_confirmacion', params);
+  if (!result.error) return result;
+
+  if (isMissingLinkedUsuarioConfirmRpc(result.error) && eventoMiembroId) {
+    return setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+  }
+
+  return result;
+}
+
 export async function assignMiembrosToEvento(eventoId, miembroIds, { requiereConfirmacion = true } = {}) {
   if (!miembroIds.length) return { error: null };
 

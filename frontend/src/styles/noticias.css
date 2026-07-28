@@ -21,6 +21,10 @@
   background: var(--white);
 }
 
+.noticia-item:nth-child(even):not(.is-inactive) {
+  background-color: var(--listing-zebra-bg);
+}
+
 .noticia-item.is-inactive {
   background: var(--gray-50);
 }

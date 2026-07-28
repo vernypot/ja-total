@@ -7,7 +7,7 @@ import { buildLinkedMemberSelfEventRow } from '../utils/linkedMemberEventConfirm
 export { buildLinkedMemberSelfEventRow };
 
 export function useLinkedMemberEventConfirmation() {
-  const { userData } = useContext(AuthContext);
+  const { user, userData } = useContext(AuthContext);
   const [linkedMiembroId, setLinkedMiembroId] = useState(null);
   const [loadingLinkedMember, setLoadingLinkedMember] = useState(true);
   const [savingConfirmationId, setSavingConfirmationId] = useState(null);
@@ -16,7 +16,7 @@ export function useLinkedMemberEventConfirmation() {
     let cancelled = false;
 
     async function loadLinkedMember() {
-      if (!userData?.id) {
+      if (!user?.id && !userData?.id) {
         if (!cancelled) {
           setLinkedMiembroId(null);
           setLoadingLinkedMember(false);
@@ -25,7 +25,7 @@ export function useLinkedMemberEventConfirmation() {
       }
 
       setLoadingLinkedMember(true);
-      const { data, error } = await UsuariosModel.fetchLinkedMiembroForUsuario(userData.id);
+      const { data, error } = await UsuariosModel.fetchCurrentUsuarioLinkedMiembro();
 
       if (cancelled) return;
 
@@ -44,7 +44,7 @@ export function useLinkedMemberEventConfirmation() {
     return () => {
       cancelled = true;
     };
-  }, [userData?.id]);
+  }, [user?.id, userData?.id]);
 
   const buildSelfRow = useCallback((assignments, evento) => (
     buildLinkedMemberSelfEventRow(assignments, evento, linkedMiembroId)
@@ -64,7 +64,11 @@ export function useLinkedMemberEventConfirmation() {
     });
     setSavingConfirmationId(saveKey);
 
-    const { error } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    const { error } = await EventosModel.setLinkedUsuarioEventoConfirmacion(
+      eventoMiembroId,
+      confirmacionEstado,
+      eventoId
+    );
     setSavingConfirmationId(null);
 
     return { error: error || null };

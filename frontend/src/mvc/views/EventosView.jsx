@@ -844,7 +844,7 @@ export default function EventosView({
                           )}
                         </div>
                       </div>
-                      {canManage && updateSelfConfirmation && !isExcluded && (
+                      {updateSelfConfirmation && !isExcluded && selfRow && (
                         <LinkedMemberEventConfirmSection
                           evento={evento}
                           selfRow={selfRow}
@@ -1113,7 +1113,7 @@ export default function EventosView({
                             {needsConfirmation ? t('noMembersAssignedToEvent') : t('eventQrAttendanceEmpty')}
                           </p>
                         ) : (
-                          <div style={{ display: 'grid', gap: '10px', marginTop: canManage ? '12px' : 0 }}>
+                          <div className={`event-attendance-list${canManage ? '' : ' event-attendance-list--no-offset'}`}>
                             {rows.map(row => {
                               const checkedInAt = getCheckedInAtFromRow(row);
                               const confirmacion = getConfirmacionFromRow(row);
@@ -1121,7 +1121,7 @@ export default function EventosView({
                               const memberName = memberDisplayName(row.miembros);
                               const eventName = evento.nombre || t('eventUntitled');
                               return (
-                              <div key={row.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                              <div key={row.id} className="event-attendance-list-item">
                                 <div>
                                   <span>{memberDisplayName(row.miembros)}</span>
                                   {manualJustification && (

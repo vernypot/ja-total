@@ -358,7 +358,7 @@ function EventDetailModal({
             </div>
           </div>
 
-          {canManage && !readOnly && updateSelfConfirmation && (
+          {!readOnly && updateSelfConfirmation && selfRow && (
             <LinkedMemberEventConfirmSection
               evento={event}
               selfRow={selfRow}
