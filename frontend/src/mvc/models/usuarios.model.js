@@ -230,6 +230,28 @@ export async function fetchLinkedMiembroForUsuario(usuarioId) {
   return { data: data || null, error };
 }
 
+export async function fetchCurrentUsuarioLinkedMiembro() {
+  const { data, error } = await sb.rpc('get_current_usuario_linked_miembro');
+  if (!error) {
+    return { data: data || null, error: null };
+  }
+
+  const msg = error?.message || '';
+  const missingRpc =
+    msg.includes('get_current_usuario_linked_miembro')
+    || msg.includes('Could not find the function')
+    || error?.code === 'PGRST202';
+
+  if (missingRpc) {
+    const userId = (await sb.rpc('resolve_current_usuario_id')).data;
+    if (userId) {
+      return fetchLinkedMiembroForUsuario(userId);
+    }
+  }
+
+  return { data: null, error };
+}
+
 export async function fetchLinkedUsuarioForMiembro(miembroId) {
   if (!miembroId) return { data: null, error: null };
   const { data, error } = await sb.rpc('admin_get_miembro_linked_usuario', {

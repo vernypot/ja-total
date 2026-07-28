@@ -91,6 +91,32 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   background: var(--gray-50);
 }
 
+.event-attendance-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.event-attendance-list--no-offset {
+  margin-top: 0;
+}
+
+.event-attendance-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.event-attendance-list-item:nth-child(even) {
+  background-color: var(--listing-zebra-bg);
+}
+
 .event-attendance-row {
   display: flex;
   justify-content: space-between;
@@ -352,6 +378,10 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   background: var(--white);
+}
+
+.checkin-session-registry-item:nth-child(even) {
+  background-color: var(--listing-zebra-bg);
 }
 
 .checkin-session-registry-time {

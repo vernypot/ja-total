@@ -75,6 +75,10 @@
   --gray-700: #334155;
   --gray-800: #1e293b;
   --gray-900: var(--brand-neutral);
+
+  /* Listing zebra stripes — very low contrast */
+  --listing-zebra-bg: rgba(13, 27, 42, 0.028);
+  --listing-row-hover-bg: rgba(13, 27, 42, 0.05);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -163,6 +167,7 @@ body {
 
 .content {
   flex: 1;
+  min-width: 0;
   padding: var(--pad-page-y, var(--spacing-xl)) var(--pad-page-x, var(--spacing-xl));
   overflow-y: auto;
   background: var(--gray-50);
@@ -480,8 +485,20 @@ textarea:disabled {
   transition: background-color var(--transition-fast);
 }
 
-.table tbody tr:hover {
-  background-color: var(--gray-50);
+.table tbody tr:nth-child(even),
+.content table tbody tr:nth-child(even),
+.usage-stats-table tbody tr:nth-child(even),
+.unidades-table tbody tr:nth-child(even),
+.ficha-medica-contacts tbody tr:nth-child(even) {
+  background-color: var(--listing-zebra-bg);
+}
+
+.table tbody tr:hover,
+.content table tbody tr:hover,
+.usage-stats-table tbody tr:hover,
+.unidades-table tbody tr:hover,
+.ficha-medica-contacts tbody tr:hover {
+  background-color: var(--listing-row-hover-bg);
 }
 
 /* ============================================

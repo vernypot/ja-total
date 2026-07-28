@@ -64,9 +64,17 @@ SET search_path = public
 AS $$
 DECLARE
   v_result JSON;
+  v_current_usuario_id UUID;
 BEGIN
+  IF p_usuario_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
   IF NOT public.is_usuarios_superadmin() THEN
-    RAISE EXCEPTION 'permission denied';
+    v_current_usuario_id := public.resolve_current_usuario_id();
+    IF v_current_usuario_id IS NULL OR p_usuario_id IS DISTINCT FROM v_current_usuario_id THEN
+      RAISE EXCEPTION 'permission denied';
+    END IF;
   END IF;
 
   SELECT to_jsonb(m.*) INTO v_result
@@ -75,6 +83,87 @@ BEGIN
   LIMIT 1;
 
   RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_current_usuario_linked_miembro()
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_miembro_id UUID;
+  v_result JSON;
+BEGIN
+  v_miembro_id := public.resolve_linked_miembro_id_for_current_usuario();
+  IF v_miembro_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT to_jsonb(m.*) INTO v_result
+  FROM public.miembros m
+  WHERE m.id = v_miembro_id
+  LIMIT 1;
+
+  RETURN v_result;
+END;
+$$;
+
+-- Resolve the member profile for the logged-in system user.
+-- 1) explicit miembros.usuario_id link
+-- 2) fallback: same email on an unlinked active member (auto-links on first match)
+CREATE OR REPLACE FUNCTION public.resolve_linked_miembro_id_for_current_usuario()
+RETURNS UUID
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_usuario_id UUID;
+  v_miembro_id UUID;
+  v_email TEXT;
+BEGIN
+  v_usuario_id := public.resolve_current_usuario_id();
+  IF v_usuario_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT m.id INTO v_miembro_id
+  FROM public.miembros m
+  WHERE m.usuario_id = v_usuario_id
+    AND coalesce(m.estado, 'activo') = 'activo'
+  LIMIT 1;
+
+  IF v_miembro_id IS NOT NULL THEN
+    RETURN v_miembro_id;
+  END IF;
+
+  SELECT lower(trim(u.email)) INTO v_email
+  FROM public.usuarios u
+  WHERE u.id = v_usuario_id;
+
+  IF coalesce(v_email, '') = '' THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT m.id INTO v_miembro_id
+  FROM public.miembros m
+  WHERE m.usuario_id IS NULL
+    AND coalesce(m.estado, 'activo') = 'activo'
+    AND lower(trim(coalesce(m.email, ''))) = v_email
+  LIMIT 1;
+
+  IF v_miembro_id IS NOT NULL THEN
+    UPDATE public.miembros
+    SET usuario_id = v_usuario_id
+    WHERE id = v_miembro_id
+      AND usuario_id IS NULL;
+  END IF;
+
+  RETURN v_miembro_id;
 END;
 $$;
 
@@ -287,6 +376,8 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_get_miembro_linked_usuario(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_usuario_linked_miembro(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_current_usuario_linked_miembro() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.resolve_linked_miembro_id_for_current_usuario() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_link_usuario_miembro(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_unlink_usuario_miembro(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_promote_miembro_to_usuario(UUID, TEXT, TEXT, TEXT, TEXT, UUID) TO authenticated;

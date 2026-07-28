@@ -847,6 +847,14 @@ export function useEventosController() {
     loadMembersForClub(clubId);
   }, [clubId, showInactive]);
 
+  useEffect(() => {
+    if (!linkedMiembroId || !events.length) {
+      if (!linkedMiembroId) setSelfEventRowsByEventId({});
+      return;
+    }
+    loadLinkedMemberEventRows(events);
+  }, [linkedMiembroId, events]);
+
   function setClubId(nextClubId) {
     if (nextClubId) {
       const club = clubs.find(c => c.id === nextClubId);

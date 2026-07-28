@@ -57,11 +57,7 @@ export function useUsuarioUsageController() {
 
   const scopedMemberRows = useMemo(() => {
     if (tab !== 'members' || memberFilter !== 'card') return activeRows;
-    return activeRows.filter(row =>
-      (Number(row.card_scan_count) || 0) > 0
-      || (Number(row.qr_login_count) || 0) > 0
-      || (Number(row.login_count) || 0) > 0
-    );
+    return activeRows.filter(row => (Number(row.login_count) || 0) > 0);
   }, [activeRows, memberFilter, tab]);
 
   const rowsForTable = tab === 'members' ? scopedMemberRows : activeRows;
@@ -93,7 +89,9 @@ export function useUsuarioUsageController() {
 
   const summary = useMemo(() => {
     const rows = rowsForTable;
-    const withLogin = rows.filter(row => row.last_login_at || (Number(row.card_scan_count) || 0) > 0);
+    const withLogin = rows.filter(row =>
+      (Number(row.login_count) || 0) > 0 || Boolean(row.last_login_at)
+    );
     const activeNow = rows.filter(row => row.active_now);
     const totalUsageSeconds = rows.reduce(
       (sum, row) => sum + (Number(row.total_usage_seconds) || 0),
