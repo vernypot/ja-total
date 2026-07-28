@@ -15,6 +15,7 @@ import { clubDisplayName } from '../../utils/club';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import HorizontalScrollRow from '../../components/HorizontalScrollRow';
 import EventListActionsModal, { EventListOverflowTrigger } from '../../components/EventListActionsModal';
+import EventAttendanceSummaryModal from '../../components/EventAttendanceSummaryModal';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
 import * as EventosModel from '../models/eventos.model';
 import '../../styles/form.css';
@@ -440,9 +441,12 @@ export default function EventosView({
   getSelfEventRow,
   updateSelfConfirmation,
   savingSelfConfirmationId,
+  loadEventAssignments,
 }) {
   const { t } = useLanguage();
   const [overflowMenuEventId, setOverflowMenuEventId] = useState(null);
+  const [summaryEventId, setSummaryEventId] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
@@ -550,6 +554,22 @@ export default function EventosView({
       onConfirm: async () => { await setAllAttendance(evento.id, estado); },
     });
   }
+
+  async function openAttendanceSummary(eventoId) {
+    setSummaryEventId(eventoId);
+    if (!assignments[eventoId]) {
+      setSummaryLoading(true);
+      await loadEventAssignments(eventoId);
+      setSummaryLoading(false);
+    }
+  }
+
+  const summaryEvent = summaryEventId
+    ? events.find(evento => evento.id === summaryEventId)
+    : null;
+  const summaryRows = summaryEventId
+    ? sortEventAttendanceRows(assignments[summaryEventId] || [])
+    : [];
 
   return (
     <div className="container">
@@ -806,6 +826,14 @@ export default function EventosView({
                               {t('activate')}
                             </EventActionButton>
                           )}
+                          {!isExcluded && (
+                            <EventActionButton
+                              tone="info"
+                              onClick={() => openAttendanceSummary(evento.id)}
+                            >
+                              {t('eventAttendanceSummaryAction')}
+                            </EventActionButton>
+                          )}
                           <EventListOverflowTrigger
                             t={t}
                             onClick={() => setOverflowMenuEventId(evento.id)}
@@ -846,6 +874,7 @@ export default function EventosView({
                         onCancelEvent={() => confirmCancelEvent(evento)}
                         onDeactivate={() => confirmDeactivateEvent(evento)}
                         onShowAttendanceList={!canManage ? () => toggleEventExpand(evento.id) : undefined}
+                        onShowSummary={() => openAttendanceSummary(evento.id)}
                       />
                     </div>
 
@@ -1185,6 +1214,21 @@ export default function EventosView({
         t={t}
       />
       {confirmDialog}
+      <EventAttendanceSummaryModal
+        open={Boolean(summaryEventId)}
+        onClose={() => {
+          setSummaryEventId(null);
+          setSummaryLoading(false);
+        }}
+        evento={summaryEvent}
+        rows={summaryRows}
+        loading={summaryLoading}
+        needsConfirmation={summaryEvent ? eventRequiresConfirmation(summaryEvent) : false}
+        formatEventTime={formatEventTime}
+        formatEventTimestamp={formatEventTimestamp}
+        formatPrintedAt={formatEventTimestamp(new Date().toISOString())}
+        t={t}
+      />
     </div>
   );
 }

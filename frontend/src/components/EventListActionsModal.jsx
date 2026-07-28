@@ -52,6 +52,7 @@ export default function EventListActionsModal({
   onCancelEvent,
   onDeactivate,
   onShowAttendanceList,
+  onShowSummary,
 }) {
   if (!open || !evento) return null;
 
@@ -126,6 +127,14 @@ export default function EventListActionsModal({
       key: 'attendance-view',
       label: expanded ? t('hideAttendanceList') : t('showAttendanceList'),
       onClick: () => run(onShowAttendanceList),
+    });
+  }
+
+  if (onShowSummary && !isExcluded) {
+    items.push({
+      key: 'summary',
+      label: t('eventAttendanceSummaryAction'),
+      onClick: () => run(onShowSummary),
     });
   }
 

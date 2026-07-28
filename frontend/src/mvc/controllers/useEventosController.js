@@ -902,6 +902,7 @@ export function useEventosController() {
     canManage,
     iglesiaScopeReady: canSwitchIglesia || (hasIglesiaAssignment && assignedIglesiaActive),
     toggleEventExpand,
+    loadEventAssignments: loadAssignments,
     toggleMemberSelection,
     selectAllMembers,
     createEvent,

@@ -8,6 +8,8 @@ import {
   canMemberConfirmEvent,
   canMemberCancelEventConfirmation,
   computeCheckinAttendanceEstado,
+  computeEventAttendanceSummary,
+  groupEventAttendanceAttendees,
   computeMemberAttendanceStats,
   eventRequiresConfirmation,
   getAsistenciaFromRow,
@@ -228,6 +230,67 @@ describe('patchPortalEventRowConfirmation', () => {
 
     expect(patched[0].id).toBe('em-new');
     expect(patched[0].confirmacion_estado).toBe('confirmado');
+  });
+});
+
+describe('computeEventAttendanceSummary', () => {
+  it('aggregates confirmation and attendance counts', () => {
+    const rows = [
+      {
+        id: '1',
+        miembros: { nombre: 'Ana', apellido1: 'López' },
+        confirmacion_estado: 'confirmado',
+        confirmado_at: '2026-07-10T15:30:00Z',
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: '2',
+        miembros: { nombre: 'Ben', apellido1: 'Pérez' },
+        confirmacion_estado: 'pendiente',
+        evento_asistencia: { estado: 'tarde' },
+      },
+      {
+        id: '3',
+        miembros: { nombre: 'Cara', apellido1: 'Díaz' },
+        confirmacion_estado: 'rechazado',
+        evento_asistencia: { estado: 'ausente' },
+      },
+      {
+        id: '4',
+        miembros: { nombre: 'Dan', apellido1: 'Ruiz' },
+        confirmacion_estado: 'confirmado',
+      },
+    ];
+
+    const { stats, attendees } = computeEventAttendanceSummary(rows, { needsConfirmation: true });
+
+    expect(stats).toMatchObject({
+      assigned: 4,
+      confirmed: 2,
+      pendingConfirmation: 1,
+      declined: 1,
+      onTime: 1,
+      late: 1,
+      absent: 1,
+      notRecorded: 1,
+    });
+    expect(attendees.map(item => item.name)).toEqual(['Ana López', 'Ben Pérez', 'Cara Díaz', 'Dan Ruiz']);
+    expect(attendees.find(item => item.id === '1')?.confirmadoAt).toBe('2026-07-10T15:30:00Z');
+    expect(attendees.find(item => item.id === '2')?.confirmadoAt).toBeNull();
+  });
+
+  it('groups attendees by confirmation or attendance status', () => {
+    const attendees = [
+      { id: '1', name: 'Ana', confirmacion: 'confirmado', asistencia: 'a_tiempo' },
+      { id: '2', name: 'Ben', confirmacion: 'pendiente', asistencia: null },
+      { id: '3', name: 'Cara', confirmacion: 'rechazado', asistencia: 'ausente' },
+    ];
+
+    expect(groupEventAttendanceAttendees(attendees, { needsConfirmation: true }).map(group => group.key))
+      .toEqual(['confirmado', 'pendiente', 'rechazado']);
+
+    expect(groupEventAttendanceAttendees(attendees, { needsConfirmation: false }).map(group => group.key))
+      .toEqual(['a_tiempo', 'ausente', 'pending']);
   });
 });
 
