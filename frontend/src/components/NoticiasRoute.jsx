@@ -4,10 +4,14 @@ import AdminRoute from './AdminRoute';
 import Noticias from '../pages/Noticias';
 import MemberPortalNoticias from '../pages/MemberPortalNoticias';
 
+function StaffNoticiasPage() {
+  return <AdminRoute element={<Noticias />} />;
+}
+
 export default function NoticiasRoute() {
-  const { loading, isPortalOnly } = useDashboardAuth();
+  const { loading, isMemberView, isPortalOnly } = useDashboardAuth();
 
   if (loading) return <DashboardRouteLoading />;
-  if (isPortalOnly) return <MemberPortalNoticias />;
-  return <AdminRoute element={<Noticias />} />;
+  if (isMemberView || isPortalOnly) return <MemberPortalNoticias />;
+  return <StaffNoticiasPage />;
 }

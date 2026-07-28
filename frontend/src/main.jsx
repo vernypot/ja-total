@@ -18,11 +18,13 @@ import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/components.css";
 import "./styles/eventAttendance.css";
+import "./styles/horizontalScrollRow.css";
 import "./styles/miembro.css";
 import "./styles/portal-mobile.css";
 import "./styles/theme-color-overrides.css";
 import "./styles/usuarios.css";
 import "./styles/noticia-html.css";
+import "./styles/themes/dark-contrast.css";
 
 class BootErrorBoundary extends React.Component {
   constructor(props) {

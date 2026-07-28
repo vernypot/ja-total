@@ -6,6 +6,7 @@ import { getUserRole } from "../utils/permissions";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
+import DashboardViewModeSwitch from "./DashboardViewModeSwitch";
 import { DASHBOARD_HOME_PATH } from "../utils/dashboardRoutes";
 import { getPortalPageTitle } from "../utils/portalMobileNav";
 
@@ -19,25 +20,25 @@ function memberInitials(name) {
 export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen = false }) {
   const { user, userData, logout } = useContext(AuthContext);
   const { t } = useLanguage();
-  const { isPortalOnly, session, logout: portalLogout } = useDashboardAuth();
+  const { isMemberView, isPortalOnly, session, logout: portalLogout, linkedMemberName } = useDashboardAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
   const userMenuRef = useRef(null);
   const userRole = getUserRole(user, userData);
-  const memberName = session?.memberName || t('roleMember');
-  const displayName = isPortalOnly ? memberName : (user?.email || '');
-  const displayInitials = isPortalOnly
+  const memberName = session?.memberName || linkedMemberName || t('roleMember');
+  const displayName = isMemberView ? memberName : (user?.email || '');
+  const displayInitials = isMemberView
     ? memberInitials(memberName)
     : (user?.email || 'U').substring(0, 2).toUpperCase();
-  const displayRole = isPortalOnly ? t('roleMember') : userRole;
+  const displayRole = isMemberView ? t('roleMember') : userRole;
   const portalPageTitle = useMemo(
-    () => (isPortalOnly ? getPortalPageTitle(location.pathname, t) : ''),
-    [isPortalOnly, location.pathname, t]
+    () => (isMemberView ? getPortalPageTitle(location.pathname, t) : ''),
+    [isMemberView, location.pathname, t]
   );
 
   async function handleLogout() {
-    if (isPortalOnly) {
+    if (isMemberView && isPortalOnly) {
       await portalLogout();
       return;
     }
@@ -59,7 +60,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
   }, [showMenu]);
 
   return (
-    <div className={`topbar${isPortalOnly ? ' topbar--portal' : ''}${showMenuButton ? ' topbar--with-menu' : ''}`}>
+    <div className={`topbar${isMemberView ? ' topbar--portal' : ''}${showMenuButton ? ' topbar--with-menu' : ''}`}>
       <div className="topbar-left">
         {showMenuButton && (
           <button
@@ -72,7 +73,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
             <span className="topbar-menu-btn__icon" aria-hidden="true" />
           </button>
         )}
-        {isPortalOnly ? (
+        {isMemberView ? (
           <h1 className="portal-topbar-title">{portalPageTitle}</h1>
         ) : (
           <Link to={DASHBOARD_HOME_PATH} className="topbar-title topbar-title-link" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -94,7 +95,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
             <div className="user-avatar">{displayInitials}</div>
             <div className="user-info">
               <span className="user-email">{displayName}</span>
-              <span className={`user-role role-${isPortalOnly ? 'member' : userRole}`}>{displayRole}</span>
+              <span className={`user-role role-${isMemberView ? 'member' : userRole}`}>{displayRole}</span>
             </div>
           </button>
 
@@ -108,6 +109,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
                 </div>
               </div>
               <hr />
+              <DashboardViewModeSwitch onAfterSwitch={() => setShowMenu(false)} />
               <div className="user-dropdown-preferences">
                 <div className="user-dropdown-preferences__group">
                   <span className="user-dropdown-preferences__label">{t('uiThemeTitle')}</span>

@@ -6,6 +6,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import DashboardNoticiaBanner from '../components/DashboardNoticiaBanner';
 import RouteErrorBoundary from '../components/RouteErrorBoundary';
 import PortalBottomNav from '../components/portal/PortalBottomNav';
+import HorizontalScrollEnhancer from '../components/HorizontalScrollEnhancer';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
 import { useAppUsageTracking } from '../hooks/useAppUsageTracking';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -15,8 +16,8 @@ import { isBlixLayoutTheme } from '../constants/uiThemes';
 
 
 export default function Dashboard() {
-  const { isPortalOnly } = useDashboardAuth();
-  useAppUsageTracking(!isPortalOnly);
+  const { isMemberView } = useDashboardAuth();
+  useAppUsageTracking(!isMemberView);
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();
@@ -51,10 +52,11 @@ export default function Dashboard() {
   const showMobileDrawer = isMobile;
   const sidebarInert = isMobile && !drawerOpen;
   const isBlixMobile = isBlixLayoutTheme(theme) && isMobile;
-  const showPortalBottomNav = isPortalOnly && isBlixMobile;
+  const showPortalBottomNav = isMemberView && isBlixMobile;
 
   return (
-    <div className={`layout${isPortalOnly ? ' layout--portal' : ''}${isBlixMobile ? ' layout--blix-mobile' : ''}`}>
+    <div className={`layout${isMemberView ? ' layout--portal' : ''}${isBlixMobile ? ' layout--blix-mobile' : ''}`}>
+      <HorizontalScrollEnhancer />
       <RouteErrorBoundary>
         <Sidebar
           drawerOpen={drawerOpen}
@@ -80,9 +82,9 @@ export default function Dashboard() {
           menuOpen={drawerOpen}
         />
         <div className="content">
-          {!isPortalOnly && <DashboardNoticiaBanner />}
+          {!isMemberView && <DashboardNoticiaBanner />}
           <RouteErrorBoundary>
-            <div className={isPortalOnly ? 'portal-breadcrumb' : undefined}>
+            <div className={isMemberView ? 'portal-breadcrumb' : undefined}>
               <Breadcrumb />
             </div>
           </RouteErrorBoundary>

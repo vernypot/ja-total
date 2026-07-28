@@ -1,4 +1,5 @@
 import { useMemberPortalProfileController } from '../../mvc/controllers/useMemberPortalProfileController';
+import DashboardViewModeSwitch from '../DashboardViewModeSwitch';
 
 export default function PortalProfileHeader() {
   const { fullName, displayPhotoUrl, loading, t } = useMemberPortalProfileController();
@@ -18,6 +19,7 @@ export default function PortalProfileHeader() {
         <p className="portal-profile-header__greeting">
           {t('portalGreetingHi')}{loading ? '' : ` ${greetingName}`}
         </p>
+        <DashboardViewModeSwitch variant="profile" />
       </div>
     </div>
   );

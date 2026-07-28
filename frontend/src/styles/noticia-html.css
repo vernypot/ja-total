@@ -24,8 +24,8 @@
 .noticia-html blockquote {
   margin: 0.75em 0;
   padding-left: 0.85rem;
-  border-left: 3px solid var(--gray-300, #d1d5db);
-  color: var(--gray-600, #4b5563);
+  border-left: 3px solid var(--gray-300);
+  color: var(--color-text-secondary);
 }
 
 .noticia-html a {
@@ -62,9 +62,9 @@
 .noticia-form-preview {
   margin-top: 6px;
   padding: 10px 12px;
-  border: 1px dashed var(--gray-300, #d1d5db);
+  border: 1px dashed var(--gray-300);
   border-radius: var(--radius-md, 6px);
-  background: var(--gray-50, #f9fafb);
+  background: var(--gray-50);
 }
 
 .noticia-form-preview-label {

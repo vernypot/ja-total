@@ -374,10 +374,76 @@ AS $$
   ORDER BY u.nombre, u.apellido1, u.email;
 $$;
 
+CREATE OR REPLACE FUNCTION public.usuario_start_linked_miembro_portal_session()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_miembro_id UUID;
+  v_miembro public.miembros;
+  v_session_token TEXT;
+  v_expires_at TIMESTAMPTZ;
+BEGIN
+  v_miembro_id := public.resolve_linked_miembro_id_for_current_usuario();
+  IF v_miembro_id IS NULL THEN
+    RAISE EXCEPTION 'linked member not found';
+  END IF;
+
+  SELECT m.* INTO v_miembro
+  FROM public.miembros m
+  WHERE m.id = v_miembro_id;
+
+  SELECT s.session_token, s.expires_at
+  INTO v_session_token, v_expires_at
+  FROM public.member_portal_create_session(v_miembro_id, 'staff_link') s;
+
+  RETURN json_build_object(
+    'session_token', v_session_token,
+    'expires_at', v_expires_at,
+    'miembro_id', v_miembro_id,
+    'nombre', v_miembro.nombre,
+    'apellido1', v_miembro.apellido1,
+    'apellido2', v_miembro.apellido2,
+    'nombre_opcional', v_miembro.nombre_opcional,
+    'apellido_opcional', v_miembro.apellido_opcional
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.member_portal_has_linked_staff_access(p_session_token TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_miembro_id UUID;
+BEGIN
+  v_miembro_id := public.member_portal_verify_session(p_session_token);
+  IF v_miembro_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.miembros m
+    JOIN public.usuarios u ON u.id = m.usuario_id
+    WHERE m.id = v_miembro_id
+      AND coalesce(m.estado, 'activo') = 'activo'
+      AND coalesce(u.estado, 'activo') = 'activo'
+  );
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.admin_get_miembro_linked_usuario(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_usuario_linked_miembro(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_current_usuario_linked_miembro() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.resolve_linked_miembro_id_for_current_usuario() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.usuario_start_linked_miembro_portal_session() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.member_portal_has_linked_staff_access(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_link_usuario_miembro(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_unlink_usuario_miembro(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_promote_miembro_to_usuario(UUID, TEXT, TEXT, TEXT, TEXT, UUID) TO authenticated;

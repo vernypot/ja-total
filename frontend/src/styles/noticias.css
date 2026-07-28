@@ -205,6 +205,24 @@
   min-width: 220px;
 }
 
+.noticia-list-item-body .home-news-title {
+  margin: 0 0 0.5rem;
+  font-size: 16px;
+}
+
+.noticia-list-item-body .noticia-read-actions {
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.noticia-list-item-body .noticia-html--summary {
+  margin: 6px 0 0;
+}
+
+.noticia-list-item-body .noticia-html--content {
+  margin: 0.75rem 0 0;
+}
+
 .noticia-placements-toolbar {
   display: flex;
   align-items: center;

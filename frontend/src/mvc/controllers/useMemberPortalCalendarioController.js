@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useMemberPortal } from '../../context/MemberPortalContext';
 import * as MemberPortalModel from '../models/memberPortal.model';
+import * as ClubesModel from '../models/clubes.model';
 import * as EventosModel from '../models/eventos.model';
 import {
   buildCalendarCells,
@@ -115,17 +116,26 @@ export function useMemberPortalCalendarioController() {
       iglesia_id: club.iglesia_id,
       iglesia_nombre: club.iglesia_nombre,
       timezone: club.timezone,
+      tipos_club: club.tipos_club || (club.tipo_nombre ? { nombre: club.tipo_nombre } : null),
     }));
 
-    setClubs(clubRows);
+    const { data: clubTypeRows } = await ClubesModel.fetchClubesByIds(clubRows.map(club => club.id));
+    const clubTypeById = Object.fromEntries((clubTypeRows || []).map(row => [row.id, row]));
 
-    const initialClub = requestedClub && clubRows.some(c => c.id === requestedClub)
+    const clubsWithTypes = clubRows.map(club => ({
+      ...club,
+      tipos_club: clubTypeById[club.id]?.tipos_club || club.tipos_club || null,
+    }));
+
+    setClubs(clubsWithTypes);
+
+    const initialClub = requestedClub && clubsWithTypes.some(c => c.id === requestedClub)
       ? requestedClub
-      : (clubRows[0]?.id || '');
+      : (clubsWithTypes[0]?.id || '');
 
     setClubId(prev => prev || initialClub);
 
-    if (!clubRows.length) {
+    if (!clubsWithTypes.length) {
       setLoading(false);
     }
   }

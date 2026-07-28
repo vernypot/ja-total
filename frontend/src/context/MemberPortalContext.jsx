@@ -77,6 +77,12 @@ export function MemberPortalProvider({ children }) {
     return { data: nextSession, error: null };
   }, []);
 
+  const establishSession = useCallback((nextSession) => {
+    if (!nextSession?.sessionToken) return;
+    MemberPortalModel.storePortalSession(nextSession);
+    setSession(nextSession);
+  }, []);
+
   const logout = useCallback(async () => {
     await MemberPortalModel.logoutPortal(session?.sessionToken);
     setSession(null);
@@ -89,8 +95,9 @@ export function MemberPortalProvider({ children }) {
     isAuthenticated: Boolean(session?.sessionToken),
     login,
     loginQr,
+    establishSession,
     logout,
-  }), [session, ready, login, loginQr, logout]);
+  }), [session, ready, login, loginQr, establishSession, logout]);
 
   return (
     <MemberPortalContext.Provider value={value}>

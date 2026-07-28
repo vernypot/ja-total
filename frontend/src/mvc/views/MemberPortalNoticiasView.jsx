@@ -1,6 +1,4 @@
-import NoticiaHtml from '../../components/NoticiaHtml';
-import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
-import { PortalNewsActions } from '../../components/portal/PortalNewsActions';
+import PortalNewsListItem from '../../components/PortalNewsListItem';
 import '../../styles/home.css';
 
 export default function MemberPortalNoticiasView({
@@ -16,6 +14,13 @@ export default function MemberPortalNoticiasView({
   markingId,
   speech,
 }) {
+  function toggleNewsExpand(itemId) {
+    if (expandedNewsId === itemId && speech?.isSpeakingItem(itemId)) {
+      speech.stop();
+    }
+    setExpandedNewsId(expandedNewsId === itemId ? '' : itemId);
+  }
+
   return (
     <div className="portal-page">
       <div className="portal-page-header portal-page-header--hide-mobile">
@@ -31,37 +36,18 @@ export default function MemberPortalNoticiasView({
       {!loading && news.length > 0 && (
         <div className="home-news-list" style={{ marginTop: '16px' }}>
           {news.map(item => (
-            <article key={item.id} className="home-news-item" style={{ marginBottom: '12px', padding: '16px', backgroundColor: 'white', borderRadius: '8px' }}>
-              <div className="home-news-meta">
-                <span>{formatNewsDate(item.publicado_en)}</span>
-              </div>
-              <NoticiaFeaturedImage
-                desktopUrl={item.imagen_destacada_url}
-                mobileUrl={item.imagen_destacada_mobile_url}
-              />
-              <NoticiaHtml html={item.titulo} variant="title" as="h3" className="noticia-html--title" />
-              {item.resumen && (
-                <NoticiaHtml html={item.resumen} variant="summary" className="home-news-resumen noticia-html--summary" />
-              )}
-              {expandedNewsId === item.id && (
-                <NoticiaHtml html={item.contenido} variant="content" className="home-news-contenido noticia-html--content" />
-              )}
-              <PortalNewsActions
-                item={item}
-                expanded={expandedNewsId === item.id}
-                isLeida={isLeida(item.id)}
-                markingId={markingId}
-                onMarkLeida={markLeida}
-                t={t}
-                speech={speech}
-                onToggleExpand={() => {
-                  if (expandedNewsId === item.id && speech?.isSpeakingItem(item.id)) {
-                    speech.stop();
-                  }
-                  setExpandedNewsId(expandedNewsId === item.id ? '' : item.id);
-                }}
-              />
-            </article>
+            <PortalNewsListItem
+              key={item.id}
+              item={item}
+              expanded={expandedNewsId === item.id}
+              onToggleExpand={() => toggleNewsExpand(item.id)}
+              formatNewsDate={formatNewsDate}
+              isLeida={isLeida}
+              markingId={markingId}
+              onMarkLeida={markLeida}
+              t={t}
+              speech={speech}
+            />
           ))}
         </div>
       )}

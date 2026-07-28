@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
-import NoticiaHtml from '../../components/NoticiaHtml';
-import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
+import { useNoticiaSpeech } from '../../hooks/useNoticiaSpeech';
+import DashboardNewsListItem from '../../components/DashboardNewsListItem';
+import HomeUpcomingEventRow from '../../components/HomeUpcomingEventRow';
 import { PageHelpLink } from '../../components/PageHelp';
 import AdminPendingApprovalsPanel from '../../components/AdminPendingApprovalsPanel';
-import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import '../../styles/home.css';
 
 function HomeNotifications({
@@ -125,7 +125,11 @@ function HomePanels({
   goToNoticiasAdmin,
   goToEventos,
   toggleNewsExpand,
+  expandedEventId,
+  toggleEventExpand,
+  speech,
   eventDayParts,
+  formatEventDate,
   eventPlace,
   formatEventTime,
 }) {
@@ -151,39 +155,16 @@ function HomePanels({
               ) : (
                 <div className="home-news-list">
                   {news.map(item => (
-                    <article key={item.id} className="home-news-item">
-                      <div className="home-news-meta">
-                        <span>{formatNewsDate(item.publicado_en)}</span>
-                        {item.estado !== 'activo' && <span>{t('inactive')}</span>}
-                      </div>
-                      <NoticiaFeaturedImage
-                        desktopUrl={item.imagen_destacada_url}
-                        mobileUrl={item.imagen_destacada_mobile_url}
-                      />
-                      <NoticiaHtml
-                        html={item.titulo}
-                        variant="title"
-                        as="h3"
-                        className="noticia-html--title"
-                      />
-                      {item.resumen && (
-                        <NoticiaHtml
-                          html={item.resumen}
-                          variant="summary"
-                          className="home-news-resumen noticia-html--summary"
-                        />
-                      )}
-                      {expandedNewsId === item.id && (
-                        <NoticiaHtml
-                          html={item.contenido}
-                          variant="content"
-                          className="home-news-contenido noticia-html--content"
-                        />
-                      )}
-                      <button type="button" className="home-link-btn" onClick={() => toggleNewsExpand(item.id)}>
-                        {expandedNewsId === item.id ? t('homeReadLess') : t('homeReadMore')}
-                      </button>
-                    </article>
+                    <DashboardNewsListItem
+                      key={item.id}
+                      item={item}
+                      expanded={expandedNewsId === item.id}
+                      onToggleExpand={() => toggleNewsExpand(item.id)}
+                      formatNewsDate={formatNewsDate}
+                      t={t}
+                      speech={speech}
+                      metaExtra={item.estado !== 'activo' ? <span>{t('inactive')}</span> : null}
+                    />
                   ))}
                 </div>
               )}
@@ -200,24 +181,21 @@ function HomePanels({
                 <p className="home-empty">{t('homeNoEvents')}</p>
               ) : (
                 <div className="home-landing-events-list">
-                  {events.map(evento => {
-                    const parts = eventDayParts(evento.fecha);
-                    const place = eventPlace(evento);
-                    return (
-                      <article key={evento.id} className="home-landing-event-row">
-                        <div className="home-landing-event-date">
-                          <strong>{parts.day}</strong>
-                          <span>{parts.month}</span>
-                        </div>
-                        <div className="home-landing-event-info">
-                          <h3>{eventDisplayName(evento) || t('eventUntitled')}</h3>
-                          {place && <p>{place}</p>}
-                          <EventDescriptionToggle description={evento.descripcion} />
-                        </div>
-                        <div className="home-landing-event-time">{formatEventTime(evento.hora)}</div>
-                      </article>
-                    );
-                  })}
+                  {events.map(evento => (
+                    <HomeUpcomingEventRow
+                      key={evento.id}
+                      evento={evento}
+                      expanded={expandedEventId === evento.id}
+                      onToggle={() => toggleEventExpand(evento.id)}
+                      variant="landing"
+                      t={t}
+                      formatEventDate={formatEventDate}
+                      formatEventTime={formatEventTime}
+                      eventDisplayName={eventDisplayName}
+                      eventDayParts={eventDayParts}
+                      eventPlace={eventPlace}
+                    />
+                  ))}
                 </div>
               )}
               {canManage && events.length > 0 && (
@@ -264,7 +242,8 @@ function HomePanels({
 }
 
 export default function HomeView(props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const speech = useNoticiaSpeech(language);
   const {
     authLoading,
     effectiveIglesiaId,
@@ -286,6 +265,17 @@ export default function HomeView(props) {
     goToMemberClasses,
     ...panelProps
   } = props;
+
+  function handleToggleNewsExpand(id) {
+    if (panelProps.expandedNewsId === id && speech?.isSpeakingItem(id)) {
+      speech.stop();
+    }
+    panelProps.toggleNewsExpand(id);
+  }
+
+  function handleToggleEventExpand(id) {
+    panelProps.toggleEventExpand(id);
+  }
 
   if (authLoading) {
     return (
@@ -392,6 +382,9 @@ export default function HomeView(props) {
             t={t}
             canManage={canManage}
             goToNoticiasAdmin={goToNoticiasAdmin}
+            speech={speech}
+            toggleNewsExpand={handleToggleNewsExpand}
+            toggleEventExpand={handleToggleEventExpand}
             {...panelProps}
           />
         </>

@@ -96,6 +96,31 @@ export async function verifyPortalSession(sessionToken) {
   return { data: data || null, error: null };
 }
 
+function parseLinkedPortalSessionPayload(data) {
+  const payload = typeof data === 'string' ? JSON.parse(data) : data;
+  return {
+    sessionToken: payload.session_token,
+    miembroId: payload.miembro_id,
+    memberName: memberDisplayName(payload),
+    expiresAt: payload.expires_at,
+  };
+}
+
+export async function startLinkedMemberPortalSession() {
+  const { data, error } = await sb.rpc('usuario_start_linked_miembro_portal_session');
+  if (error) return { data: null, error };
+  return { data: parseLinkedPortalSessionPayload(data), error: null };
+}
+
+export async function checkPortalLinkedStaffAccess(sessionToken) {
+  if (!sessionToken) return { data: false, error: null };
+  const { data, error } = await sb.rpc('member_portal_has_linked_staff_access', {
+    p_session_token: sessionToken,
+  });
+  if (error) return { data: false, error };
+  return { data: Boolean(data), error: null };
+}
+
 export async function fetchPortalProfile(sessionToken) {
   const { data, error } = await sb.rpc('member_portal_get_profile', {
     p_session_token: sessionToken,
