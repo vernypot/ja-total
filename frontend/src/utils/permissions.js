@@ -75,6 +75,12 @@ export function canRequestMemberApproval(role) {
   return isAdvancedUser(role);
 }
 
+/** Advanced user linked to this specific member profile */
+export function canRequestMemberApprovalFor(role, miembroId, linkedMiembroId) {
+  if (!canRequestMemberApproval(role) || !miembroId || !linkedMiembroId) return false;
+  return String(miembroId) === String(linkedMiembroId);
+}
+
 // Legacy alias
 export function canManageIglesias(role) {
   return canManageIglesiaProfile(role);

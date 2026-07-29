@@ -238,7 +238,13 @@ DECLARE
   v_class_link_col TEXT;
   v_result JSON;
 BEGIN
-  IF NOT public.user_can_manage_miembro(p_miembro_id) THEN
+  IF NOT (
+    public.user_can_manage_miembro(p_miembro_id)
+    OR (
+      public.is_usuarios_advanced()
+      AND p_miembro_id = public.resolve_linked_miembro_id_for_current_usuario()
+    )
+  ) THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
