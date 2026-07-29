@@ -38,6 +38,20 @@ html[data-ui-theme='dark'] {
   --listing-zebra-bg: rgba(255, 255, 255, 0.035);
   --listing-row-hover-bg: rgba(255, 255, 255, 0.06);
 
+  --member-list-row-bg: var(--brand-base);
+  --member-list-zebra-bg: var(--gray-100);
+  --member-list-selected-bg: rgba(117, 134, 254, 0.2);
+  --member-list-selected-border: var(--color-link);
+  --member-list-panel-bg: #0f172a;
+  --member-list-panel-border: var(--gray-200);
+  --member-list-club-chip-bg: var(--brand-base);
+  --member-list-club-chip-border: var(--gray-200);
+  --member-list-club-chip-assigned-bg: rgba(96, 165, 250, 0.15);
+  --member-list-club-chip-assigned-border: rgba(147, 197, 253, 0.45);
+  --member-filters-bg: var(--brand-base);
+  --member-list-bulk-bar-bg: var(--brand-base);
+  --member-list-bulk-bar-border: var(--gray-200);
+
   --gray-50: #1e293b;
   --gray-100: #334155;
   --gray-200: #475569;
@@ -155,6 +169,22 @@ html[data-ui-theme='dark'] .home-landing-event-row {
 html[data-ui-theme='dark'] .list-item {
   background: var(--brand-base);
   border-color: var(--gray-200);
+}
+
+html[data-ui-theme='dark'] .member-list-item {
+  border-color: var(--gray-200);
+}
+
+html[data-ui-theme='dark'] .member-list-item--selected {
+  box-shadow: 0 0 0 1px var(--member-list-selected-border);
+}
+
+html[data-ui-theme='dark'] .member-filters {
+  border-color: var(--gray-200);
+}
+
+html[data-ui-theme='dark'] .filter-checkbox-label {
+  color: var(--color-text-primary);
 }
 
 html[data-ui-theme='dark'] .page-back-link {

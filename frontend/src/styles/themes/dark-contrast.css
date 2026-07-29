@@ -81,6 +81,21 @@ html[data-ui-theme='dark'] .club-list-item__type-badge {
   color: #c4cbff;
 }
 
+html[data-ui-theme='dark'] .member-list-item__actions-toggle.is-expanded {
+  background-color: var(--gray-200);
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='dark'] .badge-activo {
+  background: rgba(74, 222, 128, 0.2);
+  color: #bbf7d0;
+}
+
+html[data-ui-theme='dark'] .badge-suspendido {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+}
+
 html[data-ui-theme='dark'] .form-error-text,
 html[data-ui-theme='dark'] .field-error,
 html[data-ui-theme='dark'] .form-field-error {

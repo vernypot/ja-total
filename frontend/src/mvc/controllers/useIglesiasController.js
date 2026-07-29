@@ -162,9 +162,9 @@ export function useIglesiasController() {
       if (scopeId) {
         const active = (rows || []).find(i => i.id === scopeId);
         setIglesiaData(active || null);
-      } else if (canSwitchIglesia && rows?.length > 0) {
+      } else if (canSwitchIglesia && rows?.length === 1) {
         setIglesiaData(rows[0]);
-        updateActiveIglesia(rows[0].id);
+        updateActiveIglesia(rows[0].id, rows[0].timezone);
       } else {
         setIglesiaData(null);
       }

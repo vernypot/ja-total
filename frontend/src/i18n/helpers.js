@@ -23,6 +23,7 @@ export function roleLabel(rol, t) {
     user: 'roleUser',
     admin: 'roleAdmin',
     superadmin: 'roleSuperadmin',
+    advanced: 'roleAdvancedUser',
     member: 'roleMember',
     coordinator: 'roleCoordinator',
   };

@@ -98,6 +98,11 @@
   color: #fde68a;
 }
 
+.role-advanced {
+  background: rgba(96, 165, 250, 0.2);
+  color: #93c5fd;
+}
+
 .role-superadmin {
   background: rgba(196, 181, 253, 0.25);
   color: var(--brand-purple-light);

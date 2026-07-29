@@ -88,6 +88,7 @@ export default function UsuariosView({
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{t('role')}</label>
               <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })} className="form-input" style={{ margin: 0 }}>
                 <option value="user">{t('roleUser')}</option>
+                <option value="advanced">{t('roleAdvancedUser')}</option>
                 <option value="admin">{t('roleAdmin')}</option>
                 <option value="superadmin">{t('roleSuperadmin')}</option>
               </select>

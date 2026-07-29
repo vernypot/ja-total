@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDashboardAuth } from "../hooks/useDashboardAuth";
-import { getUserRole, isSuperAdmin, isAdminOrAbove } from "../utils/permissions";
+import { getUserRole, isSuperAdmin, isAdminOrAbove, canOperateEvents } from "../utils/permissions";
 import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
 import NavLinkItem from "./NavLinkItem";
 
@@ -16,6 +16,7 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
   const userRole = getUserRole(user, userData);
   const superadmin = isSuperAdmin(userRole);
   const adminOrAbove = isAdminOrAbove(userRole);
+  const eventOperator = canOperateEvents(userRole);
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
@@ -93,7 +94,7 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('clubCalendar')}
             </NavLinkItem>
-            {adminOrAbove && (
+            {(adminOrAbove || eventOperator) && (
               <NavLinkItem to="/dashboard/eventos" icon="events" active={isActive('/dashboard/eventos')}>
                 {t('events')}
               </NavLinkItem>

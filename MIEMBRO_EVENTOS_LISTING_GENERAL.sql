@@ -161,7 +161,7 @@ AS $$
 DECLARE
   v_current_usuario_id UUID;
 BEGIN
-  IF NOT public.user_can_manage_miembro(p_miembro_id) THEN
+  IF NOT public.user_can_access_miembro(p_miembro_id) THEN
     v_current_usuario_id := public.resolve_current_usuario_id();
     IF v_current_usuario_id IS NULL
       OR p_miembro_id IS DISTINCT FROM public.resolve_linked_miembro_id_for_current_usuario() THEN

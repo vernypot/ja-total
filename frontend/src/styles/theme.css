@@ -79,6 +79,21 @@
   /* Listing zebra stripes — very low contrast */
   --listing-zebra-bg: rgba(13, 27, 42, 0.028);
   --listing-row-hover-bg: rgba(13, 27, 42, 0.05);
+
+  /* Member list surfaces */
+  --member-list-row-bg: var(--white);
+  --member-list-zebra-bg: var(--gray-50);
+  --member-list-selected-bg: #eff6ff;
+  --member-list-selected-border: #2563eb;
+  --member-list-panel-bg: var(--gray-50);
+  --member-list-panel-border: var(--gray-100);
+  --member-list-club-chip-bg: var(--white);
+  --member-list-club-chip-border: var(--gray-200);
+  --member-list-club-chip-assigned-bg: var(--info-light);
+  --member-list-club-chip-assigned-border: #93c5fd;
+  --member-filters-bg: var(--gray-50);
+  --member-list-bulk-bar-bg: var(--gray-50);
+  --member-list-bulk-bar-border: var(--gray-200);
   
   /* Spacing */
   --spacing-xs: 0.25rem;

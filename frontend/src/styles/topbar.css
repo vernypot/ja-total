@@ -105,6 +105,10 @@
   color: var(--color-badge-warning);
 }
 
+.user-role.role-advanced {
+  color: var(--brand-trust);
+}
+
 .user-role.role-superadmin {
   color: #5b21b6;
   text-shadow: none;

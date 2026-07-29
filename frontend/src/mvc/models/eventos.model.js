@@ -420,8 +420,28 @@ export async function setEventoActividadInicio(eventoId, actividadInicioAt = nul
 }
 
 export async function setEventoEstado(eventoId, estado) {
+  if (estado === EVENTO_ESTADO.FINALIZADO) {
+    return endEvento(eventoId);
+  }
   return sb.from('eventos').update({
     estado,
+    updated_at: new Date().toISOString(),
+  }).eq('id', eventoId);
+}
+
+export async function endEvento(eventoId) {
+  const rpc = await sb.rpc('admin_end_evento', { p_evento_id: eventoId });
+  if (!rpc.error) {
+    return { data: rpc.data, error: null };
+  }
+
+  const msg = rpc.error?.message || '';
+  if (!msg.includes('admin_end_evento') && !msg.includes('Could not find the function')) {
+    return { data: null, error: rpc.error };
+  }
+
+  return sb.from('eventos').update({
+    estado: EVENTO_ESTADO.FINALIZADO,
     updated_at: new Date().toISOString(),
   }).eq('id', eventoId);
 }
@@ -824,6 +844,75 @@ export function computeMemberAttendanceStats(rows, helpers) {
   }
 
   return stats;
+}
+
+export function computeEventAttendanceSummary(rows, { needsConfirmation = false } = {}) {
+  const stats = {
+    assigned: 0,
+    confirmed: 0,
+    pendingConfirmation: 0,
+    declined: 0,
+    onTime: 0,
+    late: 0,
+    absent: 0,
+    notRecorded: 0,
+  };
+
+  const attendees = (rows || []).map(row => {
+    const confirmacion = getConfirmacionFromRow(row);
+    const asistencia = getAsistenciaFromRow(row);
+
+    stats.assigned += 1;
+
+    if (needsConfirmation) {
+      if (confirmacion === 'confirmado') stats.confirmed += 1;
+      else if (confirmacion === 'rechazado') stats.declined += 1;
+      else stats.pendingConfirmation += 1;
+    }
+
+    if (asistencia === 'a_tiempo') stats.onTime += 1;
+    else if (asistencia === 'tarde') stats.late += 1;
+    else if (asistencia === 'ausente') stats.absent += 1;
+    else stats.notRecorded += 1;
+
+    return {
+      id: row.id,
+      name: memberDisplayName(row.miembros),
+      confirmacion: needsConfirmation ? confirmacion : null,
+      confirmadoAt: needsConfirmation && confirmacion === 'confirmado' ? row.confirmado_at || null : null,
+      asistencia: asistencia || null,
+    };
+  });
+
+  attendees.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+  return { stats, attendees };
+}
+
+export const EVENT_CONFIRMATION_GROUP_ORDER = ['confirmado', 'pendiente', 'rechazado'];
+export const EVENT_ATTENDANCE_GROUP_ORDER = ['a_tiempo', 'tarde', 'ausente', 'pending'];
+
+export function groupEventAttendanceAttendees(attendees, { needsConfirmation = false } = {}) {
+  const groupMap = new Map();
+
+  for (const attendee of attendees || []) {
+    const key = needsConfirmation
+      ? (attendee.confirmacion || 'pendiente')
+      : (attendee.asistencia || 'pending');
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key).push(attendee);
+  }
+
+  const order = needsConfirmation
+    ? EVENT_CONFIRMATION_GROUP_ORDER
+    : EVENT_ATTENDANCE_GROUP_ORDER;
+
+  return order
+    .filter(key => groupMap.has(key))
+    .map(key => ({
+      key,
+      members: groupMap.get(key).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    }));
 }
 
 export function sortEventAttendanceRows(rows, memberDisplayNameFn = memberDisplayName) {

@@ -3,6 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useDashboardAuth } from "../hooks/useDashboardAuth";
 import { getUserRole } from "../utils/permissions";
+import { roleLabel } from "../i18n/helpers";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -31,7 +32,7 @@ export default function Topbar({ showMenuButton = false, onMenuToggle, menuOpen 
   const displayInitials = isMemberView
     ? memberInitials(memberName)
     : (user?.email || 'U').substring(0, 2).toUpperCase();
-  const displayRole = isMemberView ? t('roleMember') : userRole;
+  const displayRole = isMemberView ? t('roleMember') : roleLabel(userRole, t);
   const portalPageTitle = useMemo(
     () => (isMemberView ? getPortalPageTitle(location.pathname, t) : ''),
     [isMemberView, location.pathname, t]

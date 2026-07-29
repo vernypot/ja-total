@@ -47,6 +47,7 @@ import PortalOrStaffPage from "../components/PortalOrStaffPage";
 import NoticiasRoute from "../components/NoticiasRoute";
 import SuperAdminRoute from "../components/SuperAdminRoute";
 import AdminRoute from "../components/AdminRoute";
+import EventOperatorRoute from "../components/EventOperatorRoute";
 import { DASHBOARD_HOME_PATH, PORTAL_PROFILE_PATH } from "../utils/dashboardRoutes";
 import { DashboardViewModeProvider } from "../context/DashboardViewModeContext";
 
@@ -108,7 +109,7 @@ export default function AppRouter() {
           <Route path="planificacion" element={<StaffOnlyRoute element={<AdminRoute element={<PlanificacionPeriodo />} />} />} />
           <Route path="tipos-evento" element={<StaffOnlyRoute element={<AdminRoute element={<TiposEvento />} />} />} />
           <Route path="distinciones" element={<StaffOnlyRoute element={<AdminRoute element={<Distinciones />} />} />} />
-          <Route path="checkin" element={<StaffOnlyRoute element={<AdminRoute element={<Checkin />} />} />} />
+          <Route path="checkin" element={<StaffOnlyRoute element={<EventOperatorRoute element={<Checkin />} />} />} />
           <Route path="carnets-club" element={<StaffOnlyRoute element={<AdminRoute element={<ClubCarnetsPrint />} />} />} />
           <Route path="especialidades" element={<StaffOnlyRoute element={<SuperAdminRoute element={<Especialidades />} />} />} />
           <Route path="cargos" element={<StaffOnlyRoute element={<SuperAdminRoute element={<Cargos />} />} />} />
