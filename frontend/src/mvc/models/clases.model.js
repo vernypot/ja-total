@@ -1063,3 +1063,25 @@ export async function reviewMiembroClaseAprobacionSolicitud({
     p_revisor_nombre: revisorNombre,
   });
 }
+
+export async function staffRequestRequisitoApproval(
+  miembroId,
+  assignmentId,
+  claseRequisitoId,
+  comentario = null
+) {
+  return sb.rpc('staff_request_requisito_approval', {
+    p_miembro_id: miembroId,
+    p_assignment_id: assignmentId,
+    p_clase_requisito_id: claseRequisitoId,
+    p_comentario: comentario,
+  });
+}
+
+export async function staffRequestClaseApproval(miembroId, assignmentId, comentario = null) {
+  return sb.rpc('staff_request_clase_approval', {
+    p_miembro_id: miembroId,
+    p_assignment_id: assignmentId,
+    p_comentario: comentario,
+  });
+}

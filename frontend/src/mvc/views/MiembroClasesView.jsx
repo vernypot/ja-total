@@ -193,6 +193,7 @@ export default function MiembroClasesView({
   savingRequisitoKey,
   savingAssignmentId,
   canManage = false,
+  canRequestApproval = false,
   defaultValidatorName = '',
   getClaseFromLink,
   getLinkClaseId,
@@ -314,7 +315,7 @@ export default function MiembroClasesView({
             const assignmentSolicitudes = solicitudesByAssignment[row.id]?.requisitos || {};
             const claseSolicitud = solicitudesByAssignment[row.id]?.clase || null;
             const clasePendingReview = claseSolicitud?.estado === 'pendiente';
-            const requisitosExpanded = expandedRequisitos[row.id] ?? !canManage;
+            const requisitosExpanded = expandedRequisitos[row.id] ?? (canRequestApproval || !canManage);
             return (
               <div key={row.id} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
@@ -350,7 +351,7 @@ export default function MiembroClasesView({
                       </div>
                     )}
                     <InvestiduraSummary row={row} t={t} />
-                    {!canManage && !classCompleted && (
+                    {!canManage && canRequestApproval && !classCompleted && (
                       <div style={{ marginTop: '8px' }}>
                         {clasePendingReview ? (
                           <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 600 }}>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { getUserRole, canManageChurchData } from '../../utils/permissions';
+import { getUserRole, canManageChurchData, canRequestMemberApproval } from '../../utils/permissions';
 import { useListPagination } from '../../hooks/useListPagination';
 import * as ClasesModel from '../models/clases.model';
 import * as MiembrosModel from '../models/miembros.model';
@@ -20,7 +20,9 @@ function userDisplayName(userData) {
 
 export function useMiembroClasesController(miembroId) {
   const { user, userData } = useContext(AuthContext);
-  const canManage = canManageChurchData(getUserRole(user, userData));
+  const role = getUserRole(user, userData);
+  const canManage = canManageChurchData(role);
+  const canRequestApproval = canRequestMemberApproval(role);
   const defaultValidatorName = userDisplayName(userData);
   const [assigned, setAssigned] = useState([]);
   const [available, setAvailable] = useState([]);
@@ -38,6 +40,12 @@ export function useMiembroClasesController(miembroId) {
   const [savingHistorialId, setSavingHistorialId] = useState(null);
   const [solicitudes, setSolicitudes] = useState([]);
   const [reviewingSolicitudId, setReviewingSolicitudId] = useState(null);
+  const [requestingKey, setRequestingKey] = useState(null);
+
+  const solicitudesByAssignment = useMemo(
+    () => ClasesModel.mapSolicitudesByAssignment(solicitudes),
+    [solicitudes]
+  );
 
   const assignedIds = useMemo(
     () => new Set(assigned.map(row => getLinkClaseId(row)).filter(Boolean)),
@@ -79,7 +87,9 @@ export function useMiembroClasesController(miembroId) {
       ClasesModel.fetchClasesProgresivas({ showInactive: false }),
       ClasesModel.fetchMiembroClaseHistorial(miembroId),
       MiembrosModel.fetchMiembroClubsWithLogos(miembroId),
-      canManage ? ClasesModel.fetchMiembroClaseAprobacionSolicitudes(miembroId) : Promise.resolve({ data: [], error: null }),
+      canManage || canRequestApproval
+        ? ClasesModel.fetchMiembroClaseAprobacionSolicitudes(miembroId)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (assignedError) {
@@ -339,6 +349,51 @@ export function useMiembroClasesController(miembroId) {
     return true;
   }, [canManage, defaultValidatorName, user?.id, userData?.id]);
 
+  const requestRequisitoApproval = useCallback(async (assignmentId, claseRequisitoId, comentario) => {
+    if (!canRequestApproval || !miembroId || !assignmentId || !claseRequisitoId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:${claseRequisitoId}`);
+
+    const { error: requestError } = await ClasesModel.staffRequestRequisitoApproval(
+      miembroId,
+      assignmentId,
+      claseRequisitoId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError('Error requesting approval: ' + requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
+  }, [canRequestApproval, miembroId]);
+
+  const requestClaseApproval = useCallback(async (assignmentId, comentario) => {
+    if (!canRequestApproval || !miembroId || !assignmentId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:clase`);
+
+    const { error: requestError } = await ClasesModel.staffRequestClaseApproval(
+      miembroId,
+      assignmentId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError('Error requesting approval: ' + requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
+  }, [canRequestApproval, miembroId]);
+
   useEffect(() => {
     load();
   }, [miembroId]);
@@ -368,9 +423,14 @@ export function useMiembroClasesController(miembroId) {
     deleteHistorial,
     savingHistorialId,
     solicitudes,
+    solicitudesByAssignment,
     reviewSolicitud,
     reviewingSolicitudId,
+    requestRequisitoApproval: canRequestApproval ? requestRequisitoApproval : null,
+    requestClaseApproval: canRequestApproval ? requestClaseApproval : null,
+    requestingKey,
     canManage,
+    canRequestApproval,
     defaultValidatorName,
     getClaseFromLink,
     getLinkClaseId,

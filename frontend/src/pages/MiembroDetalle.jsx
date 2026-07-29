@@ -1,5 +1,8 @@
+import { useContext } from 'react';
 import { useParams, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
+import { AuthContext } from '../context/AuthContext';
+import { getUserRole, isAdminOrAbove } from '../utils/permissions';
 import BackLink from '../components/BackLink';
 import '../styles/form.css';
 
@@ -17,6 +20,8 @@ import Carnet from './miembro/tabs/Carnet';
 export default function MiembroDetalle() {
   const { id } = useParams();
   const { t } = useLanguage();
+  const { user, userData } = useContext(AuthContext);
+  const canViewCarnet = isAdminOrAbove(getUserRole(user, userData));
   const isNew = id === 'new';
 
   return (
@@ -38,7 +43,7 @@ export default function MiembroDetalle() {
             <Link to="clases">{t('tabClasses')}</Link>
             <Link to="eventos">{t('tabEvents')}</Link>
             <Link to="asistencia">{t('tabAttendance')}</Link>
-            <Link to="carnet">{t('tabCarnet')}</Link>
+            {canViewCarnet && <Link to="carnet">{t('tabCarnet')}</Link>}
           </>
         )}
       </div>
@@ -55,7 +60,10 @@ export default function MiembroDetalle() {
           <Route path="clases" element={<Clases miembroId={id} />} />
           <Route path="eventos" element={<MiembroEventos miembroId={id} />} />
           <Route path="asistencia" element={<Asistencia miembroId={id} />} />
-          <Route path="carnet" element={<Carnet miembroId={id} />} />
+          <Route
+            path="carnet"
+            element={canViewCarnet ? <Carnet miembroId={id} /> : <Navigate to="datos" replace />}
+          />
         </Routes>
       </div>
     </div>

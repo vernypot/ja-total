@@ -440,3 +440,247 @@ BEGIN
   RETURN public.miembro_event_listing_json(p_miembro_id);
 END;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Advanced users: request class/requirement approval on behalf of a member
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.fetch_miembro_clase_aprobacion_solicitudes(p_miembro_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_class_link_col TEXT;
+  v_result JSON;
+BEGIN
+  IF NOT (
+    public.user_can_manage_miembro(p_miembro_id)
+    OR (
+      public.is_usuarios_advanced()
+      AND public.user_can_access_miembro(p_miembro_id)
+    )
+  ) THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'miembro_clase_progresiva' AND column_name = 'clase_progresiva_id'
+    ) THEN 'clase_progresiva_id'
+    ELSE 'clase_id'
+  END INTO v_class_link_col;
+
+  EXECUTE format($sql$
+    SELECT coalesce(json_agg(row_data ORDER BY row_data->>'solicitado_at' DESC), '[]'::json)
+    FROM (
+      SELECT json_build_object(
+        'id', s.id,
+        'miembro_id', s.miembro_id,
+        'miembro_clase_progresiva_id', s.miembro_clase_progresiva_id,
+        'clase_requisito_id', s.clase_requisito_id,
+        'tipo', s.tipo,
+        'estado', s.estado,
+        'comentario_miembro', s.comentario_miembro,
+        'comentario_lider', s.comentario_lider,
+        'revisado_por_usuario_id', s.revisado_por_usuario_id,
+        'revisado_por_nombre', s.revisado_por_nombre,
+        'solicitado_at', s.solicitado_at,
+        'revisado_at', s.revisado_at,
+        'clase_requisitos', CASE
+          WHEN cr.id IS NOT NULL THEN json_build_object(
+            'id', cr.id,
+            'numero', cr.numero,
+            'descripcion', cr.descripcion,
+            'texto_opcional', cr.texto_opcional
+          )
+          ELSE NULL
+        END,
+        'clases_progresivas', json_build_object(
+          'id', cp.id,
+          'nombre', cp.nombre
+        )
+      ) AS row_data
+      FROM public.miembro_clase_aprobacion_solicitud s
+      JOIN public.miembro_clase_progresiva mcp ON mcp.id = s.miembro_clase_progresiva_id
+      JOIN public.clases_progresivas cp ON cp.id = mcp.%1$I
+      LEFT JOIN public.clase_requisitos cr ON cr.id = s.clase_requisito_id
+      WHERE s.miembro_id = %2$L
+    ) rows
+  $sql$, v_class_link_col, p_miembro_id)
+  INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.staff_request_requisito_approval(
+  p_miembro_id UUID,
+  p_assignment_id UUID,
+  p_clase_requisito_id UUID,
+  p_comentario TEXT DEFAULT NULL
+)
+RETURNS public.miembro_clase_aprobacion_solicitud
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_assignment_miembro_id UUID;
+  v_clase_id UUID;
+  v_class_link_col TEXT;
+  v_already_complete BOOLEAN;
+  result public.miembro_clase_aprobacion_solicitud;
+BEGIN
+  IF NOT public.is_usuarios_advanced() THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  IF NOT public.user_can_access_miembro(p_miembro_id) THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'miembro_clase_progresiva' AND column_name = 'clase_progresiva_id'
+    ) THEN 'clase_progresiva_id'
+    ELSE 'clase_id'
+  END INTO v_class_link_col;
+
+  EXECUTE format(
+    'SELECT mcp.miembro_id, mcp.%I FROM public.miembro_clase_progresiva mcp WHERE mcp.id = $1',
+    v_class_link_col
+  )
+  INTO v_assignment_miembro_id, v_clase_id
+  USING p_assignment_id;
+
+  IF v_clase_id IS NULL OR v_assignment_miembro_id IS NULL THEN
+    RAISE EXCEPTION 'class assignment not found';
+  END IF;
+
+  IF v_assignment_miembro_id <> p_miembro_id THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.clase_requisitos cr
+    WHERE cr.id = p_clase_requisito_id AND cr.clase_id = v_clase_id
+  ) THEN
+    RAISE EXCEPTION 'requirement not found for this class';
+  END IF;
+
+  SELECT coalesce(mcr.completado, false) INTO v_already_complete
+  FROM public.miembro_clase_requisito mcr
+  WHERE mcr.miembro_clase_progresiva_id = p_assignment_id
+    AND mcr.clase_requisito_id = p_clase_requisito_id;
+
+  IF coalesce(v_already_complete, false) THEN
+    RAISE EXCEPTION 'requirement already completed';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.miembro_clase_aprobacion_solicitud s
+    WHERE s.miembro_clase_progresiva_id = p_assignment_id
+      AND s.clase_requisito_id = p_clase_requisito_id
+      AND s.estado = 'pendiente'
+  ) THEN
+    RAISE EXCEPTION 'approval request already pending';
+  END IF;
+
+  INSERT INTO public.miembro_clase_aprobacion_solicitud (
+    miembro_id,
+    miembro_clase_progresiva_id,
+    clase_requisito_id,
+    tipo,
+    comentario_miembro
+  )
+  VALUES (
+    p_miembro_id,
+    p_assignment_id,
+    p_clase_requisito_id,
+    'requisito',
+    nullif(trim(coalesce(p_comentario, '')), '')
+  )
+  RETURNING * INTO result;
+
+  RETURN result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.staff_request_clase_approval(
+  p_miembro_id UUID,
+  p_assignment_id UUID,
+  p_comentario TEXT DEFAULT NULL
+)
+RETURNS public.miembro_clase_aprobacion_solicitud
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_assignment_miembro_id UUID;
+  v_estado_progreso TEXT;
+  v_completado BOOLEAN;
+  result public.miembro_clase_aprobacion_solicitud;
+BEGIN
+  IF NOT public.is_usuarios_advanced() THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  IF NOT public.user_can_access_miembro(p_miembro_id) THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  SELECT mcp.miembro_id,
+    coalesce(mcp.estado_progreso, 'sin_iniciar'),
+    coalesce(mcp.completado, false)
+  INTO v_assignment_miembro_id, v_estado_progreso, v_completado
+  FROM public.miembro_clase_progresiva mcp
+  WHERE mcp.id = p_assignment_id;
+
+  IF v_assignment_miembro_id IS NULL THEN
+    RAISE EXCEPTION 'class assignment not found';
+  END IF;
+
+  IF v_assignment_miembro_id <> p_miembro_id THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  IF v_completado OR v_estado_progreso IN ('completada', 'investida') THEN
+    RAISE EXCEPTION 'class already completed';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.miembro_clase_aprobacion_solicitud s
+    WHERE s.miembro_clase_progresiva_id = p_assignment_id
+      AND s.tipo = 'clase'
+      AND s.estado = 'pendiente'
+  ) THEN
+    RAISE EXCEPTION 'approval request already pending';
+  END IF;
+
+  INSERT INTO public.miembro_clase_aprobacion_solicitud (
+    miembro_id,
+    miembro_clase_progresiva_id,
+    clase_requisito_id,
+    tipo,
+    comentario_miembro
+  )
+  VALUES (
+    p_miembro_id,
+    p_assignment_id,
+    NULL,
+    'clase',
+    nullif(trim(coalesce(p_comentario, '')), '')
+  )
+  RETURNING * INTO result;
+
+  RETURN result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.staff_request_requisito_approval(UUID, UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.staff_request_clase_approval(UUID, UUID, TEXT) TO authenticated;
