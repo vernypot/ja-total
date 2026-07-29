@@ -1,3 +1,4 @@
+import { NOTICIA_LANDING_SECTION_PLACEMENTS } from '../../constants/noticiaPlacements';
 import * as LandingCmsModel from './landingCms.model';
 import * as NoticiasModel from './noticias.model';
 import { buildUsageStatCards, fetchPublicUsageStats } from './landingUsageStats.model';
@@ -72,7 +73,7 @@ function buildDefaultLanding(language) {
 export async function loadLandingContent(language) {
   const [cmsResult, landingNewsResult, heroNewsResult, bannerNewsResult, usageResult] = await Promise.all([
     LandingCmsModel.fetchPublicLandingCms(),
-    NoticiasModel.fetchPublicNoticias({ placements: ['landing'], limit: 6 }),
+    NoticiasModel.fetchPublicNoticias({ placements: NOTICIA_LANDING_SECTION_PLACEMENTS, limit: 6 }),
     NoticiasModel.fetchPublicNoticias({ placements: ['hero_slider'], limit: 5 }),
     NoticiasModel.fetchPublicNoticias({ placements: ['standalone_banner'], limit: 1 }),
     fetchPublicUsageStats(),

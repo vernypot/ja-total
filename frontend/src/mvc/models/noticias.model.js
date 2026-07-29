@@ -5,7 +5,7 @@ import {
   extensionForImageFile,
   isRlsError,
 } from '../../utils/assets';
-import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements, NOTICIA_PLACEMENT_IDS } from '../../constants/noticiaPlacements';
+import { DEFAULT_NOTICIA_PLACEMENTS, normalizePlacements, NOTICIA_PLACEMENT_IDS, hasPublicNoticiaSurface } from '../../constants/noticiaPlacements';
 import {
   NOTICIA_FEATURED_VARIANTS,
   noticiaFeaturedImageColumn,
@@ -191,6 +191,40 @@ export async function fetchPublicNoticias({ placements, limit = 10 } = {}) {
   return fallback;
 }
 
+export function isPublicNoticia(noticia) {
+  if (!noticia || !isNoticiaVisible(noticia)) return false;
+  if (normalizeAudience(noticia.audience) !== 'general') return false;
+  return hasPublicNoticiaSurface(noticia.placements);
+}
+
+export async function fetchPublicNoticiaById(id) {
+  if (!id) return { data: null, error: null };
+
+  const rpc = await sb.rpc('fetch_public_noticia_by_id', { p_id: id });
+
+  if (!rpc.error) {
+    const row = normalizeNoticiaRow(rpc.data);
+    return {
+      data: isPublicNoticia(row) ? row : null,
+      error: null,
+    };
+  }
+
+  const msg = rpc.error?.message || '';
+  if (!isRlsError(rpc.error) && !msg.includes('fetch_public_noticia_by_id')) {
+    return { data: null, error: rpc.error };
+  }
+
+  const fallback = await fetchNoticiaById(id);
+  if (fallback.error) return { data: null, error: fallback.error };
+
+  const row = fallback.data;
+  return {
+    data: isPublicNoticia(row) ? row : null,
+    error: null,
+  };
+}
+
 export async function fetchNoticiaById(id) {
   return queryNoticias(select =>
     sb.from('noticias').select(select).eq('id', id).maybeSingle()
@@ -210,6 +244,8 @@ export function mapNoticiaToLandingCard(noticia, language = 'es') {
     category: noticia.categoria || '',
     title: noticiaPlainText(noticia.titulo, 120),
     excerpt: noticiaPlainText(noticia.resumen || noticia.contenido, 220),
+    desktopUrl: noticia.imagen_destacada_url || '',
+    mobileUrl: noticia.imagen_destacada_mobile_url || '',
     fromNoticia: true,
     language,
   };

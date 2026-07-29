@@ -14,6 +14,10 @@ export function getPortalProfileDefaultTab(isMobile = false) {
   return isMobile ? PORTAL_MOBILE_PROFILE_TAB : PORTAL_DESKTOP_PROFILE_TAB;
 }
 
+export function publicNoticiaPath(noticiaId) {
+  return `/noticias/${noticiaId}`;
+}
+
 export function isDashboardHomePath(pathname) {
   return pathname === '/dashboard'
     || pathname === '/dashboard/'

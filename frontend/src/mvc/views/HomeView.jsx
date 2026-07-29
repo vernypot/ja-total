@@ -6,6 +6,7 @@ import HomeUpcomingEventRow from '../../components/HomeUpcomingEventRow';
 import { PageHelpLink } from '../../components/PageHelp';
 import AdminPendingApprovalsPanel from '../../components/AdminPendingApprovalsPanel';
 import '../../styles/home.css';
+import '../../styles/noticias.css';
 
 function HomeNotifications({
   t,
