@@ -70,6 +70,11 @@ export function canManageChurchData(role) {
   return isAdminOrAbove(role);
 }
 
+/** Request class/requirement approval on behalf of a member — advanced users only */
+export function canRequestMemberApproval(role) {
+  return isAdvancedUser(role);
+}
+
 // Legacy alias
 export function canManageIglesias(role) {
   return canManageIglesiaProfile(role);
