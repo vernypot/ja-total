@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { getUserRole, canManageChurchData, canRequestMemberApproval } from '../../utils/permissions';
+import { getUserRole, canManageChurchData, canRequestMemberApprovalFor } from '../../utils/permissions';
+import { useDashboardAuth } from '../../hooks/useDashboardAuth';
 import { useListPagination } from '../../hooks/useListPagination';
 import * as ClasesModel from '../models/clases.model';
 import * as MiembrosModel from '../models/miembros.model';
@@ -20,9 +21,10 @@ function userDisplayName(userData) {
 
 export function useMiembroClasesController(miembroId) {
   const { user, userData } = useContext(AuthContext);
+  const { linkedMiembroId } = useDashboardAuth();
   const role = getUserRole(user, userData);
   const canManage = canManageChurchData(role);
-  const canRequestApproval = canRequestMemberApproval(role);
+  const canRequestApproval = canRequestMemberApprovalFor(role, miembroId, linkedMiembroId);
   const defaultValidatorName = userDisplayName(userData);
   const [assigned, setAssigned] = useState([]);
   const [available, setAvailable] = useState([]);
@@ -118,9 +120,16 @@ export function useMiembroClasesController(miembroId) {
       return;
     }
     if (solicitudesError) {
-      setError('Error loading approval requests: ' + solicitudesError.message);
-      setLoading(false);
-      return;
+      const permissionDenied = (solicitudesError.message || '').includes('permission denied');
+      if (canRequestApproval && permissionDenied) {
+        setSolicitudes([]);
+      } else {
+        setError('Error loading approval requests: ' + solicitudesError.message);
+        setLoading(false);
+        return;
+      }
+    } else {
+      setSolicitudes(solicitudRows || []);
     }
 
     const filtered = ClasesModel.filterClasesByTipos(allClases || [], tipoIds, tiposClub || []);
@@ -130,7 +139,6 @@ export function useMiembroClasesController(miembroId) {
     setHistorial(historialRows || []);
     setCatalogClases(allClases || []);
     setMemberClubs(clubs || []);
-    setSolicitudes(solicitudRows || []);
 
     const assignmentIds = (assignedRows || []).map(row => row.id).filter(Boolean);
     if (assignmentIds.length) {
@@ -396,7 +404,7 @@ export function useMiembroClasesController(miembroId) {
 
   useEffect(() => {
     load();
-  }, [miembroId]);
+  }, [miembroId, linkedMiembroId]);
 
   return {
     assigned: paginatedAssigned,

@@ -445,6 +445,23 @@ $$;
 -- Advanced users: request class/requirement approval on behalf of a member
 -- ---------------------------------------------------------------------------
 
+-- Prerequisite: USUARIO_MIEMBRO_LINK.sql (resolve_linked_miembro_id_for_current_usuario)
+
+CREATE OR REPLACE FUNCTION public.usuario_can_request_miembro_approval(p_miembro_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    public.is_usuarios_advanced()
+    AND p_miembro_id IS NOT NULL
+    AND p_miembro_id = public.resolve_linked_miembro_id_for_current_usuario();
+$$;
+
+GRANT EXECUTE ON FUNCTION public.usuario_can_request_miembro_approval(UUID) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.fetch_miembro_clase_aprobacion_solicitudes(p_miembro_id UUID)
 RETURNS JSON
 LANGUAGE plpgsql
@@ -457,10 +474,7 @@ DECLARE
 BEGIN
   IF NOT (
     public.user_can_manage_miembro(p_miembro_id)
-    OR (
-      public.is_usuarios_advanced()
-      AND public.user_can_access_miembro(p_miembro_id)
-    )
+    OR public.usuario_can_request_miembro_approval(p_miembro_id)
   ) THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
@@ -534,11 +548,7 @@ DECLARE
   v_already_complete BOOLEAN;
   result public.miembro_clase_aprobacion_solicitud;
 BEGIN
-  IF NOT public.is_usuarios_advanced() THEN
-    RAISE EXCEPTION 'permission denied';
-  END IF;
-
-  IF NOT public.user_can_access_miembro(p_miembro_id) THEN
+  IF NOT public.usuario_can_request_miembro_approval(p_miembro_id) THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
@@ -626,11 +636,7 @@ DECLARE
   v_completado BOOLEAN;
   result public.miembro_clase_aprobacion_solicitud;
 BEGIN
-  IF NOT public.is_usuarios_advanced() THEN
-    RAISE EXCEPTION 'permission denied';
-  END IF;
-
-  IF NOT public.user_can_access_miembro(p_miembro_id) THEN
+  IF NOT public.usuario_can_request_miembro_approval(p_miembro_id) THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
@@ -684,3 +690,111 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.staff_request_requisito_approval(UUID, UUID, UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.staff_request_clase_approval(UUID, UUID, TEXT) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Role resolution: advanced users must be recognized when auth.uid() ≠ usuarios.id
+-- Prerequisite: USUARIO_APP_USAGE.sql (resolve_current_usuario_id)
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  db_role TEXT;
+  jwt_role TEXT;
+  email TEXT;
+  v_usuario_id UUID;
+BEGIN
+  email := public.get_user_email();
+
+  IF email IN ('walkerpottinger@gmail.com') THEN
+    RETURN 'superadmin';
+  END IF;
+
+  jwt_role := COALESCE(
+    (auth.jwt() -> 'user_metadata' ->> 'role'),
+    (auth.jwt() -> 'app_metadata' ->> 'role')
+  );
+
+  IF jwt_role IN ('superadmin', 'admin') THEN
+    RETURN jwt_role;
+  END IF;
+
+  v_usuario_id := public.resolve_current_usuario_id();
+
+  IF v_usuario_id IS NOT NULL THEN
+    SELECT u.rol INTO db_role
+    FROM public.usuarios u
+    WHERE u.id = v_usuario_id;
+  END IF;
+
+  RETURN COALESCE(db_role, jwt_role, 'user');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_can_access_miembro(p_miembro_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    public.is_usuarios_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM public.miembro_club mc
+      JOIN public.clubes c ON c.id = mc.club_id
+      JOIN public.usuario_iglesia ui ON ui.iglesia_id = c.iglesia_id
+      WHERE mc.miembro_id = p_miembro_id
+        AND ui.usuario_id = public.resolve_current_usuario_id()
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_can_manage_miembro(p_miembro_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    public.is_usuarios_superadmin()
+    OR (
+      public.is_usuarios_admin()
+      AND EXISTS (
+        SELECT 1
+        FROM public.miembro_club mc
+        JOIN public.clubes c ON c.id = mc.club_id
+        JOIN public.usuario_iglesia ui ON ui.iglesia_id = c.iglesia_id
+        WHERE mc.miembro_id = p_miembro_id
+          AND ui.usuario_id = public.resolve_current_usuario_id()
+      )
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_can_operate_event_club(p_club_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    public.is_usuarios_superadmin()
+    OR public.user_can_manage_club(p_club_id)
+    OR (
+      public.is_usuarios_advanced()
+      AND EXISTS (
+        SELECT 1
+        FROM public.clubes c
+        JOIN public.usuario_iglesia ui ON ui.iglesia_id = c.iglesia_id
+        WHERE c.id = p_club_id
+          AND ui.usuario_id = public.resolve_current_usuario_id()
+      )
+    );
+$$;
