@@ -878,6 +878,7 @@ export const defaultTranslations = {
 
     roleUser: 'User',
     roleAdmin: 'Admin',
+    roleAdvancedUser: 'Advanced User',
     roleSuperadmin: 'Super Admin',
     roleMember: 'Member',
     roleCoordinator: 'Coordinator',
@@ -2565,6 +2566,7 @@ export const defaultTranslations = {
 
     roleUser: 'Usuario',
     roleAdmin: 'Admin',
+    roleAdvancedUser: 'Usuario Avanzado',
     roleSuperadmin: 'Super Admin',
     roleMember: 'Miembro',
     roleCoordinator: 'Coordinador',

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
-import { getUserRole, canManageClubs } from '../../utils/permissions';
+import { getUserRole, canOperateEvents } from '../../utils/permissions';
 import { useListPagination } from '../../hooks/useListPagination';
 import * as EventosModel from '../models/eventos.model';
 import {
@@ -22,7 +22,7 @@ export function useEventCheckinController() {
   const { t, language } = useLanguage();
   const { timeZone } = useChurchTimezone();
   const { user, userData } = useContext(AuthContext);
-  const canManage = canManageClubs(getUserRole(user, userData));
+  const canManage = canOperateEvents(getUserRole(user, userData));
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const eventoId = params.get('evento') || params.get('e') || '';
@@ -243,10 +243,7 @@ export function useEventCheckinController() {
     setError('');
     setNotice('');
 
-    const { error: saveError } = await EventosModel.setEventoEstado(
-      eventoId,
-      EventosModel.EVENTO_ESTADO.FINALIZADO
-    );
+    const { error: saveError } = await EventosModel.endEvento(eventoId);
     if (saveError) {
       setError(saveError.message);
       return;

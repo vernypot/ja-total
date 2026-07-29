@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { useScopedIglesia } from '../../hooks/useScopedIglesia';
 import { useLanguage } from '../../hooks/useLanguage';
-import { getUserRole, canManageClubs } from '../../utils/permissions';
+import { getUserRole, canManageClubs, canOperateEvents } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
@@ -36,6 +36,7 @@ export function useEventosController() {
   const churchTz = useChurchTimezone();
   const userRole = getUserRole(user, userData);
   const canManage = canManageClubs(userRole);
+  const canOperate = canOperateEvents(userRole);
   const {
     linkedMiembroId,
     buildSelfRow,
@@ -153,7 +154,7 @@ export function useEventosController() {
     setLoading(false);
 
     const eventList = data || [];
-    if (canManage && eventList.length) {
+    if (canOperate && eventList.length) {
       await loadAllAssignments(eventList);
     }
     await loadLinkedMemberEventRows(eventList);
@@ -451,7 +452,7 @@ export function useEventosController() {
   }
 
   async function endEvent(eventoId) {
-    if (!canManage) return;
+    if (!canOperate) return;
     setError('');
 
     const { error: saveError } = await EventosModel.setEventoEstado(
@@ -468,7 +469,7 @@ export function useEventosController() {
   }
 
   async function setConfirmation(eventoMiembroId, confirmacionEstado, eventoId) {
-    if (!canManage) return;
+    if (!canOperate) return;
     setError('');
 
     const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
@@ -496,7 +497,7 @@ export function useEventosController() {
   }
 
   async function setAttendance(eventoMiembroId, estado, eventoId) {
-    if (!canManage) return;
+    if (!canOperate) return;
     setError('');
 
     const { error: saveError } = await EventosModel.setEventoAsistencia(eventoMiembroId, estado);
@@ -509,7 +510,7 @@ export function useEventosController() {
   }
 
   async function initializeEvent(eventoId) {
-    if (!canManage || !eventoId) return;
+    if (!canOperate || !eventoId) return;
     setError('');
 
     setInitializingEventId(eventoId);
@@ -525,7 +526,7 @@ export function useEventosController() {
   }
 
   async function scanAttendees(eventoId) {
-    if (!canManage || !eventoId) return;
+    if (!canOperate || !eventoId) return;
     setError('');
 
     const { error: scanError } = await EventosModel.startEventoEscaneo(eventoId);
@@ -900,6 +901,7 @@ export function useEventosController() {
     searchQuery,
     setSearchQuery,
     canManage,
+    canOperateEvents: canOperate,
     iglesiaScopeReady: canSwitchIglesia || (hasIglesiaAssignment && assignedIglesiaActive),
     toggleEventExpand,
     loadEventAssignments: loadAssignments,

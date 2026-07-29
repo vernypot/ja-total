@@ -184,6 +184,7 @@ export default function MiembroSystemAccessPanel({ miembroId }) {
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>{t('role')}</label>
                   <select className="form-input" value={promoteForm.rol} onChange={e => setPromoteForm({ ...promoteForm, rol: e.target.value })}>
                     <option value="user">{t('roleUser')}</option>
+                    <option value="advanced">{t('roleAdvancedUser')}</option>
                     <option value="admin">{t('roleAdmin')}</option>
                   </select>
                 </div>

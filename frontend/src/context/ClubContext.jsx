@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { IglesiaContext } from './IglesiaContext';
+import { fetchClubesByIglesia } from '../mvc/models/clubes.model';
 
 export const ClubContext = createContext();
 
@@ -29,6 +30,39 @@ export function ClubProvider({ children }) {
       setActiveClub(null);
     }
   }, [activeIglesia, activeClub?.iglesia_id]);
+
+  useEffect(() => {
+    if (!activeIglesia) return undefined;
+
+    let cancelled = false;
+
+    fetchClubesByIglesia(activeIglesia).then(({ data, error }) => {
+      if (cancelled || error) return;
+
+      const clubs = data || [];
+      if (clubs.length !== 1) return;
+
+      const onlyClub = clubs[0];
+      setActiveClub(current => {
+        if (current?.id === onlyClub.id && current?.iglesia_id === activeIglesia) {
+          return current;
+        }
+        return {
+          id: onlyClub.id,
+          nombre: onlyClub.nombre,
+          tipoNombre: onlyClub.tipos_club?.nombre || '',
+          tipoId: onlyClub.tipo_id || null,
+          logoUrl: onlyClub.logo_url || null,
+          tipoLogoUrl: onlyClub.tipos_club?.logo_url || null,
+          iglesia_id: onlyClub.iglesia_id || activeIglesia,
+        };
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeIglesia]);
 
   function updateActiveClub(club) {
     if (!club?.id) return;

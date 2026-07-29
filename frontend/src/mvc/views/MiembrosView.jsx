@@ -67,12 +67,7 @@ function MemberListItem({
               type="button"
               onClick={() => setActionsExpanded(prev => !prev)}
               aria-expanded={actionsExpanded}
-              className="btn btn-sm"
-              style={{
-                backgroundColor: actionsExpanded ? '#e5e7eb' : '#f9fafb',
-                color: '#374151',
-                border: '1px solid #d1d5db',
-              }}
+              className={`btn btn-sm member-list-item__actions-toggle${actionsExpanded ? ' is-expanded' : ''}`}
             >
               {actionsExpanded ? '▲' : '▼'} {t('actions')}
             </button>
@@ -96,7 +91,7 @@ function MemberListItem({
 
           {canManage && (
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', marginBottom: '8px' }}>
+              <div className="member-list-item__panel-heading member-list-item__panel-heading--accent">
                 {t('portalPinAdminTitle')}
               </div>
               <MemberPortalPinAdmin miembroId={member.id} canManage={canManage} compact />
@@ -105,29 +100,19 @@ function MemberListItem({
 
           {showClubAssignments && (
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>
+              <div className="member-list-item__panel-heading">
                 {t('memberClubs')} ({assignedCount}/{clubsData.length})
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}>
+              <div className="member-list-item__club-chips">
                 {clubsData.map(club => {
                   const isAssigned = assignedClubIds.has(String(club.id));
                   const isAssigning = assigningKey === `${member.id}-${club.id}`;
+                  const chipDisabled = !canManage || isAssigning;
 
                   return (
                     <label
                       key={club.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '0.875rem',
-                        cursor: canManage && !isAssigning ? 'pointer' : 'default',
-                        opacity: isAssigning ? 0.6 : 1,
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        backgroundColor: isAssigned ? '#eff6ff' : '#fff',
-                        border: isAssigned ? '1px solid #93c5fd' : '1px solid #e5e7eb',
-                      }}
+                      className={`member-list-item__club-chip${isAssigned ? ' member-list-item__club-chip--assigned' : ''}${chipDisabled ? ' is-disabled' : ''}`}
                     >
                       <input
                         type="checkbox"
@@ -426,7 +411,7 @@ export default function MiembrosView({
             )}
           </div>
           <ListSearchInput value={searchQuery} onChange={setSearchQuery} />
-          <p style={{ margin: 0, fontSize: '12px', color: '#888', width: '100%' }}>{t('filterByClubHint')}</p>
+          <p className="member-list-toolbar-hint">{t('filterByClubHint')}</p>
         </div>
 
         <MemberFiltersPanel
@@ -459,21 +444,10 @@ export default function MiembrosView({
 
         {canManage && data.length > 0 && (
           <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-              marginBottom: '16px',
-              padding: '12px',
-              borderRadius: '8px',
-              backgroundColor: selectedCount > 0 ? '#eff6ff' : '#f9fafb',
-              border: `1px solid ${selectedCount > 0 ? '#93c5fd' : '#e5e7eb'}`,
-            }}
+            className={`member-list-bulk-bar${selectedCount > 0 ? ' member-list-bulk-bar--active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px' }}>
+            <div className="member-list-bulk-bar__select-all">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -497,7 +471,7 @@ export default function MiembrosView({
             </div>
 
             {selectedCount > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="member-list-bulk-bar__actions">
                 <button
                   type="button"
                   onClick={() => bulkActivate(t)}

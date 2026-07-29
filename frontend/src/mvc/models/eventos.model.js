@@ -420,8 +420,28 @@ export async function setEventoActividadInicio(eventoId, actividadInicioAt = nul
 }
 
 export async function setEventoEstado(eventoId, estado) {
+  if (estado === EVENTO_ESTADO.FINALIZADO) {
+    return endEvento(eventoId);
+  }
   return sb.from('eventos').update({
     estado,
+    updated_at: new Date().toISOString(),
+  }).eq('id', eventoId);
+}
+
+export async function endEvento(eventoId) {
+  const rpc = await sb.rpc('admin_end_evento', { p_evento_id: eventoId });
+  if (!rpc.error) {
+    return { data: rpc.data, error: null };
+  }
+
+  const msg = rpc.error?.message || '';
+  if (!msg.includes('admin_end_evento') && !msg.includes('Could not find the function')) {
+    return { data: null, error: rpc.error };
+  }
+
+  return sb.from('eventos').update({
+    estado: EVENTO_ESTADO.FINALIZADO,
     updated_at: new Date().toISOString(),
   }).eq('id', eventoId);
 }

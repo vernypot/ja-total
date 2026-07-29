@@ -19,8 +19,17 @@ export function isAdminOrAbove(role) {
   return role === 'admin' || role === 'superadmin';
 }
 
+export function isAdvancedUser(role) {
+  return role === 'advanced';
+}
+
+/** Start/end meetings and open/close card scanning — admin, superadmin, or advanced */
+export function canOperateEvents(role) {
+  return isAdminOrAbove(role) || isAdvancedUser(role);
+}
+
 export function isReadOnlyUser(role) {
-  return !isAdminOrAbove(role);
+  return !isAdminOrAbove(role) && !isAdvancedUser(role);
 }
 
 /** Create/list system users — superadmin only */

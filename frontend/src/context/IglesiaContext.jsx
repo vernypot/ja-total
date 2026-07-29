@@ -2,7 +2,7 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import { AuthContext } from './AuthContext';
 import { getUserRole, isSuperAdmin } from '../utils/permissions';
 import { DEFAULT_CHURCH_TIMEZONE, normalizeChurchTimezone } from '../utils/churchTimezones';
-import { fetchIglesiaById } from '../mvc/models/iglesias.model';
+import { fetchIglesiaById, fetchActiveIglesias } from '../mvc/models/iglesias.model';
 
 export const IglesiaContext = createContext();
 
@@ -46,6 +46,29 @@ export function IglesiaProvider({ children }) {
 
     setInitialized(true);
   }, [authLoading, user, userData, initialized]);
+
+  useEffect(() => {
+    if (authLoading || !user || activeIglesia) return undefined;
+
+    const role = getUserRole(user, userData);
+    if (!isSuperAdmin(role)) return undefined;
+
+    let cancelled = false;
+
+    fetchActiveIglesias().then(({ data, error }) => {
+      if (cancelled || error) return;
+      const iglesias = data || [];
+      if (iglesias.length !== 1) return;
+      const iglesia = iglesias[0];
+      setActiveIglesia(iglesia.id);
+      setActiveIglesiaTimezone(normalizeChurchTimezone(iglesia.timezone));
+      localStorage.setItem('activeIglesiaId', iglesia.id);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user, userData, activeIglesia]);
 
   useEffect(() => {
     if (!activeIglesia) {

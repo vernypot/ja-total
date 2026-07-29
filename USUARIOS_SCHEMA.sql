@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   apellido1 VARCHAR(255),
   apellido2 VARCHAR(255),
   rol VARCHAR(50) NOT NULL DEFAULT 'user', 
-  -- Roles: superadmin, admin, coordinator, member, user
+  -- Roles: superadmin, admin, advanced, coordinator, member, user
   estado VARCHAR(50) NOT NULL DEFAULT 'activo',
   -- Estados: activo, inactivo, suspendido
   foto TEXT,

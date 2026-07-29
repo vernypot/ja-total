@@ -259,13 +259,6 @@ export function useHomeController() {
     loadHomeData();
   }, [authLoading, effectiveIglesiaId, assignedIglesiaNombre, activeClub?.id, churchTz.timeZone, canManage]);
 
-  useEffect(() => {
-    if (authLoading || effectiveIglesiaId || !canSwitchIglesia || !iglesias.length) return;
-    if (iglesias.length === 1) {
-      updateActiveIglesia(iglesias[0].id, iglesias[0].timezone);
-    }
-  }, [authLoading, effectiveIglesiaId, canSwitchIglesia, iglesias, updateActiveIglesia]);
-
   return {
     authLoading,
     effectiveIglesiaId,

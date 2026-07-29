@@ -368,6 +368,7 @@ export default function EventosView({
   searchQuery,
   setSearchQuery,
   canManage,
+  canOperateEvents,
   iglesiaScopeReady,
   toggleEventExpand,
   toggleMemberSelection,
@@ -783,7 +784,7 @@ export default function EventosView({
                           )}
                         </div>
                         <HorizontalScrollRow className="event-list-card__actions">
-                          {canManage && isActive && !isExcluded && (
+                          {canOperateEvents && isActive && !isExcluded && (
                             <>
                               <EventActionButton
                                 tone="primary"
@@ -798,7 +799,7 @@ export default function EventosView({
                               >
                                 ▶ {t('scanAttendees')}
                               </EventActionButton>
-                              {canCombineEvent && (
+                              {canManage && canCombineEvent && (
                                 <EventActionButton
                                   tone="info"
                                   onClick={() => openMergeAttendance(evento.id)}
@@ -816,7 +817,7 @@ export default function EventosView({
                               )}
                             </>
                           )}
-                          {canManage && isActive && (
+                          {canOperateEvents && isActive && (
                             <EventActionButton tone="muted" onClick={() => confirmEndEvent(evento)}>
                               ⏹ {t('endEvent')}
                             </EventActionButton>
@@ -967,9 +968,9 @@ export default function EventosView({
                         ) : (
                           <>
                         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>
-                          {canManage ? t('manageAttendance') : t('attendanceList')}
+                          {canOperateEvents ? t('manageAttendance') : t('attendanceList')}
                         </h4>
-                        {canManage && (
+                        {canOperateEvents && (
                           <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
                             {needsConfirmation ? t('manageAttendanceHint') : t('manageAttendanceQrHint')}
                           </p>
@@ -1089,7 +1090,7 @@ export default function EventosView({
                             )}
                           </div>
                         )}
-                        {canManage && isActive && (
+                        {canOperateEvents && isActive && (
                           <div className="event-checkin-actions event-checkin-actions--inline">
                             <div className="event-start-scan-cta">
                               <p>{t('initializeEventHint')}</p>
@@ -1112,7 +1113,7 @@ export default function EventosView({
                                 ▶ {t('scanAttendees')}
                               </EventActionButton>
                             </div>
-                            {canCombineEvent && (
+                            {canManage && canCombineEvent && (
                               <div className="event-start-scan-cta">
                                 <p>{t('eventMergeHint')}</p>
                                 <EventActionButton tone="info" onClick={() => openMergeAttendance(evento.id)}>
@@ -1120,7 +1121,7 @@ export default function EventosView({
                                 </EventActionButton>
                               </div>
                             )}
-                            {evento.asistencia_grupo_id && (
+                            {canManage && evento.asistencia_grupo_id && (
                               <div className="event-start-scan-cta">
                                 <p>{t('eventMergedAttendanceHint')}</p>
                                 <EventActionButton tone="warning" onClick={() => unmergeAttendance(evento.id)}>
@@ -1135,7 +1136,7 @@ export default function EventosView({
                             {needsConfirmation ? t('noMembersAssignedToEvent') : t('eventQrAttendanceEmpty')}
                           </p>
                         ) : (
-                          <div className={`event-attendance-list${canManage ? '' : ' event-attendance-list--no-offset'}`}>
+                          <div className={`event-attendance-list${canOperateEvents ? '' : ' event-attendance-list--no-offset'}`}>
                             {rows.map(row => {
                               const checkedInAt = getCheckedInAtFromRow(row);
                               const confirmacion = getConfirmacionFromRow(row);
@@ -1166,7 +1167,7 @@ export default function EventosView({
                                         eventoMiembroId={row.id}
                                         eventoId={evento.id}
                                         current={confirmacion}
-                                        canManage={canManage}
+                                        canManage={canOperateEvents}
                                         onSet={setConfirmation}
                                         confirmBeforeSet={buildConfirmBeforeConfirmation(eventName, memberName)}
                                         t={t}
@@ -1179,7 +1180,7 @@ export default function EventosView({
                                       eventoMiembroId={row.id}
                                       eventoId={evento.id}
                                       current={getAsistenciaFromRow(row)}
-                                      canManage={canManage}
+                                      canManage={canOperateEvents}
                                       onSet={setAttendance}
                                       confirmBeforeSet={buildConfirmBeforeAttendance(eventName, memberName)}
                                       t={t}
