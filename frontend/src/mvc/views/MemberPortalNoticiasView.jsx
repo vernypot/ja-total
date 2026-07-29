@@ -1,5 +1,6 @@
 import PortalNewsListItem from '../../components/PortalNewsListItem';
 import '../../styles/home.css';
+import '../../styles/noticias.css';
 
 export default function MemberPortalNoticiasView({
   news,

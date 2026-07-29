@@ -7,6 +7,7 @@ import MemberEventConfirmationStatus from '../../components/MemberEventConfirmat
 import { confirmationLabel } from '../../i18n/helpers';
 import { useLanguage } from '../../hooks/useLanguage';
 import '../../styles/home.css';
+import '../../styles/noticias.css';
 import '../../styles/eventAttendance.css';
 
 function SectionHeader({ title, actionLabel, actionTo, onClear, clearLabel }) {

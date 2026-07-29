@@ -4,7 +4,7 @@ vi.mock('../../services/supabase', () => ({
   sb: {},
 }));
 
-import { isNoticiaExpired, isNoticiaVisible, normalizeExpiraEn } from './noticias.model';
+import { isNoticiaExpired, isNoticiaVisible, isPublicNoticia, normalizeExpiraEn } from './noticias.model';
 
 const activeNoticia = {
   estado: 'activo',
@@ -30,5 +30,25 @@ describe('noticias visibility', () => {
       ...activeNoticia,
       expira_en: '2026-06-10',
     }, { referenceDate: '2026-06-18' })).toBe(false);
+  });
+
+  it('allows public direct links only for general audience on public surfaces', () => {
+    expect(isPublicNoticia({
+      ...activeNoticia,
+      audience: 'general',
+      placements: ['dashboard'],
+    })).toBe(true);
+
+    expect(isPublicNoticia({
+      ...activeNoticia,
+      audience: 'church',
+      placements: ['dashboard'],
+    })).toBe(false);
+
+    expect(isPublicNoticia({
+      ...activeNoticia,
+      audience: 'general',
+      placements: ['newsletter'],
+    })).toBe(false);
   });
 });

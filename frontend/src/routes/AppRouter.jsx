@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "../pages/Landing";
+import PublicNoticia from "../pages/PublicNoticia";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import ResetPassword from "../pages/ResetPassword";
@@ -61,6 +62,7 @@ export default function AppRouter() {
       <RecoveryRedirect />
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/noticias/:id" element={<PublicNoticia />} />
         <Route path="/modulos" element={<SystemModules />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />

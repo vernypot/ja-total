@@ -4,12 +4,15 @@ import { ProgramLogo } from '../../components/landing/YouthClubIcons';
 import LandingHeroScreenshot, { resolveHeroScreenshot } from '../../components/landing/LandingHeroScreenshot';
 import LandingHeroSlide from '../../components/landing/LandingHeroSlide';
 import NoticiaBanner from '../../components/NoticiaBanner';
+import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
 import LandingInfoRequestModal from '../../components/landing/LandingInfoRequestModal';
 import { useLanguage } from '../../hooks/useLanguage';
+import { publicNoticiaPath } from '../../utils/dashboardRoutes';
 import { getSectionCopy, resolveSlideText, resolveProgramText, resolveStatText } from '../models/landingContent.model';
 import '../../styles/landing.css';
 import '../../styles/landingHeroScreenshot.css';
 import '../../styles/landingInfoRequest.css';
+import '../../styles/noticias.css';
 
 import { BRAND_MARK } from '../../constants/brand';
 
@@ -274,21 +277,50 @@ export default function LandingView({
               <p className="landing-section-text">{getSectionCopy(sections, 'news', 'body', language, t)}</p>
             </div>
             <div className="landing-news-grid">
-              {news.map(item => (
-                <article key={item.id} className="landing-news-card">
-                  <div className="landing-news-thumb">
-                    <ProgramLogo type="ministerios" className="landing-news-thumb-logo" language={language} />
-                  </div>
-                  <div className="landing-news-body">
-                    <div className="landing-news-meta">
-                      <span className="landing-news-category">{item.category}</span>
-                      <span>{formatDate(item.date)}</span>
+              {news.map(item => {
+                const noticiaPath = item.fromNoticia ? publicNoticiaPath(item.id) : null;
+
+                return (
+                  <article key={item.id} className="landing-news-card">
+                    {item.fromNoticia ? (
+                      (item.desktopUrl || item.mobileUrl) ? (
+                        <Link to={noticiaPath} className="landing-news-card__media-link">
+                          <NoticiaFeaturedImage
+                            desktopUrl={item.desktopUrl}
+                            mobileUrl={item.mobileUrl}
+                            className="landing-news-card__featured"
+                          />
+                        </Link>
+                      ) : null
+                    ) : (
+                      <div className="landing-news-thumb">
+                        <ProgramLogo type="ministerios" className="landing-news-thumb-logo" language={language} />
+                      </div>
+                    )}
+                    <div className="landing-news-body">
+                      <div className="landing-news-meta">
+                        <span className="landing-news-category">{item.category}</span>
+                        <span>{formatDate(item.date)}</span>
+                      </div>
+                      {noticiaPath ? (
+                        <h3>
+                          <Link to={noticiaPath} className="landing-news-card__title-link">
+                            {item.title}
+                          </Link>
+                        </h3>
+                      ) : (
+                        <h3>{item.title}</h3>
+                      )}
+                      <p className="landing-news-excerpt">{item.excerpt}</p>
+                      {noticiaPath && (
+                        <Link to={noticiaPath} className="landing-news-read-more">
+                          {t('portalReadNews')}
+                        </Link>
+                      )}
                     </div>
-                    <h3>{item.title}</h3>
-                    <p>{item.excerpt}</p>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
