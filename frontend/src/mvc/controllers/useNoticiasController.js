@@ -15,7 +15,8 @@ import { DEFAULT_NOTICIA_AUDIENCE, normalizeAudience } from '../../constants/not
 import { NOTICIA_FEATURED_VARIANTS } from '../../constants/noticiaFeaturedImage';
 import * as ClubesModel from '../models/clubes.model';
 
-const emptyForm = () => ({
+const emptyForm = (iglesiaId = '') => ({
+  iglesia_id: iglesiaId,
   titulo: '',
   resumen: '',
   contenido: '',
@@ -38,12 +39,14 @@ const emptyPendingFeaturedImages = () => ({
 export function useNoticiasController() {
   const { user, userData } = useContext(AuthContext);
   const { language, t } = useLanguage();
-  const { effectiveIglesiaId, assignedIglesiaNombre } = useScopedIglesia();
+  const { effectiveIglesiaId, assignedIglesiaNombre, isSuperAdmin } = useScopedIglesia();
   const userRole = getUserRole(user, userData);
   const canManage = canManageChurchData(userRole);
 
   const [items, setItems] = useState([]);
   const [clubs, setClubs] = useState([]);
+  const [formClubs, setFormClubs] = useState([]);
+  const [iglesias, setIglesias] = useState([]);
   const [iglesiaNombre, setIglesiaNombre] = useState(assignedIglesiaNombre || '');
   const [showForm, setShowForm] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
@@ -81,14 +84,29 @@ export function useNoticiasController() {
     setLoading(true);
     setError('');
 
-    const [{ data: iglesia }, { data: clubData }, { data, error: queryError }] = await Promise.all([
+    const fetchNoticias = isSuperAdmin
+      ? NoticiasModel.fetchSuperadminNoticiasByIglesia
+      : NoticiasModel.fetchNoticiasByIglesia;
+
+    const requests = [
       IglesiasModel.fetchIglesiaById(effectiveIglesiaId),
       ClubesModel.fetchClubesByIglesia(effectiveIglesiaId),
-      NoticiasModel.fetchNoticiasByIglesia(effectiveIglesiaId, { showInactive }),
-    ]);
+      fetchNoticias(effectiveIglesiaId, { showInactive }),
+    ];
+
+    if (isSuperAdmin) {
+      requests.push(IglesiasModel.fetchIglesias({ showInactive: true }));
+    }
+
+    const results = await Promise.all(requests);
+    const [{ data: iglesia }, { data: clubData }, { data, error: queryError }] = results;
+    const iglesiasResult = isSuperAdmin ? results[3] : null;
 
     setIglesiaNombre(iglesia?.nombre || assignedIglesiaNombre || '');
     setClubs(clubData || []);
+    if (isSuperAdmin) {
+      setIglesias(iglesiasResult?.data || []);
+    }
 
     if (queryError) {
       setError(queryError.message);
@@ -102,7 +120,7 @@ export function useNoticiasController() {
 
   function openCreateForm() {
     setEditingId('');
-    setForm(emptyForm());
+    setForm(emptyForm(effectiveIglesiaId || ''));
     setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
     setShowForm(true);
   }
@@ -111,6 +129,7 @@ export function useNoticiasController() {
     setShowForm(false);
     setEditingId('');
     setForm(emptyForm());
+    setFormClubs([]);
     setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
   }
 
@@ -118,6 +137,7 @@ export function useNoticiasController() {
     setEditingId(item.id);
     setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
     setForm({
+      iglesia_id: item.iglesia_id || effectiveIglesiaId || '',
       titulo: item.titulo || '',
       resumen: item.resumen || '',
       contenido: item.contenido || '',
@@ -179,7 +199,8 @@ export function useNoticiasController() {
   }
 
   async function save() {
-    if (!effectiveIglesiaId) return;
+    const targetIglesiaId = isSuperAdmin ? form.iglesia_id : effectiveIglesiaId;
+    if (!targetIglesiaId) return;
 
     const validation = validateForm('noticia', form, t);
     setFieldErrors(validation.fieldErrors);
@@ -198,7 +219,7 @@ export function useNoticiasController() {
 
     const { data, error: saveError } = await NoticiasModel.saveNoticia({
       id: editingId || null,
-      iglesiaId: effectiveIglesiaId,
+      iglesiaId: targetIglesiaId,
       titulo: form.titulo,
       resumen: form.resumen,
       contenido: form.contenido,
@@ -265,12 +286,36 @@ export function useNoticiasController() {
 
   useEffect(() => {
     load();
-  }, [effectiveIglesiaId, showInactive]);
+  }, [effectiveIglesiaId, showInactive, isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin || !showForm) {
+      setFormClubs([]);
+      return;
+    }
+
+    const iglesiaId = form.iglesia_id || effectiveIglesiaId;
+    if (!iglesiaId) {
+      setFormClubs([]);
+      return;
+    }
+
+    let cancelled = false;
+    ClubesModel.fetchClubesByIglesia(iglesiaId).then(({ data }) => {
+      if (!cancelled) setFormClubs(data || []);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdmin, showForm, form.iglesia_id, effectiveIglesiaId]);
 
   return {
     effectiveIglesiaId,
     iglesiaNombre,
-    clubs,
+    isSuperAdmin,
+    iglesias,
+    clubs: isSuperAdmin && showForm ? formClubs : clubs,
     items: paginatedItems,
     listPagination,
     showForm,

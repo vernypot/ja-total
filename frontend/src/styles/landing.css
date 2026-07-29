@@ -129,13 +129,12 @@
   transition: color 0.2s;
 }
 
-.landing-nav-info-link,
 .landing-footer-link-btn {
   border: none;
   background: none;
   padding: 0;
   font: inherit;
-  color: inherit;
+  color: var(--lp-on-dark-muted);
   cursor: pointer;
   text-decoration: none;
   font-size: 0.9375rem;
@@ -143,22 +142,9 @@
   transition: color 0.2s;
 }
 
-.landing-nav-info-link {
-  color: var(--lp-navy);
-}
-
-.landing-nav-info-link:hover,
-.landing-footer-link-btn:hover {
-  color: var(--lp-teal-dark);
-  text-decoration: underline;
-}
-
-.landing-footer-link-btn {
-  color: var(--lp-on-dark-muted);
-}
-
 .landing-footer-link-btn:hover {
   color: var(--lp-gold-light);
+  text-decoration: underline;
 }
 
 .landing-nav a:hover {
@@ -194,6 +180,31 @@
 
 .landing-btn:hover {
   transform: translateY(-1px);
+}
+
+a.landing-btn:hover,
+a.landing-btn:focus-visible {
+  text-decoration: none;
+}
+
+a.landing-btn-primary:hover,
+a.landing-btn-primary:focus-visible {
+  color: var(--lp-white);
+}
+
+a.landing-btn-gold:hover,
+a.landing-btn-gold:focus-visible {
+  color: var(--lp-navy-dark);
+}
+
+a.landing-btn-outline:hover,
+a.landing-btn-outline:focus-visible {
+  color: var(--lp-navy);
+}
+
+a.landing-btn-outline-on-dark:hover,
+a.landing-btn-outline-on-dark:focus-visible {
+  color: var(--lp-on-dark);
 }
 
 .landing-btn-primary {

@@ -141,6 +141,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.portal-profile-tabs--desktop a.active:hover,
+.portal-profile-tabs--desktop a.active:focus-visible {
+  color: var(--white);
+}
+
 .portal-profile-tab-select {
   display: flex;
   flex-direction: column;

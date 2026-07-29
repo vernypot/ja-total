@@ -91,11 +91,15 @@ html[data-ui-theme='clear'] .btn-primary {
   box-shadow: none;
 }
 
-html[data-ui-theme='clear'] .btn-primary:hover:not(:disabled) {
+html[data-ui-theme='clear'] .btn-primary:hover:not(:disabled),
+html[data-ui-theme='clear'] a.btn-primary:hover:not(:disabled),
+html[data-ui-theme='clear'] a.btn-primary:focus-visible {
   background: var(--blix-accent-dark);
   transform: none;
   filter: none;
   box-shadow: none;
+  color: var(--blix-text-dark);
+  text-decoration: none;
 }
 
 html[data-ui-theme='clear'] .btn-secondary {

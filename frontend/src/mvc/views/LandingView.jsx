@@ -91,9 +91,15 @@ export default function LandingView({
               {show('programs') && <Link to="/modulos">{t('landingNavModules')}</Link>}
               {show('events') && <a href="#eventos">{t('landingNavEvents')}</a>}
               {show('news') && <a href="#noticias">{t('landingNavNews')}</a>}
-              <button type="button" className="landing-nav-info-link" onClick={openInfoModal}>
-                {infoCtaLabel}
-              </button>
+              <a
+                href="#informacion"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openInfoModal();
+                }}
+              >
+                {t('landingNavInfoRequest')}
+              </a>
             </div>
           </nav>
 
@@ -327,7 +333,7 @@ export default function LandingView({
       )}
 
       {show('cta') && (
-        <section className="landing-cta" style={sectionStyle(sections.cta)}>
+        <section id="informacion" className="landing-cta" style={sectionStyle(sections.cta)}>
           <div className="landing-cta-inner">
             <div>
               <h2>{getSectionCopy(sections, 'cta', 'title', language, t)}</h2>

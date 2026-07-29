@@ -155,6 +155,15 @@
   color: var(--color-badge-warning);
 }
 
+.noticia-owner-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--info-light);
+  color: var(--color-badge-info);
+}
+
 .noticia-form-grid {
   display: grid;
   gap: 16px;

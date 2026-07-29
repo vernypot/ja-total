@@ -20,7 +20,7 @@ import {
 
 const NOTICIA_IMAGES_BUCKET = 'noticia-imagenes';
 
-const NOTICIA_SELECT_WITH_IMAGE = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,imagen_destacada_url,imagen_destacada_mobile_url,created_at,updated_at,clubes(id,nombre,tipos_club(id,nombre))';
+const NOTICIA_SELECT_WITH_IMAGE = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,imagen_destacada_url,imagen_destacada_mobile_url,created_at,updated_at,iglesias(nombre),clubes(id,nombre,tipos_club(id,nombre))';
 const NOTICIA_SELECT_WITH_EXPIRA = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,expira_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre,tipos_club(id,nombre))';
 const NOTICIA_SELECT_LEGACY = 'id,iglesia_id,club_id,titulo,resumen,contenido,publicado_en,estado,categoria,placements,audience,created_at,updated_at,clubes(id,nombre)';
 
@@ -66,6 +66,7 @@ function normalizeNoticiaRow(row) {
     expira_en: normalizeExpiraEn(row.expira_en),
     placements: normalizePlacements(row.placements, { allowEmpty: true }),
     audience: normalizeAudience(row.audience),
+    iglesia_nombre: row.iglesias?.nombre || row.iglesia_nombre || '',
     club_nombre: row.clubes?.nombre || row.club_nombre || '',
     imagen_destacada_url: row.imagen_destacada_url || '',
     imagen_destacada_mobile_url: row.imagen_destacada_mobile_url || '',
@@ -113,6 +114,23 @@ export async function fetchNoticiasByIglesia(iglesiaId, { showInactive = false, 
     if (!showInactive) query = query.eq('estado', 'activo');
     query = applyPlacementsFilter(query, placements);
     if (limit) query = query.limit(limit);
+    return query;
+  });
+}
+
+/** Superadmin listing: selected church news plus platform-wide general audience items. */
+export async function fetchSuperadminNoticiasByIglesia(iglesiaId, { showInactive = false } = {}) {
+  if (!iglesiaId) return { data: [], error: null };
+
+  return queryNoticias(select => {
+    let query = sb
+      .from('noticias')
+      .select(select)
+      .or(`iglesia_id.eq.${iglesiaId},audience.eq.general`)
+      .order('publicado_en', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (!showInactive) query = query.eq('estado', 'activo');
     return query;
   });
 }

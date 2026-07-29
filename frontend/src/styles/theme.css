@@ -271,10 +271,14 @@ a:hover {
   box-shadow: var(--shadow-md), 0 0 0 4px var(--color-focus-ring-shadow);
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled),
+a.btn-primary:hover:not(:disabled),
+a.btn-primary:focus-visible {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
   filter: brightness(1.05);
+  color: var(--color-on-primary);
+  text-decoration: none;
 }
 
 .btn-secondary {
@@ -283,9 +287,13 @@ a:hover {
   border: 2px solid var(--gray-400);
 }
 
-.btn-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled),
+a.btn-secondary:hover:not(:disabled),
+a.btn-secondary:focus-visible {
   background: var(--gray-300);
   border-color: var(--gray-500);
+  color: var(--color-text-primary);
+  text-decoration: none;
 }
 
 .btn-secondary:focus-visible {
@@ -298,8 +306,12 @@ a:hover {
   color: var(--color-on-primary);
 }
 
-.btn-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled),
+a.btn-danger:hover:not(:disabled),
+a.btn-danger:focus-visible {
   background: #9a3412;
+  color: var(--color-on-primary);
+  text-decoration: none;
 }
 
 .btn-success {
@@ -307,8 +319,12 @@ a:hover {
   color: var(--color-on-primary);
 }
 
-.btn-success:hover:not(:disabled) {
+.btn-success:hover:not(:disabled),
+a.btn-success:hover:not(:disabled),
+a.btn-success:focus-visible {
   background: #3f6212;
+  color: var(--color-on-primary);
+  text-decoration: none;
 }
 
 .btn-edit {
@@ -316,8 +332,12 @@ a:hover {
   color: var(--color-on-primary);
 }
 
-.btn-edit:hover:not(:disabled) {
+.btn-edit:hover:not(:disabled),
+a.btn-edit:hover:not(:disabled),
+a.btn-edit:focus-visible {
   background: #1e3a8a;
+  color: var(--color-on-primary);
+  text-decoration: none;
 }
 
 .btn-danger:focus-visible,
