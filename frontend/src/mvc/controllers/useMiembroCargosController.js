@@ -107,6 +107,7 @@ export function useMiembroCargosController(miembroId) {
     setFieldErrors({});
     setEditingId(null);
     setShowForm(false);
+    setError('');
   }
 
   function defaultClubId() {

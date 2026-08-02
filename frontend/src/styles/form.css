@@ -61,6 +61,30 @@
   color: var(--gray-600);
 }
 
+.club-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.club-list-row__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 9.5rem;
+}
+
+.club-list-row__action {
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.club-list-row__actions .club-actions-menu-trigger {
+  width: 100%;
+}
+
 .club-list-item {
   padding: 15px;
   border: 1px solid var(--gray-200, #e5e7eb);
@@ -71,6 +95,25 @@
   background-color: var(--white, #fff);
   transition: all 0.2s;
   min-width: 0;
+}
+
+.club-list-item--selectable {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.club-list-item--selectable:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.club-list-item__select-label {
+  font-weight: 600;
+}
+
+.club-list-item__select-label--active {
+  color: #2563eb;
 }
 
 .club-list-item--active {
@@ -129,7 +172,65 @@
   max-width: 100%;
 }
 
+@media (min-width: 769px) {
+  .club-list-item--selectable:not(.club-list-item--active):hover {
+    border-color: #0891b2;
+    background-color: #f0f9ff;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .club-list-item--selectable.club-list-item--active:hover {
+    border-color: #1d4ed8;
+    background-color: #bfdbfe;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .club-list-item__select-label:not(.club-list-item__select-label--active),
+  .club-list-item__select-sep {
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease;
+  }
+
+  .club-list-item__select-label:not(.club-list-item__select-label--active) {
+    color: #0891b2;
+  }
+
+  .club-list-item--selectable:hover .club-list-item__select-label:not(.club-list-item__select-label--active),
+  .club-list-item--selectable:hover .club-list-item__select-sep {
+    opacity: 1;
+  }
+
+  .club-list-item--selectable:hover .club-list-item__select-label:not(.club-list-item__select-label--active) {
+    color: #0e7490;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .club-list-item--selectable:hover .club-list-item__select-label--active {
+    color: #1d4ed8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
 @media (max-width: 768px) {
+  .club-list-row {
+    grid-template-columns: 1fr;
+  }
+
+  .club-list-row__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .club-list-row__action {
+    flex: 1 1 auto;
+  }
+
   .club-list-item__head {
     flex-direction: column;
     align-items: stretch;

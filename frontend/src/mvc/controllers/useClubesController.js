@@ -36,10 +36,11 @@ export function useClubesController() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingClubId, setEditingClubId] = useState(null);
   const [clubForm, setClubForm] = useState({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
   const [tipos, setTipos] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [logoUploading, setLogoUploading] = useState({ clubId: '', kind: '' });
   const [clubStats, setClubStats] = useState({});
 
   const filteredData = useMemo(
@@ -133,6 +134,62 @@ export function useClubesController() {
     load();
   }
 
+  function resetEditForm() {
+    setEditingClubId(null);
+    setShowEditForm(false);
+    setFieldErrors({});
+    setError('');
+    setClubForm({ nombre: '', iglesia_id: iglesiaId || '', tipo_id: '' });
+  }
+
+  function startEditClub(club) {
+    if (!canManage) return;
+    setError('');
+    setFieldErrors({});
+    setEditingClubId(club.id);
+    setClubForm({
+      nombre: club.nombre || '',
+      iglesia_id: club.iglesia_id || iglesiaId || '',
+      tipo_id: club.tipo_id || '',
+    });
+    setShowEditForm(true);
+  }
+
+  async function saveEditClub() {
+    if (!canManage || !editingClubId) return;
+    setError('');
+
+    const validation = validateForm('club', {
+      nombre: clubForm.nombre,
+      iglesia_id: clubForm.iglesia_id || iglesiaId,
+    }, t);
+    setFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError || validation.formError);
+      return;
+    }
+
+    const targetIglesiaId = canSwitchIglesia ? (clubForm.iglesia_id || iglesiaId) : iglesiaId;
+    const { error: saveError } = await ClubesModel.updateClub(editingClubId, {
+      nombre: clubForm.nombre.trim(),
+      iglesia_id: targetIglesiaId,
+      tipo_id: clubForm.tipo_id,
+    });
+
+    if (saveError) {
+      setError('Error guardando club: ' + saveError.message);
+      return;
+    }
+
+    if (activeClub?.id === editingClubId) {
+      const { data: updatedClub } = await ClubesModel.fetchClubById(editingClubId);
+      if (updatedClub) updateActiveClub(updatedClub);
+    }
+
+    resetEditForm();
+    load();
+  }
+
   async function toggleEstado(club) {
     if (!canManage) return;
     setError('');
@@ -145,7 +202,7 @@ export function useClubesController() {
         return;
       }
       if (dep?.length > 0) {
-        alert('No se puede desactivar. Tiene miembros asignados.');
+        setError(t('clubCannotDeactivateHasMembers'));
         return;
       }
     }
@@ -183,66 +240,16 @@ export function useClubesController() {
     navigate(`/dashboard/club-directiva?club=${clubId}`);
   }
 
+  function navigateToDetalle(club) {
+    if (club) updateActiveClub(club);
+    const churchId = club?.iglesia_id || iglesiaId;
+    const query = churchId ? `?iglesia=${churchId}` : '';
+    navigate(`/dashboard/clubes/${club.id}${query}`);
+  }
+
   function selectClub(club) {
     if (!canSwitchIglesia && club.iglesia_id && club.iglesia_id !== effectiveIglesiaId) return;
     updateActiveClub(club);
-  }
-
-  async function handleClubLogoUpload(clubId, file) {
-    if (!canManage) return;
-    setError('');
-    setLogoUploading({ clubId, kind: 'club' });
-    const { error: uploadError, errorStage } = await ClubesModel.uploadClubLogo(clubId, file);
-    setLogoUploading({ clubId: '', kind: '' });
-    if (uploadError) {
-      const prefix = errorStage === 'database' ? 'Error saving club logo: ' : 'Error uploading club logo: ';
-      setError(prefix + uploadError.message);
-      return;
-    }
-    load();
-  }
-
-  async function handleClubLogoRemove(club) {
-    if (!canManage) return;
-    setError('');
-    setLogoUploading({ clubId: club.id, kind: 'club' });
-    const { error: removeError } = await ClubesModel.removeClubLogo(club.id, club.logo_url);
-    setLogoUploading({ clubId: '', kind: '' });
-    if (removeError) {
-      setError('Error removing club logo: ' + removeError.message);
-      return;
-    }
-    load();
-  }
-
-  async function handleTipoLogoUpload(club, file) {
-    if (!canManage || !club.tipo_id) return;
-    setError('');
-    setLogoUploading({ clubId: club.id, kind: 'tipo' });
-    const { error: uploadError, errorStage } = await ClubesModel.uploadTipoClubLogo(club.tipo_id, file);
-    setLogoUploading({ clubId: '', kind: '' });
-    if (uploadError) {
-      const prefix = errorStage === 'database' ? 'Error saving type logo: ' : 'Error uploading type logo: ';
-      setError(prefix + uploadError.message);
-      return;
-    }
-    load();
-  }
-
-  async function handleTipoLogoRemove(club) {
-    if (!canManage || !club.tipo_id) return;
-    setError('');
-    setLogoUploading({ clubId: club.id, kind: 'tipo' });
-    const { error: removeError } = await ClubesModel.removeTipoClubLogo(
-      club.tipo_id,
-      club.tipos_club?.logo_url
-    );
-    setLogoUploading({ clubId: '', kind: '' });
-    if (removeError) {
-      setError('Error removing type logo: ' + removeError.message);
-      return;
-    }
-    load();
   }
 
   useEffect(() => {
@@ -272,22 +279,23 @@ export function useClubesController() {
     loading,
     showForm,
     setShowForm,
+    showEditForm,
+    editingClubId,
     clubForm,
     setClubForm,
     tipos,
     addClub,
+    startEditClub,
+    saveEditClub,
+    resetEditForm,
     toggleEstado,
     navigateToMiembros,
     navigateToEventos,
     navigateToDirectiva,
     navigateToUnidades,
+    navigateToDetalle,
     selectClub,
     activeClub,
     clubStats,
-    logoUploading,
-    handleClubLogoUpload,
-    handleClubLogoRemove,
-    handleTipoLogoUpload,
-    handleTipoLogoRemove,
   };
 }

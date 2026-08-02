@@ -3,7 +3,6 @@ import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, isSuperAdmin } from '../../utils/permissions';
 import { filterBySearch } from '../../utils/listSearch';
-import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as CargosModel from '../models/cargos.model';
@@ -27,7 +26,7 @@ export function useCargosCatalogController() {
   const [tipos, setTipos] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [tipoFilter, setTipoFilter] = useState('');
-  const [showAllTypes, setShowAllTypes] = useState(false);
+  const [showAllTypes, setShowAllTypes] = useState(true);
   const [showInactive, setShowInactive] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
@@ -43,20 +42,16 @@ export function useCargosCatalogController() {
     if (effectiveTipoId) {
       rows = CargosModel.filterCargosByTipo(rows, [effectiveTipoId]);
     }
-    return filterBySearch(rows, searchQuery, c => [
+    const searched = filterBySearch(rows, searchQuery, c => [
       c.nombre,
       c.codigo,
       c.descripcion,
       c.tipos_club?.nombre,
     ]);
+    return CargosModel.includeCargoAncestors(data, searched);
   }, [data, effectiveTipoId, searchQuery]);
 
   const tree = useMemo(() => CargosModel.buildCargoTree(filteredData), [filteredData]);
-
-  const {
-    pageItems: paginatedTree,
-    ...listPagination
-  } = useListPagination(tree, [searchQuery, showInactive, effectiveTipoId]);
 
   const parentOptions = useMemo(() => {
     const exclude = editingId
@@ -84,11 +79,6 @@ export function useCargosCatalogController() {
 
     setData(rows || []);
     setTipos(tiposData || []);
-
-    if (!expandedIds.size && rows?.length) {
-      const roots = rows.filter(c => !c.parent_id).map(c => c.id);
-      setExpandedIds(new Set(roots));
-    }
   }
 
   function resetForm() {
@@ -96,6 +86,7 @@ export function useCargosCatalogController() {
     setFieldErrors({});
     setEditingId(null);
     setShowForm(false);
+    setError('');
   }
 
   function startCreate(parentId = '') {
@@ -182,9 +173,12 @@ export function useCargosCatalogController() {
     load();
   }, [showInactive]);
 
+  useEffect(() => {
+    setExpandedIds(CargosModel.collectCargoExpandableIds(filteredData));
+  }, [filteredData]);
+
   return {
-    tree: paginatedTree,
-    listPagination,
+    tree,
     filteredData,
     tipos,
     form,

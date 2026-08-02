@@ -76,6 +76,34 @@ html[data-ui-theme='dark'] .club-list-item--active {
   background-color: rgba(117, 134, 254, 0.15);
 }
 
+@media (min-width: 769px) {
+  html[data-ui-theme='dark'] .club-list-item--selectable:not(.club-list-item--active):hover {
+    border-color: #67e8f9;
+    background-color: rgba(103, 232, 249, 0.08);
+  }
+
+  html[data-ui-theme='dark'] .club-list-item--selectable.club-list-item--active:hover {
+    border-color: #a5b4fc;
+    background-color: rgba(117, 134, 254, 0.22);
+  }
+
+  html[data-ui-theme='dark'] .club-list-item__select-label:not(.club-list-item__select-label--active) {
+    color: #67e8f9;
+  }
+
+  html[data-ui-theme='dark'] .club-list-item--selectable:hover .club-list-item__select-label:not(.club-list-item__select-label--active) {
+    color: #a5f3fc;
+  }
+
+  html[data-ui-theme='dark'] .club-list-item__select-label--active {
+    color: #a5b4fc;
+  }
+
+  html[data-ui-theme='dark'] .club-list-item--selectable:hover .club-list-item__select-label--active {
+    color: #c4cbff;
+  }
+}
+
 html[data-ui-theme='dark'] .club-list-item__type-badge {
   background-color: rgba(117, 134, 254, 0.2);
   color: #c4cbff;

@@ -12,6 +12,7 @@ import Unidades from "../pages/Unidades";
 import BloquesCompletados from "../pages/BloquesCompletados";
 import Iglesias from "../pages/Iglesias";
 import Clubes from "../pages/Clubes";
+import ClubDetalle from "../pages/ClubDetalle";
 import Eventos from "../pages/Eventos";
 import TiposEvento from "../pages/TiposEvento";
 import Distinciones from "../pages/Distinciones";
@@ -98,6 +99,7 @@ export default function AppRouter() {
           <Route path="iglesias" element={<StaffOnlyRoute element={<AdminRoute element={<Iglesias />} />} />} />
           <Route path="estructura" element={<StaffOnlyRoute element={<SuperAdminRoute element={<EstructuraOrganizacional />} />} />} />
           <Route path="contactos" element={<StaffOnlyRoute element={<Contactos />} />} />
+          <Route path="clubes/:clubId" element={<StaffOnlyRoute element={<ClubDetalle />} />} />
           <Route path="clubes" element={<StaffOnlyRoute element={<Clubes />} />} />
           <Route path="club-directiva" element={<StaffOnlyRoute element={<ClubDirectiva />} />} />
           <Route

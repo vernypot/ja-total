@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { estadoLabel } from '../../i18n/helpers';
 import { clubDisplayName } from '../../utils/club';
 import { PageHelpLink } from '../../components/PageHelp';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
-import LogoAssetField from '../../components/LogoAssetField';
-import HorizontalScrollRow from '../../components/HorizontalScrollRow';
 import FormField from '../../components/FormField';
+import FormModal from '../../components/FormModal';
+import ClubListActionsModal, { ClubListOverflowTrigger } from '../../components/ClubListActionsModal';
 import { ChurchOrgPath } from '../../components/ChurchOrgFields';
 import { iglesiaHierarchyLabel } from '../../mvc/models/iglesias.model';
 import '../../styles/form.css';
@@ -29,35 +30,44 @@ export default function ClubesView({
   loading,
   showForm,
   setShowForm,
+  showEditForm,
   clubForm,
   setClubForm,
   tipos,
   addClub,
+  startEditClub,
+  saveEditClub,
+  resetEditForm,
   toggleEstado,
   navigateToMiembros,
   navigateToEventos,
   navigateToDirectiva,
   navigateToUnidades,
+  navigateToDetalle,
   selectClub,
   clubStats = {},
-  logoUploading,
-  handleClubLogoUpload,
-  handleClubLogoRemove,
-  handleTipoLogoUpload,
-  handleTipoLogoRemove,
   listPagination,
 }) {
   const { t } = useLanguage();
   const isSearching = searchQuery.trim().length > 0;
-  const [logosVisibleIds, setLogosVisibleIds] = useState(() => new Set());
+  const [menuClub, setMenuClub] = useState(null);
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
 
-  function toggleRowLogos(clubId) {
-    setLogosVisibleIds(prev => {
-      const next = new Set(prev);
-      if (next.has(clubId)) next.delete(clubId);
-      else next.add(clubId);
-      return next;
-    });
+  function handleToggleEstado(club) {
+    if (club.estado === 'activo') {
+      askConfirm({
+        title: t('confirmDeactivateClubTitle'),
+        message: t('confirmDeactivateClubMessage'),
+        highlight: clubDisplayName(club),
+        confirmLabel: t('deactivate'),
+        onConfirm: () => toggleEstado(club),
+      });
+      return;
+    }
+    toggleEstado(club);
   }
 
   return (
@@ -98,7 +108,7 @@ export default function ClubesView({
         )}
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && !showEditForm && <div className="alert alert-error">{error}</div>}
       {!iglesiaScopeReady && (
         <div className="alert alert-error">{t('noActiveIglesiaAssignment')}</div>
       )}
@@ -156,6 +166,88 @@ export default function ClubesView({
           </div>
         )}
 
+        <FormModal
+          open={showEditForm && canManage}
+          title={t('editClub')}
+          onClose={resetEditForm}
+        >
+          {error && <div className="alert alert-error">{error}</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <FormField label={t('name')} htmlFor="edit-club-nombre" error={fieldErrors.nombre} required>
+              <input
+                id="edit-club-nombre"
+                type="text"
+                value={clubForm.nombre}
+                onChange={e => setClubForm({ ...clubForm, nombre: e.target.value })}
+                placeholder={t('clubName')}
+                className="form-input"
+                style={{ margin: 0 }}
+                aria-invalid={Boolean(fieldErrors.nombre)}
+              />
+            </FormField>
+            <FormField label={t('church')} htmlFor="edit-club-iglesia" error={fieldErrors.iglesia_id} required>
+              {canSelectIglesia ? (
+                <select
+                  id="edit-club-iglesia"
+                  value={clubForm.iglesia_id}
+                  onChange={e => setClubForm({ ...clubForm, iglesia_id: e.target.value })}
+                  className="form-input"
+                  style={{ margin: 0 }}
+                  aria-invalid={Boolean(fieldErrors.iglesia_id)}
+                >
+                  <option value="">{t('selectChurch')}</option>
+                  {iglesiasData.map(iglesia => (
+                    <option key={iglesia.id} value={iglesia.id}>{iglesia.nombre}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="form-input" style={{ margin: 0, backgroundColor: '#f3f4f6' }}>
+                  {activeIglesiaData?.nombre || '—'}
+                </div>
+              )}
+            </FormField>
+            <FormField label={t('clubType')} htmlFor="edit-club-tipo">
+              <select
+                id="edit-club-tipo"
+                value={clubForm.tipo_id}
+                onChange={e => setClubForm({ ...clubForm, tipo_id: e.target.value })}
+                className="form-input"
+                style={{ margin: 0 }}
+              >
+                <option value="">{t('selectType')}</option>
+                {tipos.map(tipo => (
+                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                ))}
+              </select>
+            </FormField>
+          </div>
+          <div className="form-modal__actions">
+            <button type="button" className="btn btn-primary" onClick={saveEditClub}>
+              {t('save')}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={resetEditForm}>
+              {t('cancel')}
+            </button>
+          </div>
+        </FormModal>
+
+        <ClubListActionsModal
+          open={Boolean(menuClub)}
+          club={menuClub}
+          onClose={() => setMenuClub(null)}
+          t={t}
+          canManage={canManage}
+          onEdit={startEditClub}
+          onDetalles={navigateToDetalle}
+          onMiembros={navigateToMiembros}
+          onUnidades={navigateToUnidades}
+          onDirectiva={navigateToDirectiva}
+          onEventos={navigateToEventos}
+          onToggleEstado={handleToggleEstado}
+        />
+
+        {confirmDialog}
+
         {loading ? (
           <div className="loading">{t('loadingClubs')}</div>
         ) : data.length === 0 ? (
@@ -170,47 +262,23 @@ export default function ClubesView({
               const stats = clubStats[c.id] || { memberCount: 0, boardCount: 0 };
               const memberCountLabel = t('clubMemberCount').replace('{{count}}', String(stats.memberCount));
               const boardCountLabel = t('clubBoardCount').replace('{{count}}', String(stats.boardCount));
-              const showRowLogos = logosVisibleIds.has(c.id);
 
               return (
-                <div
-                  key={c.id}
-                  className={`club-list-item hover-shadow${isActive ? ' club-list-item--active' : ''}`}
-                >
-                  <div className="club-list-item__head">
-                  <div className="club-list-item__body">
-                    {showRowLogos && (
-                      <div className="club-list-item__logos">
-                        <LogoAssetField
-                          label={tipoNombre
-                            ? t('clubTypeLogoNamed').replace('{type}', tipoNombre)
-                            : t('clubTypeLogo')}
-                          logoUrl={c.tipos_club?.logo_url}
-                          canManage={canManage && Boolean(c.tipo_id)}
-                          uploading={logoUploading.clubId === c.id && logoUploading.kind === 'tipo'}
-                          onUpload={file => handleTipoLogoUpload(c, file)}
-                          onRemove={() => handleTipoLogoRemove(c)}
-                          uploadLabel={t('uploadLogo')}
-                          changeLabel={t('changeLogo')}
-                          removeLabel={t('removeLogo')}
-                          emptyLabel={t('noLogo')}
-                          hint={c.tipo_id ? t('clubTypeLogoHint') : t('clubTypeLogoMissing')}
-                        />
-                        <LogoAssetField
-                          label={t('clubLocalLogo')}
-                          logoUrl={c.logo_url}
-                          canManage={canManage}
-                          uploading={logoUploading.clubId === c.id && logoUploading.kind === 'club'}
-                          onUpload={file => handleClubLogoUpload(c.id, file)}
-                          onRemove={() => handleClubLogoRemove(c)}
-                          uploadLabel={t('uploadLogo')}
-                          changeLabel={t('changeLogo')}
-                          removeLabel={t('removeLogo')}
-                          emptyLabel={t('noLogo')}
-                          hint={t('clubLocalLogoHint')}
-                        />
-                      </div>
-                    )}
+                <div key={c.id} className="club-list-row">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={`club-list-item club-list-item--selectable${isActive ? ' club-list-item--active' : ''}`}
+                    onClick={() => selectClub(c)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectClub(c);
+                      }
+                    }}
+                    aria-pressed={isActive}
+                    aria-label={`${t('select')}: ${c.nombre}`}
+                  >
                     <div className="club-list-item__meta">
                       <div className="club-list-item__title-row">
                         <strong>{c.nombre}</strong>
@@ -224,47 +292,41 @@ export default function ClubesView({
                         {estadoLabel(c.estado, t)}
                       </span>
                     </div>
+                    <div className="club-row-footer">
+                      <span>{memberCountLabel}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{boardCountLabel}</span>
+                      <span aria-hidden="true" className="club-list-item__select-sep">·</span>
+                      <span
+                        className={`club-list-item__select-label${isActive ? ' club-list-item__select-label--active' : ''}`}
+                      >
+                        {isActive ? `★ ${t('select')}` : t('select')}
+                      </span>
+                    </div>
                   </div>
-                  <HorizontalScrollRow className="club-list-item__actions">
+                  <div className="club-list-row__actions">
                     <button
                       type="button"
-                      onClick={() => toggleRowLogos(c.id)}
-                      className="btn btn-sm btn-secondary"
-                      aria-pressed={showRowLogos}
-                      aria-expanded={showRowLogos}
+                      className="btn btn-sm btn-edit club-list-row__action"
+                      onClick={() => navigateToMiembros(c.id)}
                     >
-                      {showRowLogos ? `🖼️ ${t('hideClubLogos')}` : `🖼️ ${t('showClubLogos')}`}
+                      👥 {t('membersBtn')}
                     </button>
                     <button
                       type="button"
-                      onClick={() => selectClub(c)}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: isActive ? '#1e40af' : '#0891b2',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                      }}
+                      className="btn btn-sm btn-edit club-list-row__action"
+                      onClick={() => navigateToUnidades(c.id)}
                     >
-                      ★ {t('select')}
+                      🧩 {t('unidadBtn')}
                     </button>
-                    <button type="button" onClick={() => navigateToMiembros(c.id)} className="btn btn-sm btn-edit">👥 {t('membersBtn')}</button>
-                    <button type="button" onClick={() => navigateToUnidades(c.id)} className="btn btn-sm btn-edit">🧩 {t('unidadBtn')}</button>
-                    <button type="button" onClick={() => navigateToDirectiva(c.id)} className="btn btn-sm btn-edit">🎖️ {t('directivaBtn')}</button>
-                    <button type="button" onClick={() => navigateToEventos(c.id)} className="btn btn-sm btn-edit">📅 {t('eventsBtn')}</button>
-                    {canManage && (
-                      <button type="button" onClick={() => toggleEstado(c)} className={`btn btn-sm ${c.estado === 'activo' ? 'btn-danger' : 'btn-success'}`}>
-                        {c.estado === 'activo' ? `❌ ${t('deactivate')}` : `✓ ${t('activate')}`}
-                      </button>
-                    )}
-                  </HorizontalScrollRow>
-                  </div>
-                  <div className="club-row-footer">
-                    <span>{memberCountLabel}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{boardCountLabel}</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-edit club-list-row__action"
+                      onClick={() => navigateToDirectiva(c.id)}
+                    >
+                      🎖️ {t('directivaBtn')}
+                    </button>
+                    <ClubListOverflowTrigger onClick={() => setMenuClub(c)} t={t} />
                   </div>
                 </div>
               );

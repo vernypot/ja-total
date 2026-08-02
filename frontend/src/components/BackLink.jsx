@@ -4,7 +4,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { ClubContext } from '../context/ClubContext';
 import { DASHBOARD_HOME_PATH } from '../utils/dashboardRoutes';
 
-export default function BackLink({ fallbackTo, className = 'page-back-link', labelKey = 'back' }) {
+export default function BackLink({ fallbackTo, onClick, className = 'page-back-link', labelKey = 'back' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -23,6 +23,10 @@ export default function BackLink({ fallbackTo, className = 'page-back-link', lab
       return '/dashboard/clubes';
     }
 
+    if (/^\/dashboard\/clubes\/[^/]+$/.test(location.pathname)) {
+      return '/dashboard/clubes';
+    }
+
     if (location.pathname.includes('/dashboard/unidades')) {
       return '/dashboard/clubes';
     }
@@ -31,6 +35,10 @@ export default function BackLink({ fallbackTo, className = 'page-back-link', lab
   }, [fallbackTo, location.pathname, params, activeClub?.id]);
 
   function handleClick() {
+    if (onClick) {
+      onClick();
+      return;
+    }
     if (location.key !== 'default') {
       navigate(-1);
       return;
