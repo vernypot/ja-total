@@ -70,6 +70,35 @@ export function filterCargosByTipo(cargos, tipoIds = []) {
   return (cargos || []).filter(c => !c.tipo_id || tipoIds.includes(c.tipo_id));
 }
 
+export function includeCargoAncestors(allCargos, subset) {
+  const catalog = allCargos || [];
+  const selected = subset || [];
+  if (!selected.length) return [];
+
+  const byId = new Map(catalog.map(c => [c.id, c]));
+  const included = new Set(selected.map(c => c.id));
+
+  for (const cargo of selected) {
+    let current = cargo.parent_id ? byId.get(cargo.parent_id) : null;
+    const seen = new Set();
+    while (current && !seen.has(current.id)) {
+      seen.add(current.id);
+      included.add(current.id);
+      current = current.parent_id ? byId.get(current.parent_id) : null;
+    }
+  }
+
+  return catalog.filter(c => included.has(c.id));
+}
+
+export function collectCargoExpandableIds(cargos) {
+  const parentIds = new Set();
+  for (const cargo of cargos || []) {
+    if (cargo.parent_id) parentIds.add(cargo.parent_id);
+  }
+  return parentIds;
+}
+
 export function buildCargoSortIndex(cargos) {
   const tree = buildCargoTree(cargos);
   const flat = flattenCargosForSelect(tree);

@@ -20,6 +20,8 @@ import '../../styles/noticias.css';
 export default function NoticiasView({
   effectiveIglesiaId,
   iglesiaNombre,
+  isSuperAdmin,
+  iglesias,
   clubs,
   items,
   showForm,
@@ -84,6 +86,11 @@ export default function NoticiasView({
               {t('churchLabel')}: <strong>{iglesiaNombre}</strong>
             </p>
           )}
+          {isSuperAdmin && (
+            <p style={{ margin: '6px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+              {t('noticiasSuperadminListingHint')}
+            </p>
+          )}
         </div>
         <div className="noticia-page-header-actions">
           <button
@@ -136,6 +143,29 @@ export default function NoticiasView({
               onRemove={handleFeaturedImageRemove}
               t={t}
             />
+            {isSuperAdmin && (
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {t('noticiasFieldOwnerChurch')}
+                </span>
+                <select
+                  className="form-input"
+                  value={form.iglesia_id || ''}
+                  onChange={e => setForm(f => ({
+                    ...f,
+                    iglesia_id: e.target.value,
+                    club_id: '',
+                  }))}
+                  style={{ margin: 0, maxWidth: '420px' }}
+                >
+                  <option value="">{t('noticiasFieldOwnerChurchPlaceholder')}</option>
+                  {iglesias.map(iglesia => (
+                    <option key={iglesia.id} value={iglesia.id}>{iglesia.nombre}</option>
+                  ))}
+                </select>
+                <small className="noticia-field-hint">{t('noticiasFieldOwnerChurchHint')}</small>
+              </label>
+            )}
             <NoticiaPlacementsField
               value={form.placements}
               onChange={placements => setForm(f => ({ ...f, placements }))}
@@ -258,6 +288,11 @@ export default function NoticiasView({
                       contentClassName="noticia-html--content"
                     />
                     <div className="noticia-item-badges">
+                      {isSuperAdmin && item.iglesia_nombre && (
+                        <span className="noticia-owner-badge">
+                          {t('churchLabel')}: {item.iglesia_nombre}
+                        </span>
+                      )}
                       <NoticiaAudienceBadge
                         audience={item.audience}
                         clubName={item.club_nombre}

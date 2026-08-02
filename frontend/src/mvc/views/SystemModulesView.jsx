@@ -39,9 +39,15 @@ export default function SystemModulesView({
             <div className="landing-nav-links">
               <Link to="/">{t('landingNavHome')}</Link>
               <span className="landing-nav-current">{t('systemModulesNav')}</span>
-              <button type="button" className="landing-nav-info-link" onClick={openInfoModal}>
-                {infoCtaLabel}
-              </button>
+              <a
+                href="/#informacion"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openInfoModal();
+                }}
+              >
+                {t('landingNavInfoRequest')}
+              </a>
             </div>
           </nav>
 

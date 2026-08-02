@@ -1,7 +1,7 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { estadoLabel } from '../../i18n/helpers';
 import ListSearchInput from '../../components/ListSearchInput';
-import ListPagination from '../../components/ListPagination';
+import FormModal from '../../components/FormModal';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
 import '../../styles/form.css';
@@ -138,7 +138,6 @@ export default function CargosCatalogView({
   toggleEstado,
   toggleExpanded,
   getCargoPath,
-  listPagination,
 }) {
   const { t } = useLanguage();
 
@@ -153,7 +152,7 @@ export default function CargosCatalogView({
         )}
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && !showForm && <div className="alert alert-error">{error}</div>}
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         <ListSearchInput value={searchQuery} onChange={setSearchQuery} placeholder={t('search')} />
@@ -180,83 +179,83 @@ export default function CargosCatalogView({
         </label>
       </div>
 
-      <ListPagination {...listPagination} />
-
-      {showForm && canManage && (
-        <div className="card" style={{ marginBottom: '20px' }}>
-          <h3>{editingId ? t('editCargo') : t('addCargo')}</h3>
-          <div className="form-grid">
-            <FormField label={t('name')} htmlFor="cargo-nombre" error={fieldErrors.nombre} required>
-              <input
-                id="cargo-nombre"
-                className="form-input"
-                value={form.nombre}
-                onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-              />
-            </FormField>
-            <FormField label={t('parentCargo')} htmlFor="cargo-parent">
-              <select
-                id="cargo-parent"
-                className="form-input"
-                value={form.parent_id}
-                onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
-              >
-                <option value="">{t('rootCargo')}</option>
-                {parentOptions.map(opt => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </FormField>
-            <FormField label={t('cargoCode')} htmlFor="cargo-codigo">
-              <input
-                id="cargo-codigo"
-                className="form-input"
-                value={form.codigo}
-                onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
-              />
-            </FormField>
-            <FormField label={t('clubType')} htmlFor="cargo-tipo">
-              <select
-                id="cargo-tipo"
-                className="form-input"
-                value={form.tipo_id}
-                onChange={e => setForm(f => ({ ...f, tipo_id: e.target.value }))}
-              >
-                <option value="">{t('allClubTypes')}</option>
-                {tipos.map(tipo => (
-                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                ))}
-              </select>
-            </FormField>
-            <FormField label={t('order')} htmlFor="cargo-orden">
-              <input
-                id="cargo-orden"
-                type="number"
-                className="form-input"
-                value={form.orden}
-                onChange={e => setForm(f => ({ ...f, orden: e.target.value }))}
-              />
-            </FormField>
-            <FormField label={t('description')} htmlFor="cargo-descripcion" className="form-grid-full">
-              <textarea
-                id="cargo-descripcion"
-                className="form-input"
-                rows={3}
-                value={form.descripcion}
-                onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-              />
-            </FormField>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            <button type="button" className="btn btn-primary" onClick={saveCargo}>
-              {t('save')}
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={resetForm}>
-              {t('cancel')}
-            </button>
-          </div>
+      <FormModal
+        open={showForm && canManage}
+        title={editingId ? t('editCargo') : t('addCargo')}
+        onClose={resetForm}
+      >
+        {error && <div className="alert alert-error">{error}</div>}
+        <div className="form-grid">
+          <FormField label={t('name')} htmlFor="cargo-nombre" error={fieldErrors.nombre} required>
+            <input
+              id="cargo-nombre"
+              className="form-input"
+              value={form.nombre}
+              onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+            />
+          </FormField>
+          <FormField label={t('parentCargo')} htmlFor="cargo-parent">
+            <select
+              id="cargo-parent"
+              className="form-input"
+              value={form.parent_id}
+              onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
+            >
+              <option value="">{t('rootCargo')}</option>
+              {parentOptions.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label={t('cargoCode')} htmlFor="cargo-codigo">
+            <input
+              id="cargo-codigo"
+              className="form-input"
+              value={form.codigo}
+              onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
+            />
+          </FormField>
+          <FormField label={t('clubType')} htmlFor="cargo-tipo">
+            <select
+              id="cargo-tipo"
+              className="form-input"
+              value={form.tipo_id}
+              onChange={e => setForm(f => ({ ...f, tipo_id: e.target.value }))}
+            >
+              <option value="">{t('allClubTypes')}</option>
+              {tipos.map(tipo => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label={t('order')} htmlFor="cargo-orden">
+            <input
+              id="cargo-orden"
+              type="number"
+              className="form-input"
+              value={form.orden}
+              onChange={e => setForm(f => ({ ...f, orden: e.target.value }))}
+            />
+          </FormField>
+          <FormField label={t('description')} htmlFor="cargo-descripcion" className="form-grid-full">
+            <textarea
+              id="cargo-descripcion"
+              className="form-input"
+              rows={3}
+              value={form.descripcion}
+              onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+            />
+          </FormField>
         </div>
-      )}
+        <div className="form-modal__actions">
+          <button type="button" className="btn btn-primary" onClick={saveCargo}>
+            {t('save')}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={resetForm}>
+            {t('cancel')}
+          </button>
+        </div>
+      </FormModal>
 
       {filteredData.length === 0 ? (
         <p className="text-muted">{t('noCargos')}</p>
@@ -279,7 +278,6 @@ export default function CargosCatalogView({
           ))}
         </div>
       )}
-      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
     </div>
   );
 }

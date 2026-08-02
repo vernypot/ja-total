@@ -4,6 +4,9 @@ import {
   extensionForImageFile,
   isRlsError,
 } from '../../utils/assets';
+import * as CargosModel from './cargos.model';
+import { fetchUnidadesByClub } from './unidades.model';
+import { fetchEventosByClub } from './eventos.model';
 
 const CLUB_LOGOS_BUCKET = 'club-logos';
 
@@ -156,11 +159,19 @@ export async function fetchClubesByIglesia(iglesiaId) {
 }
 
 export async function fetchClubById(clubId) {
-  return sb
-    .from('clubes')
-    .select('id, nombre, iglesia_id, tipo_id, logo_url, tipos_club(id, nombre, logo_url)')
-    .eq('id', clubId)
-    .single();
+  const select = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
+  const result = await sb.from('clubes').select(select).eq('id', clubId).single();
+  if (!result.error) return result;
+
+  if (/estado|created_at|Could not find/i.test(result.error.message || '')) {
+    return sb
+      .from('clubes')
+      .select('id,nombre,iglesia_id,tipo_id,logo_url,tipos_club(id,nombre,logo_url)')
+      .eq('id', clubId)
+      .single();
+  }
+
+  return result;
 }
 
 export async function fetchClubesByIds(clubIds) {
@@ -186,10 +197,46 @@ export async function createClub({ nombre, iglesia_id, tipo_id }) {
   }]);
 }
 
+export async function updateClub(id, { nombre, iglesia_id, tipo_id }) {
+  return sb.from('clubes').update({
+    nombre,
+    iglesia_id,
+    tipo_id: tipo_id || null,
+  }).eq('id', id);
+}
+
 export async function updateClubEstado(id, estado) {
   return sb.from('clubes').update({ estado }).eq('id', id);
 }
 
 export async function hasMembers(clubId) {
   return sb.from('miembro_club').select('id').eq('club_id', clubId).limit(1);
+}
+
+export async function fetchClubDetailStats(club) {
+  if (!club?.id) {
+    return { stats: null, error: null };
+  }
+
+  const [{ stats, error: statsError }, { data: unidades, error: unidadesError }, { data: eventos, error: eventosError }] =
+    await Promise.all([
+      CargosModel.fetchClubListingStats([club]),
+      fetchUnidadesByClub(club.id, { showInactive: true }),
+      fetchEventosByClub(club.id, { showInactive: true }),
+    ]);
+
+  const base = stats?.[club.id] || { memberCount: 0, boardCount: 0 };
+  const unidadRows = unidades || [];
+  const eventoRows = eventos || [];
+
+  return {
+    stats: {
+      ...base,
+      unidadCount: unidadRows.filter(row => row.estado === 'activo').length,
+      unidadCountTotal: unidadRows.length,
+      eventCount: eventoRows.filter(row => row.estado === 'activo').length,
+      eventCountTotal: eventoRows.length,
+    },
+    error: statsError || unidadesError || eventosError || null,
+  };
 }

@@ -1,5 +1,6 @@
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import FormModal from '../../components/FormModal';
 import ListPagination from '../../components/ListPagination';
 import FormField from '../../components/FormField';
 import DatePickerInput from '../../components/DatePickerInput';
@@ -115,125 +116,127 @@ export default function MiembroCargosView({
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <h3 style={{ margin: 0 }}>{t('tabCargos')} <PageHelpLink pageId="memberCargos" compact /></h3>
-        {canManage && !showForm && (
+        {canManage && (
           <button
             type="button"
+            className="btn btn-primary btn-sm"
             onClick={startAssign}
-            style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
             ➕ {t('assignCargo')}
           </button>
         )}
       </div>
 
-      {error && <div className="alert alert-error" style={{ marginTop: '12px' }}>{error}</div>}
+      {error && !showForm && <div className="alert alert-error" style={{ marginTop: '12px' }}>{error}</div>}
 
       {memberTipos.length === 0 && (
         <p style={{ color: '#b45309', fontSize: '14px', marginTop: '12px' }}>{t('memberNoClubsForClasses')}</p>
       )}
 
-      {showForm && canManage && (
-        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-          <h4 style={{ marginTop: 0 }}>{editingId ? t('editCargoAssignment') : t('assignCargo')}</h4>
-          <div className="form-grid">
-            {!editingId && (
-              <FormField label={t('cargo')} htmlFor="miembro-cargo" error={fieldErrors.cargo_id} required>
-                <select
-                  id="miembro-cargo"
-                  className="form-input"
-                  value={form.cargo_id}
-                  onChange={e => setForm(f => ({ ...f, cargo_id: e.target.value }))}
-                >
-                  <option value="">{t('selectCargo')}</option>
-                  {assignableCargos.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.label}</option>
-                  ))}
-                </select>
-              </FormField>
-            )}
-            <FormField label={t('clubLabel')} htmlFor="miembro-cargo-club">
+      <FormModal
+        open={showForm && canManage}
+        title={editingId ? t('editCargoAssignment') : t('assignCargo')}
+        onClose={resetForm}
+      >
+        {error && <div className="alert alert-error">{error}</div>}
+        <div className="form-grid">
+          {!editingId && (
+            <FormField label={t('cargo')} htmlFor="miembro-cargo" error={fieldErrors.cargo_id} required>
               <select
-                id="miembro-cargo-club"
+                id="miembro-cargo"
                 className="form-input"
-                value={form.club_id}
-                onChange={e => setForm(f => ({ ...f, club_id: e.target.value }))}
+                value={form.cargo_id}
+                onChange={e => setForm(f => ({ ...f, cargo_id: e.target.value }))}
               >
-                <option value="">{t('optional')}</option>
-                {memberClubs.map(club => (
-                  <option key={club.id} value={club.id}>{club.nombre}</option>
+                <option value="">{t('selectCargo')}</option>
+                {assignableCargos.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
               </select>
             </FormField>
-            <FormField label={t('planStartDate')} htmlFor="miembro-cargo-inicio" error={fieldErrors.fecha_inicio}>
+          )}
+          <FormField label={t('clubLabel')} htmlFor="miembro-cargo-club">
+            <select
+              id="miembro-cargo-club"
+              className="form-input"
+              value={form.club_id}
+              onChange={e => setForm(f => ({ ...f, club_id: e.target.value }))}
+            >
+              <option value="">{t('optional')}</option>
+              {memberClubs.map(club => (
+                <option key={club.id} value={club.id}>{club.nombre}</option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label={t('planStartDate')} htmlFor="miembro-cargo-inicio" error={fieldErrors.fecha_inicio}>
+            <DatePickerInput
+              id="miembro-cargo-inicio"
+              className="form-input"
+              value={form.fecha_inicio}
+              disabled={form.inicioDesconocido}
+              onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))}
+            />
+          </FormField>
+          <FormField label={t('cargoStartUnknown')} htmlFor="miembro-cargo-inicio-unknown">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <input
+                id="miembro-cargo-inicio-unknown"
+                type="checkbox"
+                checked={form.inicioDesconocido}
+                onChange={e => setForm(f => ({
+                  ...f,
+                  inicioDesconocido: e.target.checked,
+                  fecha_inicio: e.target.checked ? '' : f.fecha_inicio,
+                }))}
+              />
+              {t('cargoStartUnknownHint')}
+            </label>
+          </FormField>
+          <FormField label={t('cargoOngoing')} htmlFor="miembro-cargo-en-curso">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <input
+                id="miembro-cargo-en-curso"
+                type="checkbox"
+                checked={form.en_curso}
+                onChange={e => setForm(f => ({
+                  ...f,
+                  en_curso: e.target.checked,
+                  fecha_fin: e.target.checked ? '' : f.fecha_fin,
+                }))}
+              />
+              {t('cargoOngoingHint')}
+            </label>
+          </FormField>
+          {!form.en_curso && (
+            <FormField label={t('planEndDate')} htmlFor="miembro-cargo-fin" error={fieldErrors.fecha_fin} required>
               <DatePickerInput
-                id="miembro-cargo-inicio"
+                id="miembro-cargo-fin"
                 className="form-input"
-                value={form.fecha_inicio}
-                disabled={form.inicioDesconocido}
-                onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))}
+                value={form.fecha_fin}
+                onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))}
+                required
               />
             </FormField>
-            <FormField label={t('cargoStartUnknown')} htmlFor="miembro-cargo-inicio-unknown">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                <input
-                  id="miembro-cargo-inicio-unknown"
-                  type="checkbox"
-                  checked={form.inicioDesconocido}
-                  onChange={e => setForm(f => ({
-                    ...f,
-                    inicioDesconocido: e.target.checked,
-                    fecha_inicio: e.target.checked ? '' : f.fecha_inicio,
-                  }))}
-                />
-                {t('cargoStartUnknownHint')}
-              </label>
-            </FormField>
-            <FormField label={t('cargoOngoing')} htmlFor="miembro-cargo-en-curso">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                <input
-                  id="miembro-cargo-en-curso"
-                  type="checkbox"
-                  checked={form.en_curso}
-                  onChange={e => setForm(f => ({
-                    ...f,
-                    en_curso: e.target.checked,
-                    fecha_fin: e.target.checked ? '' : f.fecha_fin,
-                  }))}
-                />
-                {t('cargoOngoingHint')}
-              </label>
-            </FormField>
-            {!form.en_curso && (
-              <FormField label={t('planEndDate')} htmlFor="miembro-cargo-fin" error={fieldErrors.fecha_fin} required>
-                <DatePickerInput
-                  id="miembro-cargo-fin"
-                  className="form-input"
-                  value={form.fecha_fin}
-                  onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))}
-                  required
-                />
-              </FormField>
-            )}
-            <FormField label={t('notes')} htmlFor="miembro-cargo-notas" className="form-grid-full">
-              <textarea
-                id="miembro-cargo-notas"
-                className="form-input"
-                rows={2}
-                value={form.notas}
-                onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
-              />
-            </FormField>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            <button type="button" className="btn btn-primary" onClick={saveAssignment}>
-              {t('save')}
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={resetForm}>
-              {t('cancel')}
-            </button>
-          </div>
+          )}
+          <FormField label={t('notes')} htmlFor="miembro-cargo-notas" className="form-grid-full">
+            <textarea
+              id="miembro-cargo-notas"
+              className="form-input"
+              rows={2}
+              value={form.notas}
+              onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
+            />
+          </FormField>
         </div>
-      )}
+        <div className="form-modal__actions">
+          <button type="button" className="btn btn-primary" onClick={saveAssignment}>
+            {t('save')}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={resetForm}>
+            {t('cancel')}
+          </button>
+        </div>
+      </FormModal>
 
       <h4 style={{ marginTop: '24px' }}>{t('currentCargos')}</h4>
       <ListPagination {...listPagination} />
