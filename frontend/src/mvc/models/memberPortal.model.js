@@ -1,6 +1,11 @@
 import { sb } from '../../services/supabase';
 import { memberDisplayName } from '../../utils/memberDisplayName';
-import { getEventoFromRow, getEventoIdFromRow, getEventoMiembroRowId } from './eventos.model';
+import {
+  filterRowsForMemberAttendanceStats,
+  getEventoFromRow,
+  getEventoIdFromRow,
+  getEventoMiembroRowId,
+} from './eventos.model';
 import { normalizeEventDate, normalizeEventHora } from '../../utils/eventTimezone';
 import { isValidDateKey } from '../../utils/calendar';
 
@@ -356,7 +361,12 @@ export async function fetchPortalEvents(sessionToken) {
     p_session_token: sessionToken,
   });
   if (error) return { data: [], error };
-  return { data: normalizePortalEventRows(parsePortalJsonRows(data)), error: null };
+  return {
+    data: filterRowsForMemberAttendanceStats(
+      normalizePortalEventRows(parsePortalJsonRows(data))
+    ),
+    error: null,
+  };
 }
 
 function parsePortalJsonRows(data) {

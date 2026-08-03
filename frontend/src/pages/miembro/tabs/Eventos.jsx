@@ -1,6 +1,5 @@
-import { useMiembroEventosController } from '../../../mvc/controllers/useMiembroEventosController';
-import MiembroEventosView from '../../../mvc/views/MiembroEventosView';
+import { Navigate } from 'react-router-dom';
 
 export default function MiembroEventos({ miembroId }) {
-  return <MiembroEventosView {...useMiembroEventosController(miembroId)} />;
+  return <Navigate to={`/dashboard/miembro/${miembroId}/asistencia`} replace />;
 }

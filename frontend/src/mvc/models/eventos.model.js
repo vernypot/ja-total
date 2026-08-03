@@ -186,11 +186,11 @@ export async function fetchMiembroEventos(miembroId) {
 
   const selects = [
     `id, evento_id, miembro_id, cuota_pagada, cuota_pagada_at, cuota_monto_override, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, asistencia_grupo_id, cuota_aplica, cuota_monto_override, tipo_evento_id,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, asistencia_grupo_id, excluir_registro_asistencia, cuota_aplica, cuota_monto_override, tipo_evento_id,
        clubes ( id, nombre, iglesia_id, cuota_activa, cuota_monto, cuota_moneda_nombre, cuota_moneda_simbolo, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, asistencia_grupo_id, tipo_evento_id,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, asistencia_grupo_id, excluir_registro_asistencia, tipo_evento_id,
        clubes ( id, nombre ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id,
@@ -872,6 +872,8 @@ export function buildMemberMergedAttendanceContext(rows) {
 
   for (const row of rows || []) {
     const evento = getEventoFromRow(row);
+    if (!isEventoIncludedInMemberStats(evento)) continue;
+
     const grupoId = evento?.asistencia_grupo_id;
     if (!grupoId) continue;
 
