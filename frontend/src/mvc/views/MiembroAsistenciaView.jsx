@@ -5,6 +5,7 @@ import { PageHelpLink } from '../../components/PageHelp';
 import ListPagination from '../../components/ListPagination';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
+import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import '../../styles/eventAttendance.css';
 
 function StatCard({ label, value, tone = 'neutral' }) {
@@ -160,6 +161,7 @@ export default function MiembroAsistenciaView({
                 <th style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>{t('attendanceStatAttended')}</th>
                 <th style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>{t('attendanceOnTime')}</th>
                 <th style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>{t('attendanceStatusColumn')}</th>
+                <th style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>{t('memberEventCuotaLabel')}</th>
               </tr>
             </thead>
             <tbody>
@@ -255,6 +257,19 @@ export default function MiembroAsistenciaView({
                     </td>
                     <td style={{ padding: '12px', verticalAlign: 'top' }}>
                       <AttendanceBadge estado={asistencia} t={t} />
+                    </td>
+                    <td style={{ padding: '12px', verticalAlign: 'top' }}>
+                      {evento?.cuota_aplica ? (
+                        <MemberEventCuotaSummary
+                          row={row}
+                          evento={evento}
+                          language={language}
+                          t={t}
+                          variant="stacked"
+                        />
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>—</span>
+                      )}
                     </td>
                   </tr>
                 );

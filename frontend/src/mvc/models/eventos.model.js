@@ -73,6 +73,14 @@ export function filterRowsForMemberAttendanceStats(rows) {
   return (rows || []).filter(row => isEventoIncludedInMemberStats(getEventoFromRow(row)));
 }
 
+export function sortMemberEventRowsByEventDateDesc(rows) {
+  return [...(rows || [])].sort((a, b) => {
+    const eventA = getEventoFromRow(a);
+    const eventB = getEventoFromRow(b);
+    return compareEventsByLocalDateTime(eventB, eventA);
+  });
+}
+
 function isRlsError(error) {
   const msg = error?.message || '';
   return msg.includes('row-level security') || msg.includes('permission denied');
@@ -177,12 +185,12 @@ export async function fetchMiembroEventos(miembroId) {
   }
 
   const selects = [
-    `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, tipo_evento_id,
-       clubes ( id, nombre, iglesia_id, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
+    `id, evento_id, miembro_id, cuota_pagada, cuota_pagada_at, cuota_monto_override, confirmacion_estado, confirmado_at,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, asistencia_grupo_id, cuota_aplica, cuota_monto_override, tipo_evento_id,
+       clubes ( id, nombre, iglesia_id, cuota_activa, cuota_monto, cuota_moneda_nombre, cuota_moneda_simbolo, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, asistencia_grupo_id, tipo_evento_id,
        clubes ( id, nombre ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id,
@@ -199,7 +207,7 @@ export async function fetchMiembroEventos(miembroId) {
     if (!error) {
       return { data: filterRowsForMemberAttendanceStats(data || []), error: null };
     }
-    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'requiere_confirmacion')) {
+    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_pagada') || isMissingColumnError(error, 'cuota_aplica')) {
       continue;
     }
     return { data: [], error };
@@ -849,6 +857,76 @@ export function getCuotaPagadaFromRow(row) {
   return Boolean(row?.cuota_pagada);
 }
 
+function isAttendedAsistenciaEstado(estado) {
+  return estado === 'a_tiempo' || estado === 'tarde';
+}
+
+function pickMergedAsistenciaEstado(current, next) {
+  if (next === 'a_tiempo' || current === 'a_tiempo') return 'a_tiempo';
+  if (next === 'tarde' || current === 'tarde') return 'tarde';
+  return current || next || null;
+}
+
+export function buildMemberMergedAttendanceContext(rows) {
+  const byGrupo = new Map();
+
+  for (const row of rows || []) {
+    const evento = getEventoFromRow(row);
+    const grupoId = evento?.asistencia_grupo_id;
+    if (!grupoId) continue;
+
+    const asistencia = getAsistenciaFromRow(row);
+    if (!isAttendedAsistenciaEstado(asistencia)) continue;
+
+    const existing = byGrupo.get(grupoId) || {
+      asistencia: null,
+      checkedInAt: null,
+    };
+
+    existing.asistencia = pickMergedAsistenciaEstado(existing.asistencia, asistencia);
+    existing.checkedInAt = existing.checkedInAt || getCheckedInAtFromRow(row) || null;
+    byGrupo.set(grupoId, existing);
+  }
+
+  return { byGrupo };
+}
+
+export function getMemberEventAsistencia(row, context = null) {
+  const direct = getAsistenciaFromRow(row);
+  if (isAttendedAsistenciaEstado(direct)) return direct;
+
+  const grupoId = getEventoFromRow(row)?.asistencia_grupo_id;
+  if (!grupoId || !context?.byGrupo) return direct;
+
+  const merged = context.byGrupo.get(grupoId);
+  if (merged?.asistencia && isAttendedAsistenciaEstado(merged.asistencia)) {
+    return merged.asistencia;
+  }
+
+  return direct;
+}
+
+export function getMemberEventCheckedInAt(row, context = null) {
+  const direct = getCheckedInAtFromRow(row);
+  if (direct) return direct;
+
+  const grupoId = getEventoFromRow(row)?.asistencia_grupo_id;
+  if (!grupoId || !context?.byGrupo) return null;
+
+  return context.byGrupo.get(grupoId)?.checkedInAt || null;
+}
+
+export function createMemberMergedAttendanceHelpers(rows) {
+  const mergedAttendanceContext = buildMemberMergedAttendanceContext(rows);
+
+  return {
+    mergedAttendanceContext,
+    getAsistenciaFromRow: row => getMemberEventAsistencia(row, mergedAttendanceContext),
+    getCheckedInAtFromRow: row => getMemberEventCheckedInAt(row, mergedAttendanceContext),
+    memberAttendedEvent: row => memberAttendedEvent(row, mergedAttendanceContext),
+  };
+}
+
 export function filterAttendedRowsForCuota(rows) {
   return (rows || []).filter(row => memberAttendedEvent(row));
 }
@@ -884,24 +962,26 @@ export function computeEventCuotaSummary(rows, { evento, club } = {}) {
   };
 }
 
-export function memberAttendedEvent(value) {
-  const estado = typeof value === 'string' ? value : getAsistenciaFromRow(value);
-  return estado === 'a_tiempo' || estado === 'tarde';
+export function memberAttendedEvent(value, context = null) {
+  if (typeof value === 'string') {
+    return isAttendedAsistenciaEstado(value);
+  }
+  return isAttendedAsistenciaEstado(getMemberEventAsistencia(value, context));
 }
 
-export function wasMemberCheckedInToEvent(row) {
+export function wasMemberCheckedInToEvent(row, context = null) {
   if (!row) return false;
-  if (getCheckedInAtFromRow(row)) return true;
-  return memberAttendedEvent(row);
+  if (getMemberEventCheckedInAt(row, context)) return true;
+  return memberAttendedEvent(row, context);
 }
 
 export function computeMemberAttendanceStats(rows, helpers) {
   const {
-    getEventoFromRow,
-    getAsistenciaFromRow,
+    getEventoFromRow: resolveEventoFromRow = getEventoFromRow,
     getConfirmacionFromRow,
     eventRequiresConfirmation,
   } = helpers;
+  const mergedContext = buildMemberMergedAttendanceContext(rows);
 
   const stats = {
     assigned: 0,
@@ -918,13 +998,13 @@ export function computeMemberAttendanceStats(rows, helpers) {
   };
 
   for (const row of rows) {
-    const evento = getEventoFromRow(row);
+    const evento = resolveEventoFromRow(row);
     if (!evento || !isEventoIncludedInMemberStats(evento)) continue;
 
     stats.assigned += 1;
 
     const isFuture = isEventInFuture(evento);
-    const asistencia = getAsistenciaFromRow(row);
+    const asistencia = getMemberEventAsistencia(row, mergedContext);
     const confirmacion = getConfirmacionFromRow(row);
     const needsConfirmation = eventRequiresConfirmation(evento);
 

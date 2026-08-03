@@ -3,7 +3,6 @@ import { AuthContext } from '../../context/AuthContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { useListPagination } from '../../hooks/useListPagination';
 import * as EventosModel from '../models/eventos.model';
-import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
 
 export function useMiembroEventosController(miembroId) {
   const { user, userData } = useContext(AuthContext);
@@ -11,7 +10,7 @@ export function useMiembroEventosController(miembroId) {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [attendanceFilter, setAttendanceFilter] = useState('all');
+  const [attendanceFilter, setAttendanceFilter] = useState('attended');
 
   async function load() {
     if (!miembroId) return;
@@ -26,27 +25,30 @@ export function useMiembroEventosController(miembroId) {
       return;
     }
 
-    const sorted = [...(data || [])].sort((a, b) => {
-      const eventA = EventosModel.getEventoFromRow(a);
-      const eventB = EventosModel.getEventoFromRow(b);
-      return compareEventsByLocalDateTime(eventB, eventA);
-    });
+    const sorted = EventosModel.sortMemberEventRowsByEventDateDesc(data || []);
 
     setRows(sorted);
     setLoading(false);
   }
 
-  const attendedCount = useMemo(
-    () => rows.filter(EventosModel.memberAttendedEvent).length,
+  const mergedAttendanceHelpers = useMemo(
+    () => EventosModel.createMemberMergedAttendanceHelpers(rows),
     [rows]
+  );
+
+  const attendedCount = useMemo(
+    () => rows.filter(mergedAttendanceHelpers.memberAttendedEvent).length,
+    [rows, mergedAttendanceHelpers]
   );
 
   const filteredRows = useMemo(() => {
     if (attendanceFilter === 'attended') {
-      return rows.filter(EventosModel.memberAttendedEvent);
+      return EventosModel.sortMemberEventRowsByEventDateDesc(
+        rows.filter(mergedAttendanceHelpers.memberAttendedEvent)
+      );
     }
     return rows;
-  }, [rows, attendanceFilter]);
+  }, [rows, attendanceFilter, mergedAttendanceHelpers]);
 
   const {
     pageItems: paginatedRows,
@@ -86,6 +88,7 @@ export function useMiembroEventosController(miembroId) {
     listPagination,
     allRows: rows,
     attendedCount,
+    totalEventCount: rows.length,
     attendanceFilter,
     setAttendanceFilter,
     error,
@@ -94,10 +97,10 @@ export function useMiembroEventosController(miembroId) {
     updateAttendance,
     updateConfirmation,
     getEventoFromRow: EventosModel.getEventoFromRow,
-    getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
-    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
+    getAsistenciaFromRow: mergedAttendanceHelpers.getAsistenciaFromRow,
+    getCheckedInAtFromRow: mergedAttendanceHelpers.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
-    memberAttendedEvent: EventosModel.memberAttendedEvent,
+    memberAttendedEvent: mergedAttendanceHelpers.memberAttendedEvent,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     isEventInFuture: EventosModel.isEventInFuture,

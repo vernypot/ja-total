@@ -102,17 +102,22 @@ export function useMemberPortalEventosController() {
     await load({ silent: true });
   }
 
+  const mergedAttendanceHelpers = useMemo(
+    () => EventosModel.createMemberMergedAttendanceHelpers(rows),
+    [rows]
+  );
+
   const attendedCount = useMemo(
-    () => timeFilteredRows.filter(EventosModel.memberAttendedEvent).length,
-    [timeFilteredRows]
+    () => timeFilteredRows.filter(mergedAttendanceHelpers.memberAttendedEvent).length,
+    [timeFilteredRows, mergedAttendanceHelpers]
   );
 
   const filteredRows = useMemo(() => {
     if (attendanceFilter === 'attended') {
-      return timeFilteredRows.filter(EventosModel.memberAttendedEvent);
+      return timeFilteredRows.filter(mergedAttendanceHelpers.memberAttendedEvent);
     }
     return timeFilteredRows;
-  }, [timeFilteredRows, attendanceFilter]);
+  }, [timeFilteredRows, attendanceFilter, mergedAttendanceHelpers]);
 
   const {
     pageItems: paginatedRows,
@@ -141,10 +146,10 @@ export function useMemberPortalEventosController() {
     updateConfirmation,
     savingConfirmationId,
     getEventoFromRow: EventosModel.getEventoFromRow,
-    getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
-    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
+    getAsistenciaFromRow: mergedAttendanceHelpers.getAsistenciaFromRow,
+    getCheckedInAtFromRow: mergedAttendanceHelpers.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
-    memberAttendedEvent: EventosModel.memberAttendedEvent,
+    memberAttendedEvent: mergedAttendanceHelpers.memberAttendedEvent,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     isEventInFuture: EventosModel.isEventInFuture,

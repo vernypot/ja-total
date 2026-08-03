@@ -682,6 +682,11 @@ export function useMemberPortalAsistenciaController() {
     await load({ silent: true });
   }
 
+  const mergedAttendanceHelpers = useMemo(
+    () => EventosModel.createMemberMergedAttendanceHelpers(rows),
+    [rows]
+  );
+
   const stats = useMemo(
     () => EventosModel.computeMemberAttendanceStats(rows, attendanceHelpers),
     [rows]
@@ -703,14 +708,14 @@ export function useMemberPortalAsistenciaController() {
     error,
     loading,
     getEventoFromRow: EventosModel.getEventoFromRow,
-    getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getAsistenciaFromRow: mergedAttendanceHelpers.getAsistenciaFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
-    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
+    getCheckedInAtFromRow: mergedAttendanceHelpers.getCheckedInAtFromRow,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     isEventInFuture: EventosModel.isEventInFuture,
     isEventInPast: EventosModel.isEventInPast,
-    memberAttendedEvent: EventosModel.memberAttendedEvent,
+    memberAttendedEvent: mergedAttendanceHelpers.memberAttendedEvent,
     getEventChurchTimezone: EventosModel.getEventChurchTimezone,
     canMemberConfirmEvent: EventosModel.canMemberConfirmEvent,
     updateConfirmation,
