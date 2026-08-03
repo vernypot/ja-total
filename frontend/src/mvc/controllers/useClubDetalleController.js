@@ -99,6 +99,10 @@ export function useClubDetalleController() {
     navigate(`/dashboard/club-directiva?club=${clubId}`);
   }
 
+  function navigateToReglamento() {
+    navigate(`/dashboard/reglamento?club=${clubId}`);
+  }
+
   async function handleClubLogoUpload(file) {
     if (!canManage || !clubId) return;
     setError('');
@@ -193,6 +197,7 @@ export function useClubDetalleController() {
     navigateToEventos,
     navigateToUnidades,
     navigateToDirectiva,
+    navigateToReglamento,
     handleClubLogoUpload,
     handleClubLogoRemove,
     handleTipoLogoUpload,

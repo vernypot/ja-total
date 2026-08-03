@@ -4,6 +4,7 @@ import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
 import UnidadEvalConfigPanel from '../../components/UnidadEvalConfigPanel';
+import UnidadReglamentoInfraccionesPanel from '../../components/UnidadReglamentoInfraccionesPanel';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
@@ -19,6 +20,7 @@ function UnidadesListTable({
   onEditUnidad,
   evalScoresByUnidadId,
   formatEvalPercent,
+  formatEvalPoints,
   formatValidationStartDate,
   language,
   t,
@@ -40,6 +42,7 @@ function UnidadesListTable({
               <th>{t('unidadEvalValidationStartCol')}</th>
               <th>{t('unidadEvalEfficiencyCol')}</th>
               <th>{t('unidadEvalExcellenceCol')}</th>
+              <th>{t('reglamentoPenaltyCol')}</th>
               <th>{t('actions')}</th>
             </tr>
           </thead>
@@ -74,6 +77,15 @@ function UnidadesListTable({
                       {scores.validationActive === false
                         ? t('unidadEvalValidationPending')
                         : formatEvalPercent(scores.excellencePercent)}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {scores.validationActive === false
+                        ? '—'
+                        : (scores.penaltyPoints > 0
+                          ? `−${formatEvalPoints(scores.penaltyPoints)}`
+                          : '—')}
                     </strong>
                   </td>
                   <td>
@@ -156,7 +168,14 @@ export default function UnidadesView({
   savingValidationStartId,
   saveUnidadValidationStart,
   formatEvalPercent,
+  formatEvalPoints,
   formatValidationStartDate,
+  reglamentoNodos,
+  reglamentoInfracciones,
+  reglamentoSchemaAvailable,
+  savingInfraccionId,
+  saveReglamentoInfraccion,
+  removeReglamentoInfraccion,
 }) {
   const { t, language } = useLanguage();
 
@@ -304,6 +323,7 @@ export default function UnidadesView({
                 onEditUnidad={startEditUnidad}
                 evalScoresByUnidadId={evalScoresByUnidadId}
                 formatEvalPercent={formatEvalPercent}
+                formatEvalPoints={formatEvalPoints}
                 formatValidationStartDate={formatValidationStartDate}
                 language={language}
                 t={t}
@@ -327,6 +347,18 @@ export default function UnidadesView({
                 onSaveValidationStart={saveUnidadValidationStart}
                 formatValidationStartDate={formatValidationStartDate}
                 language={language}
+                t={t}
+              />
+
+              <UnidadReglamentoInfraccionesPanel
+                canManage={canManage}
+                unidades={unidades}
+                reglamentoNodos={reglamentoNodos}
+                infracciones={reglamentoInfracciones}
+                schemaAvailable={reglamentoSchemaAvailable}
+                savingInfraccionId={savingInfraccionId}
+                onSaveInfraccion={saveReglamentoInfraccion}
+                onRemoveInfraccion={removeReglamentoInfraccion}
                 t={t}
               />
 

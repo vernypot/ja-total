@@ -10,6 +10,7 @@ import { useListPagination } from '../../hooks/useListPagination';
 import * as UnidadesModel from '../models/unidades.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
+import * as ReglamentoModel from '../models/reglamento.model';
 import {
   computeAllUnidadEvaluations,
   DEFAULT_UNIDAD_EVAL_CONFIG,
@@ -63,6 +64,10 @@ export function useUnidadesController() {
   const [savingItemId, setSavingItemId] = useState('');
   const [savingCantidadKey, setSavingCantidadKey] = useState('');
   const [savingValidationStartId, setSavingValidationStartId] = useState('');
+  const [reglamentoNodos, setReglamentoNodos] = useState([]);
+  const [reglamentoInfracciones, setReglamentoInfracciones] = useState([]);
+  const [reglamentoSchemaAvailable, setReglamentoSchemaAvailable] = useState(true);
+  const [savingInfraccionId, setSavingInfraccionId] = useState('');
 
   const loadedClubIdRef = useRef('');
   const urlSyncedRef = useRef(false);
@@ -102,8 +107,10 @@ export function useUnidadesController() {
       config: evalConfig,
       evalItems,
       cantidades: evalCantidades,
+      reglamentoInfracciones,
+      reglamentoNodos,
     }),
-    [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades]
+    [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades, reglamentoInfracciones, reglamentoNodos]
   );
 
   async function loadEvalData(currentClubId, currentUnidades, currentMembers) {
@@ -112,18 +119,22 @@ export function useUnidadesController() {
       setEvalItems([]);
       setEvalCantidades([]);
       setMemberEventRows([]);
+      setReglamentoNodos([]);
+      setReglamentoInfracciones([]);
       setEvalSchemaAvailable(true);
+      setReglamentoSchemaAvailable(true);
       return;
     }
 
     const memberIds = UnidadesModel.getAssignedMemberIds(currentUnidades);
     const ids = [...memberIds];
 
-    const [evalResult, eventRowsResult] = await Promise.all([
+    const [evalResult, eventRowsResult, reglamentoResult] = await Promise.all([
       UnidadEvaluacionModel.fetchClubUnidadEval(currentClubId),
       ids.length
         ? UnidadEvaluacionModel.fetchClubMemberEventRowsForEval(currentClubId, ids)
         : Promise.resolve({ data: [], error: null }),
+      ReglamentoModel.fetchClubReglamento(currentClubId),
     ]);
 
     if (evalResult.error) {
@@ -140,6 +151,17 @@ export function useUnidadesController() {
 
     if (!eventRowsResult.error) {
       setMemberEventRows(eventRowsResult.data || []);
+    }
+
+    if (reglamentoResult.error) {
+      const msg = reglamentoResult.error.message || '';
+      if (msg.includes('does not exist') || msg.includes('Could not find')) {
+        setReglamentoSchemaAvailable(false);
+      }
+    } else {
+      setReglamentoSchemaAvailable(reglamentoResult.schemaAvailable !== false);
+      setReglamentoNodos(reglamentoResult.data?.nodos || []);
+      setReglamentoInfracciones(reglamentoResult.data?.infracciones || []);
     }
   }
 
@@ -574,6 +596,55 @@ export function useUnidadesController() {
     setMessage(t('unidadEvalValidationStartSaved'));
   }
 
+  async function saveReglamentoInfraccion({
+    unidadId,
+    reglamentoNodoId,
+    cantidad,
+    fecha,
+    notas,
+  }) {
+    if (!canManage || !unidadId || !reglamentoNodoId) return;
+    setError('');
+    setSavingInfraccionId('new');
+
+    const { error: saveError } = await ReglamentoModel.upsertUnidadInfraccion({
+      unidadId,
+      reglamentoNodoId,
+      cantidad,
+      fecha,
+      notas,
+    });
+
+    setSavingInfraccionId('');
+
+    if (saveError) {
+      setError(saveError.message || t('reglamentoInfractionSaveError'));
+      return;
+    }
+
+    setMessage(t('reglamentoInfractionSaved'));
+    await loadEvalData(clubId, unidades, members);
+  }
+
+  async function removeReglamentoInfraccion(infraccionId) {
+    if (!canManage || !infraccionId) return;
+    if (!window.confirm(t('reglamentoInfractionDeleteConfirm'))) return;
+
+    setError('');
+    setSavingInfraccionId(infraccionId);
+
+    const { error: deleteError } = await ReglamentoModel.removeUnidadInfraccion(infraccionId);
+    setSavingInfraccionId('');
+
+    if (deleteError) {
+      setError(deleteError.message || t('reglamentoInfractionDeleteError'));
+      return;
+    }
+
+    setMessage(t('reglamentoInfractionDeleted'));
+    await loadEvalData(clubId, unidades, members);
+  }
+
   return {
     canManage,
     clubId,
@@ -628,5 +699,11 @@ export function useUnidadesController() {
     formatEvalPoints,
     formatEvalPercent,
     formatValidationStartDate,
+    reglamentoNodos,
+    reglamentoInfracciones,
+    reglamentoSchemaAvailable,
+    savingInfraccionId,
+    saveReglamentoInfraccion,
+    removeReglamentoInfraccion,
   };
 }

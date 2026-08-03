@@ -45,6 +45,7 @@ export default function ClubDetalleView({
   navigateToEventos,
   navigateToUnidades,
   navigateToDirectiva,
+  navigateToReglamento,
   handleClubLogoUpload,
   handleClubLogoRemove,
   handleTipoLogoUpload,
@@ -340,6 +341,9 @@ export default function ClubDetalleView({
               </button>
               <button type="button" className="btn btn-secondary" onClick={navigateToEventos}>
                 📅 {t('eventsBtn')}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={navigateToReglamento}>
+                📜 {t('reglamentoNav')}
               </button>
             </div>
           </section>
