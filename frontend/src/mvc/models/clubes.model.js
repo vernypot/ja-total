@@ -10,7 +10,7 @@ import { fetchEventosByClub } from './eventos.model';
 
 const CLUB_LOGOS_BUCKET = 'club-logos';
 
-const CLUB_SELECT = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
+const CLUB_SELECT = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
 
 async function uploadLogoToStorage(path, file) {
   let { error } = await sb.storage
@@ -159,11 +159,11 @@ export async function fetchClubesByIglesia(iglesiaId) {
 }
 
 export async function fetchClubById(clubId) {
-  const select = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
+  const select = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
   const result = await sb.from('clubes').select(select).eq('id', clubId).single();
   if (!result.error) return result;
 
-  if (/estado|created_at|Could not find/i.test(result.error.message || '')) {
+  if (/cuota_|estado|created_at|Could not find/i.test(result.error.message || '')) {
     return sb
       .from('clubes')
       .select('id,nombre,iglesia_id,tipo_id,logo_url,tipos_club(id,nombre,logo_url)')
@@ -207,6 +207,59 @@ export async function updateClub(id, { nombre, iglesia_id, tipo_id }) {
 
 export async function updateClubEstado(id, estado) {
   return sb.from('clubes').update({ estado }).eq('id', id);
+}
+
+export async function updateClubCuota(clubId, payload) {
+  const cuotaActiva = Boolean(payload.cuota_activa);
+  const monto = cuotaActiva ? parseCuotaPayloadMonto(payload.cuota_monto) : null;
+  const frecuencia = cuotaActiva ? (payload.cuota_frecuencia || null) : null;
+  const frecuenciaOtro = cuotaActiva && frecuencia === 'otro'
+    ? (payload.cuota_frecuencia_otro?.trim() || null)
+    : null;
+  const monedaNombre = cuotaActiva ? (payload.cuota_moneda_nombre?.trim() || null) : null;
+  const monedaSimbolo = cuotaActiva ? (payload.cuota_moneda_simbolo?.trim() || null) : null;
+
+  const rpc = await sb.rpc('admin_update_club_cuota', {
+    p_club_id: clubId,
+    p_cuota_activa: cuotaActiva,
+    p_cuota_monto: monto,
+    p_cuota_frecuencia: frecuencia,
+    p_cuota_frecuencia_otro: frecuenciaOtro,
+    p_cuota_moneda_nombre: monedaNombre,
+    p_cuota_moneda_simbolo: monedaSimbolo,
+  });
+  if (!rpc.error) return rpc;
+
+  const body = {
+    cuota_activa: cuotaActiva,
+    cuota_monto: monto,
+    cuota_frecuencia: frecuencia,
+    cuota_frecuencia_otro: frecuenciaOtro,
+    cuota_moneda_nombre: monedaNombre,
+    cuota_moneda_simbolo: monedaSimbolo,
+  };
+  const direct = await sb.from('clubes').update(body).eq('id', clubId);
+  if (!direct.error) return direct;
+  if (!isRlsError(direct.error)) return direct;
+  return rpc;
+}
+
+function parseCuotaPayloadMonto(value) {
+  if (value === '' || value == null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+export async function fetchMiembroClubCuotas(clubId) {
+  if (!clubId) return { data: [], error: null };
+  const { data, error } = await sb
+    .from('miembro_club_cuota')
+    .select('id, miembro_id, club_id, monto_override, notas')
+    .eq('club_id', clubId);
+  if (error && /miembro_club_cuota|does not exist|Could not find/i.test(error.message || '')) {
+    return { data: [], error: null };
+  }
+  return { data: data || [], error };
 }
 
 export async function hasMembers(clubId) {

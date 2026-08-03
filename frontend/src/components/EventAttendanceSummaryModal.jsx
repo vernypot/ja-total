@@ -7,6 +7,8 @@ export default function EventAttendanceSummaryModal({
   onClose,
   evento,
   rows,
+  club,
+  language,
   loading,
   needsConfirmation,
   formatEventTime,
@@ -66,6 +68,8 @@ export default function EventAttendanceSummaryModal({
             <EventAttendanceSummaryContent
               evento={evento}
               rows={rows}
+              club={club}
+              language={language}
               needsConfirmation={needsConfirmation}
               formatEventTime={formatEventTime}
               formatEventTimestamp={formatEventTimestamp}
@@ -80,6 +84,8 @@ export default function EventAttendanceSummaryModal({
           <EventAttendanceSummaryContent
             evento={evento}
             rows={rows}
+            club={club}
+            language={language}
             needsConfirmation={needsConfirmation}
             formatEventTime={formatEventTime}
             formatEventTimestamp={formatEventTimestamp}

@@ -662,6 +662,10 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   color: #92400e;
 }
 
+.event-list-card__hint--cuota {
+  color: #166534;
+}
+
 .event-list-card__actions,
 .event-list-bulk-actions {
   display: flex;
@@ -730,6 +734,12 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   justify-content: center;
   padding: 16px;
   background: rgba(15, 23, 42, 0.45);
+  touch-action: none;
+}
+
+.event-list--overlay-open {
+  pointer-events: none;
+  user-select: none;
 }
 
 .event-overflow-menu {

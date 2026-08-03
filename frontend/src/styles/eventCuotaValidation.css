@@ -1,0 +1,189 @@
+.event-cuota-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.event-cuota-modal {
+  width: min(100%, 640px);
+  max-height: min(85vh, 760px);
+  overflow: auto;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--brand-base, #fff);
+  box-shadow: var(--shadow-lg, 0 10px 24px rgba(0, 0, 0, 0.18));
+}
+
+.event-cuota-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.event-cuota-modal__header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.event-cuota-modal__subtitle,
+.event-cuota-modal__amount {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.event-cuota-modal__amount {
+  color: var(--color-text-secondary, #4b5563);
+  font-weight: 600;
+}
+
+.event-cuota-modal__close {
+  flex-shrink: 0;
+  border: none;
+  background: var(--gray-100, #f3f4f6);
+  color: var(--color-text-secondary, #4b5563);
+  border-radius: var(--radius-md, 6px);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.event-cuota-modal__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.event-cuota-modal__stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.event-cuota-modal__stat-value--paid {
+  color: #166534;
+}
+
+.event-cuota-modal__stat-value--unpaid {
+  color: #b45309;
+}
+
+.event-cuota-modal__stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.event-cuota-modal__toolbar {
+  padding: 12px 16px 0;
+}
+
+.event-cuota-modal__list {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.event-cuota-modal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--gray-50, #f9fafb);
+}
+
+.event-cuota-modal__row-main {
+  min-width: 0;
+}
+
+.event-cuota-modal__row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.event-cuota-modal__row-amount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #4b5563);
+}
+
+.event-cuota-payment-toggle {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.event-cuota-payment-toggle__btn {
+  padding: 6px 10px;
+  border: 1px solid var(--gray-300, #d1d5db);
+  border-radius: var(--radius-md, 6px);
+  background: #fff;
+  color: var(--color-text-secondary, #4b5563);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.event-cuota-payment-toggle__btn.is-selected.is-paid {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.event-cuota-payment-toggle__btn.is-selected.is-unpaid {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #b45309;
+}
+
+.event-cuota-payment-toggle__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.event-cuota-modal__loading,
+.event-cuota-modal__empty {
+  padding: 20px 16px 24px;
+  margin: 0;
+  color: var(--color-text-muted, #6b7280);
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .event-cuota-modal-overlay {
+    align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .event-cuota-modal__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-cuota-payment-toggle {
+    width: 100%;
+  }
+
+  .event-cuota-payment-toggle__btn {
+    flex: 1 1 0;
+  }
+}

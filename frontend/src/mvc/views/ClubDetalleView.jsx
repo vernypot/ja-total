@@ -6,6 +6,9 @@ import BackLink from '../../components/BackLink';
 import LogoAssetField from '../../components/LogoAssetField';
 import { ChurchOrgPath } from '../../components/ChurchOrgFields';
 import { iglesiaHierarchyLabel } from '../models/iglesias.model';
+import { cuotaFrequencyLabel } from '../../constants/cuotaFrequencies';
+import { clubHasDefaultCuota, formatCuotaMonto } from '../../utils/cuota';
+import FormField from '../../components/FormField';
 import '../../styles/form.css';
 import '../../styles/club-detalle.css';
 
@@ -46,6 +49,12 @@ export default function ClubDetalleView({
   handleClubLogoRemove,
   handleTipoLogoUpload,
   handleTipoLogoRemove,
+  cuotaForm,
+  setCuotaForm,
+  cuotaFieldErrors = {},
+  savingCuota,
+  saveClubCuota,
+  cuotaFrequencyOptions = [],
 }) {
   const { t, language } = useLanguage();
   const tipoNombre = club?.tipos_club?.nombre;
@@ -144,6 +153,143 @@ export default function ClubDetalleView({
                 <dd>{formatCreatedDate(club.created_at, language)}</dd>
               </div>
             </dl>
+          </section>
+
+          <section className="card club-detalle-section club-detalle-section--cuota">
+            <h2>{t('clubDetailsCuota')}</h2>
+            <p className="text-muted club-detalle-cuota-intro">{t('clubDetailsCuotaHint')}</p>
+            {!canManage ? (
+              <dl className="club-detalle-info">
+                <div>
+                  <dt>{t('clubCuotaEnabled')}</dt>
+                  <dd>{club.cuota_activa ? t('yes') : t('no')}</dd>
+                </div>
+                {clubHasDefaultCuota(club) && (
+                  <>
+                    <div>
+                      <dt>{t('clubCuotaAmount')}</dt>
+                      <dd>{formatCuotaMonto(club.cuota_monto, { language, club, includeCurrencyName: true })}</dd>
+                    </div>
+                    <div>
+                      <dt>{t('clubCuotaCurrencyName')}</dt>
+                      <dd>{club.cuota_moneda_nombre || t('notAvailable')}</dd>
+                    </div>
+                    <div>
+                      <dt>{t('clubCuotaCurrencySymbol')}</dt>
+                      <dd>{club.cuota_moneda_simbolo || t('notAvailable')}</dd>
+                    </div>
+                    <div>
+                      <dt>{t('clubCuotaFrequency')}</dt>
+                      <dd>{cuotaFrequencyLabel(club.cuota_frecuencia, t, club.cuota_frecuencia_otro)}</dd>
+                    </div>
+                  </>
+                )}
+              </dl>
+            ) : (
+              <div className="club-detalle-cuota-form">
+                <label className="club-detalle-cuota-toggle">
+                  <input
+                    type="checkbox"
+                    checked={cuotaForm.cuota_activa}
+                    onChange={e => setCuotaForm(prev => ({ ...prev, cuota_activa: e.target.checked }))}
+                  />
+                  {t('clubCuotaEnabled')}
+                </label>
+                {cuotaForm.cuota_activa && (
+                  <div className="form-grid club-detalle-cuota-fields">
+                    <FormField
+                      label={t('clubCuotaAmount')}
+                      htmlFor="club-cuota-monto"
+                      error={cuotaFieldErrors.cuota_monto}
+                      required
+                    >
+                      <input
+                        id="club-cuota-monto"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        value={cuotaForm.cuota_monto}
+                        onChange={e => setCuotaForm(prev => ({ ...prev, cuota_monto: e.target.value }))}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t('clubCuotaCurrencySymbol')}
+                      htmlFor="club-cuota-moneda-simbolo"
+                      error={cuotaFieldErrors.cuota_moneda_simbolo}
+                      required
+                    >
+                      <input
+                        id="club-cuota-moneda-simbolo"
+                        type="text"
+                        maxLength={12}
+                        className="form-input"
+                        value={cuotaForm.cuota_moneda_simbolo}
+                        onChange={e => setCuotaForm(prev => ({ ...prev, cuota_moneda_simbolo: e.target.value }))}
+                        placeholder={t('clubCuotaCurrencySymbolPlaceholder')}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t('clubCuotaCurrencyName')}
+                      htmlFor="club-cuota-moneda-nombre"
+                      error={cuotaFieldErrors.cuota_moneda_nombre}
+                      required
+                    >
+                      <input
+                        id="club-cuota-moneda-nombre"
+                        type="text"
+                        maxLength={80}
+                        className="form-input"
+                        value={cuotaForm.cuota_moneda_nombre}
+                        onChange={e => setCuotaForm(prev => ({ ...prev, cuota_moneda_nombre: e.target.value }))}
+                        placeholder={t('clubCuotaCurrencyNamePlaceholder')}
+                      />
+                    </FormField>
+                    <FormField label={t('clubCuotaFrequency')} htmlFor="club-cuota-frecuencia">
+                      <select
+                        id="club-cuota-frecuencia"
+                        className="form-input"
+                        value={cuotaForm.cuota_frecuencia}
+                        onChange={e => setCuotaForm(prev => ({ ...prev, cuota_frecuencia: e.target.value }))}
+                      >
+                        {cuotaFrequencyOptions.map(value => (
+                          <option key={value} value={value}>
+                            {cuotaFrequencyLabel(value, t)}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    {cuotaForm.cuota_frecuencia === 'otro' && (
+                      <FormField
+                        label={t('clubCuotaFrequencyOther')}
+                        htmlFor="club-cuota-frecuencia-otro"
+                        error={cuotaFieldErrors.cuota_frecuencia_otro}
+                        className="form-grid-full"
+                        required
+                      >
+                        <input
+                          id="club-cuota-frecuencia-otro"
+                          type="text"
+                          className="form-input"
+                          value={cuotaForm.cuota_frecuencia_otro}
+                          onChange={e => setCuotaForm(prev => ({ ...prev, cuota_frecuencia_otro: e.target.value }))}
+                        />
+                      </FormField>
+                    )}
+                  </div>
+                )}
+                <div className="club-detalle-cuota-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={saveClubCuota}
+                    disabled={savingCuota}
+                  >
+                    {savingCuota ? t('saving') : t('save')}
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="card club-detalle-section club-detalle-section--logos">

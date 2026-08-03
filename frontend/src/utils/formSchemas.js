@@ -27,10 +27,47 @@ export const FORM_SCHEMAS = {
     },
     formRules: [
       values => {
-        if (!values.requiere_confirmacion) return null;
+        const needsMembers = values.requiere_confirmacion || values.cuota_aplica;
+        if (!needsMembers) return null;
         if (values.memberAssignmentMode !== 'specific') return null;
         if ((values.selectedMemberIds || []).length > 0) return null;
         return { formError: 'validationEventMembersRequired' };
+      },
+      values => {
+        if (!values.cuota_aplica || values.cuota_use_default) return null;
+        const amount = Number(values.cuota_monto_override);
+        if (Number.isFinite(amount) && amount >= 0) return null;
+        return { field: 'cuota_monto_override', message: 'validationCuotaAmountRequired' };
+      },
+    ],
+  },
+
+  clubCuota: {
+    id: 'clubCuota',
+    label: 'Club cuota',
+    submitAction: 'saveClubCuota',
+    fields: {},
+    formRules: [
+      values => {
+        if (!values.cuota_activa) return null;
+        const amount = Number(values.cuota_monto);
+        if (Number.isFinite(amount) && amount >= 0) return null;
+        return { field: 'cuota_monto', message: 'validationCuotaAmountRequired' };
+      },
+      values => {
+        if (!values.cuota_activa || values.cuota_frecuencia !== 'otro') return null;
+        if ((values.cuota_frecuencia_otro || '').trim()) return null;
+        return { field: 'cuota_frecuencia_otro', message: 'validationCuotaFrequencyOtherRequired' };
+      },
+      values => {
+        if (!values.cuota_activa) return null;
+        if ((values.cuota_moneda_simbolo || '').trim()) return null;
+        return { field: 'cuota_moneda_simbolo', message: 'validationCuotaCurrencySymbolRequired' };
+      },
+      values => {
+        if (!values.cuota_activa) return null;
+        if ((values.cuota_moneda_nombre || '').trim()) return null;
+        return { field: 'cuota_moneda_nombre', message: 'validationCuotaCurrencyNameRequired' };
       },
     ],
   },

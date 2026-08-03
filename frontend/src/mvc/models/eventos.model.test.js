@@ -9,6 +9,7 @@ import {
   canMemberCancelEventConfirmation,
   computeCheckinAttendanceEstado,
   computeEventAttendanceSummary,
+  computeEventCuotaSummary,
   groupEventAttendanceAttendees,
   computeMemberAttendanceStats,
   eventRequiresConfirmation,
@@ -315,6 +316,55 @@ describe('memberAttendedEvent', () => {
     expect(getAsistenciaFromRow({
       evento_asistencia: [{ estado: 'a_tiempo' }],
     })).toBe('a_tiempo');
+  });
+});
+
+describe('computeEventCuotaSummary', () => {
+  const evento = { cuota_aplica: true, cuota_monto_override: 10 };
+  const club = { cuota_moneda_simbolo: '$' };
+
+  it('returns applies false when event has no cuota', () => {
+    expect(computeEventCuotaSummary([], { evento: { cuota_aplica: false }, club })).toEqual({
+      applies: false,
+      totalCollected: 0,
+      paidCount: 0,
+      attendedCount: 0,
+      unpaidCount: 0,
+    });
+  });
+
+  it('sums paid cuotas for attended members only', () => {
+    const rows = [
+      {
+        id: '1',
+        cuota_pagada: true,
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: '2',
+        cuota_pagada: true,
+        cuota_monto_override: 15,
+        evento_asistencia: { estado: 'tarde' },
+      },
+      {
+        id: '3',
+        cuota_pagada: false,
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: '4',
+        cuota_pagada: true,
+        evento_asistencia: { estado: 'ausente' },
+      },
+    ];
+
+    expect(computeEventCuotaSummary(rows, { evento, club })).toEqual({
+      applies: true,
+      totalCollected: 25,
+      paidCount: 2,
+      attendedCount: 3,
+      unpaidCount: 1,
+    });
   });
 });
 

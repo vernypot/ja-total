@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import MemberEventConfirmationStatus from './MemberEventConfirmationStatus';
 import * as EventosModel from '../mvc/models/eventos.model';
 
@@ -53,7 +55,27 @@ export default function EventListActionsModal({
   onDeactivate,
   onShowAttendanceList,
   onShowSummary,
+  onValidateCuota,
+  hasCuota,
 }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') onClose();
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onClose]);
+
   if (!open || !evento) return null;
 
   const showSelfConfirmInModal = Boolean(
@@ -138,7 +160,16 @@ export default function EventListActionsModal({
     });
   }
 
-  return (
+  if (canManage && hasCuota && !isExcluded && onValidateCuota) {
+    items.push({
+      key: 'cuota',
+      label: t('eventCuotaValidationAction'),
+      onClick: () => run(onValidateCuota),
+    });
+  }
+
+  return createPortal(
+    (
     <div
       className="event-overflow-menu-overlay"
       onClick={onClose}
@@ -195,5 +226,7 @@ export default function EventListActionsModal({
         )}
       </div>
     </div>
+    ),
+    document.body
   );
 }
