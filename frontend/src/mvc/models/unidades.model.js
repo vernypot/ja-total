@@ -18,6 +18,7 @@ export const LEADERSHIP_ROLES = [
 ];
 
 const UNIDAD_BASE_SELECTS = [
+  'id, club_id, nombre, descripcion, genero, orden, estado, evaluacion_inicio_fecha, created_at, updated_at',
   'id, club_id, nombre, descripcion, genero, orden, estado, created_at, updated_at',
   'id, club_id, nombre, descripcion, genero, created_at, updated_at',
   'id, club_id, nombre, descripcion, genero, created_at',
@@ -319,12 +320,19 @@ export async function fetchClubMembersForUnidades(clubId) {
   return { data: [], error: null };
 }
 
-export async function createUnidad({ clubId, nombre, genero, descripcion = null }) {
+export async function createUnidad({
+  clubId,
+  nombre,
+  genero,
+  descripcion = null,
+  evaluacionInicioFecha = null,
+}) {
   const { data, error } = await sb.rpc('admin_create_unidad', {
     p_club_id: clubId,
     p_nombre: nombre,
     p_genero: genero,
     p_descripcion: descripcion,
+    p_evaluacion_inicio_fecha: evaluacionInicioFecha || null,
   });
 
   if (!error) return { data, error: null };
@@ -339,13 +347,22 @@ export async function createUnidad({ clubId, nombre, genero, descripcion = null 
     nombre: nombre?.trim(),
     genero,
     descripcion: descripcion?.trim() || null,
+    evaluacion_inicio_fecha: evaluacionInicioFecha || null,
   };
 
   const direct = await sb.from('unidades').insert(payload).select('*').single();
   return direct;
 }
 
-export async function updateUnidad(unidadId, { nombre, genero, descripcion, orden, estado } = {}) {
+export async function updateUnidad(unidadId, {
+  nombre,
+  genero,
+  descripcion,
+  orden,
+  estado,
+  evaluacionInicioFecha,
+  clearEvaluacionInicioFecha = false,
+} = {}) {
   const { data, error } = await sb.rpc('admin_update_unidad', {
     p_unidad_id: unidadId,
     p_nombre: nombre ?? null,
@@ -353,6 +370,8 @@ export async function updateUnidad(unidadId, { nombre, genero, descripcion, orde
     p_descripcion: descripcion ?? null,
     p_orden: orden ?? null,
     p_estado: estado ?? null,
+    p_evaluacion_inicio_fecha: evaluacionInicioFecha ?? null,
+    p_clear_evaluacion_inicio_fecha: clearEvaluacionInicioFecha,
   });
 
   if (!error) return { data, error: null };
@@ -368,9 +387,21 @@ export async function updateUnidad(unidadId, { nombre, genero, descripcion, orde
   if (descripcion !== undefined) payload.descripcion = descripcion?.trim() || null;
   if (orden !== undefined) payload.orden = orden;
   if (estado !== undefined) payload.estado = estado;
+  if (clearEvaluacionInicioFecha) {
+    payload.evaluacion_inicio_fecha = null;
+  } else if (evaluacionInicioFecha !== undefined) {
+    payload.evaluacion_inicio_fecha = evaluacionInicioFecha || null;
+  }
   payload.updated_at = new Date().toISOString();
 
   return sb.from('unidades').update(payload).eq('id', unidadId).select('*').single();
+}
+
+export async function updateUnidadEvaluacionInicio(unidadId, evaluacionInicioFecha) {
+  return updateUnidad(unidadId, {
+    evaluacionInicioFecha: evaluacionInicioFecha || null,
+    clearEvaluacionInicioFecha: !evaluacionInicioFecha,
+  });
 }
 
 export async function deactivateUnidad(unidadId) {

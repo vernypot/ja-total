@@ -8,6 +8,7 @@ import MemberEventConfirmationStatus from '../../components/MemberEventConfirmat
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import * as EventosModel from '../../mvc/models/eventos.model';
+import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
   AttendanceBadge,
   AttendanceControls,
@@ -38,6 +39,7 @@ function MemberEventCard({
 }) {
   const evento = getEventoFromRow(row);
   const asistencia = getAsistenciaFromRow(row);
+  const asistenciaDisplay = getAttendanceDisplayEstado(row);
   const confirmacion = getConfirmacionFromRow(row);
   const checkedInAt = getCheckedInAtFromRow(row);
   const clubName = evento?.clubes?.nombre;
@@ -104,6 +106,7 @@ function MemberEventCard({
               eventoMiembroId={row.id}
               eventoId={evento?.id}
               current={asistencia}
+              currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
               canManage={canManage}
               onSet={(eventoMiembroId, estado) => updateAttendance(eventoMiembroId, estado)}
               confirmBeforeSet={confirmBeforeAttendanceSet}
@@ -147,7 +150,7 @@ function MemberEventCard({
       {!canManage && showMemberAttendance && (
         <div className="member-event-attendance-summary">
           <div className="event-attendance-row-label">{t('attendanceList')}</div>
-          <AttendanceBadge estado={asistencia} t={t} />
+          <AttendanceBadge estado={asistenciaDisplay} t={t} />
         </div>
       )}
     </div>

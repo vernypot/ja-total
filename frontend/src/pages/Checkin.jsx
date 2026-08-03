@@ -358,6 +358,7 @@ export default function Checkin() {
                             eventoMiembroId={row.id}
                             eventoId={eventoId}
                             current={asistencia}
+                            currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
                             canManage={canManage}
                             onSet={setAttendance}
                             confirmBeforeSet={buildConfirmBeforeAttendance(eventName, name)}

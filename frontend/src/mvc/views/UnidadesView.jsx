@@ -3,6 +3,7 @@ import BackLink from '../../components/BackLink';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
+import UnidadEvalConfigPanel from '../../components/UnidadEvalConfigPanel';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
@@ -16,6 +17,10 @@ function UnidadesListTable({
   getCaptainName,
   memberDisplayName,
   onEditUnidad,
+  evalScoresByUnidadId,
+  formatEvalPercent,
+  formatValidationStartDate,
+  language,
   t,
 }) {
   if (!unidades.length) return null;
@@ -23,6 +28,7 @@ function UnidadesListTable({
   return (
     <div className="card unidades-table-card">
       <h2 className="unidades-table-title">{t('unidadSummaryTitle')}</h2>
+      <p className="unidades-eval-summary-hint">{t('unidadEvalSummaryHint')}</p>
       <div className="unidades-table-wrap">
         <table className="unidades-table">
           <thead>
@@ -31,6 +37,9 @@ function UnidadesListTable({
               <th>{t('unidadGender')}</th>
               <th>{t('unidadMembersCount')}</th>
               <th>{t('unidadRole_capitan')}</th>
+              <th>{t('unidadEvalValidationStartCol')}</th>
+              <th>{t('unidadEvalEfficiencyCol')}</th>
+              <th>{t('unidadEvalExcellenceCol')}</th>
               <th>{t('actions')}</th>
             </tr>
           </thead>
@@ -38,6 +47,7 @@ function UnidadesListTable({
             {unidades.map(unidad => {
               const assignments = unidad.miembro_unidad || [];
               const captain = getCaptainName(unidad);
+              const scores = evalScoresByUnidadId?.[unidad.id] || {};
               return (
                 <tr key={unidad.id}>
                   <td>
@@ -49,6 +59,23 @@ function UnidadesListTable({
                   <td>{genderLabel(unidad.genero)}</td>
                   <td>{assignments.length}</td>
                   <td>{captain || '—'}</td>
+                  <td>
+                    {formatValidationStartDate(unidad.evaluacion_inicio_fecha, language) || t('unidadEvalValidationStartAll')}
+                  </td>
+                  <td>
+                    <strong>
+                      {scores.validationActive === false
+                        ? t('unidadEvalValidationPending')
+                        : formatEvalPercent(scores.efficiencyPercent)}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {scores.validationActive === false
+                        ? t('unidadEvalValidationPending')
+                        : formatEvalPercent(scores.excellencePercent)}
+                    </strong>
+                  </td>
                   <td>
                     <button type="button" className="home-link-btn" onClick={() => onEditUnidad(unidad)}>
                       {t('edit')}
@@ -101,6 +128,7 @@ export default function UnidadesView({
   assigningKey,
   saveUnidad,
   resetForm,
+  startCreateUnidad,
   startEditUnidad,
   removeUnidad,
   addMemberToUnidad,
@@ -113,8 +141,24 @@ export default function UnidadesView({
   roles,
   getCaptainName,
   listPagination,
+  evalConfig,
+  evalItems,
+  evalCantidades,
+  evalScoresByUnidadId,
+  evalSchemaAvailable,
+  savingEval,
+  savingItemId,
+  savingCantidadKey,
+  saveEvalConfig,
+  saveEvalItem,
+  removeEvalItem,
+  setEvalItemCantidad,
+  savingValidationStartId,
+  saveUnidadValidationStart,
+  formatEvalPercent,
+  formatValidationStartDate,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   if (!canManage) {
     return (
@@ -140,10 +184,7 @@ export default function UnidadesView({
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => {
-              resetForm();
-              setShowForm(true);
-            }}
+            onClick={startCreateUnidad}
           >
             + {t('unidadNew')}
           </button>
@@ -208,6 +249,21 @@ export default function UnidadesView({
                     <option value="F">{t('unidadGenderFemale')}</option>
                   </select>
                 </label>
+                <label className="unidades-field">
+                  <span className="unidades-field__label">{t('unidadEvalValidationStartLabel')}</span>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={form.evaluacion_inicio_fecha}
+                    onChange={e => setForm(prev => ({
+                      ...prev,
+                      evaluacion_inicio_fecha: e.target.value,
+                    }))}
+                  />
+                </label>
+                <label className="unidades-field unidades-field--full">
+                  <span className="unidades-field__hint">{t('unidadEvalValidationStartFieldHint')}</span>
+                </label>
                 <label className="unidades-field unidades-field--full">
                   <span className="unidades-field__label">{t('unidadDescription')}</span>
                   <textarea
@@ -246,6 +302,31 @@ export default function UnidadesView({
                 getCaptainName={getCaptainName}
                 memberDisplayName={memberDisplayName}
                 onEditUnidad={startEditUnidad}
+                evalScoresByUnidadId={evalScoresByUnidadId}
+                formatEvalPercent={formatEvalPercent}
+                formatValidationStartDate={formatValidationStartDate}
+                language={language}
+                t={t}
+              />
+
+              <UnidadEvalConfigPanel
+                canManage={canManage}
+                unidades={unidades}
+                evalConfig={evalConfig}
+                evalItems={evalItems}
+                evalCantidades={evalCantidades}
+                evalSchemaAvailable={evalSchemaAvailable}
+                savingEval={savingEval}
+                savingItemId={savingItemId}
+                savingCantidadKey={savingCantidadKey}
+                savingValidationStartId={savingValidationStartId}
+                onSaveConfig={saveEvalConfig}
+                onSaveItem={saveEvalItem}
+                onRemoveItem={removeEvalItem}
+                onSetCantidad={setEvalItemCantidad}
+                onSaveValidationStart={saveUnidadValidationStart}
+                formatValidationStartDate={formatValidationStartDate}
+                language={language}
                 t={t}
               />
 

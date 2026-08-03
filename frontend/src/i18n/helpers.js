@@ -9,6 +9,7 @@ export function attendanceLabel(estado, t) {
   if (estado === 'a_tiempo') return t('attendanceOnTime');
   if (estado === 'tarde') return t('attendanceLate');
   if (estado === 'ausente') return t('attendanceAbsent');
+  if (estado === 'ausente_justificado') return t('attendanceAbsentJustified');
   return t('attendancePending');
 }
 

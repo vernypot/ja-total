@@ -107,10 +107,10 @@ const EVENTO_SELECTS = [
 const EVENTO_MIEMBRO_SELECTS = [
   `id, evento_id, miembro_id, cuota_monto_override, cuota_pagada, cuota_pagada_at, confirmacion_estado, confirmado_at, justificacion_asignacion, asignado_manualmente_at,
    miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
-   evento_asistencia ( id, estado, updated_at, checked_in_at )`,
+   evento_asistencia ( id, estado, justificada, updated_at, checked_in_at )`,
   `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
    miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
-   evento_asistencia ( id, estado, updated_at, checked_in_at )`,
+   evento_asistencia ( id, estado, justificada, updated_at, checked_in_at )`,
   `id, evento_id, miembro_id,
    miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
    evento_asistencia ( id, estado, updated_at, checked_in_at )`,
@@ -607,32 +607,57 @@ async function fetchActiveClubMemberIds(clubId) {
     .map(m => m.id);
 }
 
-export async function setEventoAsistencia(eventoMiembroId, estado) {
+export async function setEventoAsistencia(eventoMiembroId, estado, options = {}) {
+  let resolvedEstado = estado;
+  let justificada = Boolean(options.justificada);
+
+  if (resolvedEstado === 'ausente_justificado') {
+    resolvedEstado = 'ausente';
+    justificada = true;
+  }
+
+  if (resolvedEstado !== 'ausente') {
+    justificada = false;
+  }
+
   const existing = await sb
     .from('evento_asistencia')
     .select('id')
     .eq('evento_miembro_id', eventoMiembroId)
     .maybeSingle();
 
+  const payload = { estado: resolvedEstado, justificada };
+
   if (existing.data?.id) {
     const direct = await sb
       .from('evento_asistencia')
-      .update({ estado })
+      .update(payload)
       .eq('id', existing.data.id);
     if (!direct.error) return direct;
-    if (!isRlsError(direct.error)) return direct;
+    if (!isRlsError(direct.error) && !isMissingColumnError(direct.error, 'justificada')) return direct;
   } else {
     const direct = await sb.from('evento_asistencia').insert([{
       evento_miembro_id: eventoMiembroId,
-      estado,
+      ...payload,
     }]);
     if (!direct.error) return direct;
-    if (!isRlsError(direct.error)) return direct;
+    if (!isRlsError(direct.error) && !isMissingColumnError(direct.error, 'justificada')) return direct;
   }
 
   return sb.rpc('admin_set_evento_asistencia', {
     p_evento_miembro_id: eventoMiembroId,
-    p_estado: estado,
+    p_estado: resolvedEstado,
+    p_justificada: justificada,
+  }).then(async (result) => {
+    if (!result.error) return result;
+    const msg = result.error?.message || '';
+    if (msg.includes('p_justificada') || msg.includes('justificada')) {
+      return sb.rpc('admin_set_evento_asistencia', {
+        p_evento_miembro_id: eventoMiembroId,
+        p_estado: resolvedEstado,
+      });
+    }
+    return result;
   });
 }
 
@@ -1168,6 +1193,12 @@ export function getAsistenciaFromRow(row) {
   const nested = row?.evento_asistencia ?? row?.eventos?.evento_asistencia;
   if (Array.isArray(nested)) return nested[0]?.estado || null;
   return nested?.estado || null;
+}
+
+export function getAsistenciaJustificadaFromRow(row) {
+  const nested = row?.evento_asistencia ?? row?.eventos?.evento_asistencia;
+  if (Array.isArray(nested)) return Boolean(nested[0]?.justificada);
+  return Boolean(nested?.justificada);
 }
 
 export function getConfirmacionFromRow(row) {

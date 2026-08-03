@@ -9,12 +9,25 @@ import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
 import * as UnidadesModel from '../models/unidades.model';
 import * as ClubesModel from '../models/clubes.model';
+import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
+import {
+  computeAllUnidadEvaluations,
+  DEFAULT_UNIDAD_EVAL_CONFIG,
+  formatEvalPoints,
+  formatEvalPercent,
+  formatValidationStartDate,
+} from '../../utils/unidadEvaluacion';
 
 const EMPTY_FORM = {
   nombre: '',
   genero: 'M',
   descripcion: '',
+  evaluacion_inicio_fecha: '',
 };
+
+function todayDateInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export function useUnidadesController() {
   const { user, userData } = useContext(AuthContext);
@@ -41,6 +54,15 @@ export function useUnidadesController() {
   const [editingUnidadId, setEditingUnidadId] = useState('');
   const [savingUnidadId, setSavingUnidadId] = useState('');
   const [assigningKey, setAssigningKey] = useState('');
+  const [evalConfig, setEvalConfig] = useState({ ...DEFAULT_UNIDAD_EVAL_CONFIG });
+  const [evalItems, setEvalItems] = useState([]);
+  const [evalCantidades, setEvalCantidades] = useState([]);
+  const [memberEventRows, setMemberEventRows] = useState([]);
+  const [evalSchemaAvailable, setEvalSchemaAvailable] = useState(true);
+  const [savingEval, setSavingEval] = useState(false);
+  const [savingItemId, setSavingItemId] = useState('');
+  const [savingCantidadKey, setSavingCantidadKey] = useState('');
+  const [savingValidationStartId, setSavingValidationStartId] = useState('');
 
   const loadedClubIdRef = useRef('');
   const urlSyncedRef = useRef(false);
@@ -72,6 +94,54 @@ export function useUnidadesController() {
     () => UnidadesModel.attachMembersToUnidadAssignments(unidades, membersById),
     [unidades, membersById]
   );
+
+  const evalScoresByUnidadId = useMemo(
+    () => computeAllUnidadEvaluations({
+      unidades: displayUnidades,
+      memberEventRows,
+      config: evalConfig,
+      evalItems,
+      cantidades: evalCantidades,
+    }),
+    [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades]
+  );
+
+  async function loadEvalData(currentClubId, currentUnidades, currentMembers) {
+    if (!currentClubId) {
+      setEvalConfig({ ...DEFAULT_UNIDAD_EVAL_CONFIG });
+      setEvalItems([]);
+      setEvalCantidades([]);
+      setMemberEventRows([]);
+      setEvalSchemaAvailable(true);
+      return;
+    }
+
+    const memberIds = UnidadesModel.getAssignedMemberIds(currentUnidades);
+    const ids = [...memberIds];
+
+    const [evalResult, eventRowsResult] = await Promise.all([
+      UnidadEvaluacionModel.fetchClubUnidadEval(currentClubId),
+      ids.length
+        ? UnidadEvaluacionModel.fetchClubMemberEventRowsForEval(currentClubId, ids)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (evalResult.error) {
+      const msg = evalResult.error.message || '';
+      if (msg.includes('does not exist') || msg.includes('Could not find')) {
+        setEvalSchemaAvailable(false);
+      }
+    } else {
+      setEvalSchemaAvailable(true);
+      setEvalConfig(evalResult.data?.config || { ...DEFAULT_UNIDAD_EVAL_CONFIG });
+      setEvalItems(evalResult.data?.items || []);
+      setEvalCantidades(evalResult.data?.cantidades || []);
+    }
+
+    if (!eventRowsResult.error) {
+      setMemberEventRows(eventRowsResult.data || []);
+    }
+  }
 
   async function refreshUnidades({ showLoading = false } = {}) {
     if (!clubId) {
@@ -111,6 +181,7 @@ export function useUnidadesController() {
 
     setUnidades(unidadesResult.data || []);
     setMembers(membersResult.data || []);
+    await loadEvalData(clubId, unidadesResult.data || [], membersResult.data || []);
     setLoading(false);
   }
 
@@ -208,6 +279,7 @@ export function useUnidadesController() {
 
       setUnidades(unidadesResult.data || []);
       setMembers(membersResult.data || []);
+      await loadEvalData(clubId, unidadesResult.data || [], membersResult.data || []);
       setLoading(false);
     }
 
@@ -228,9 +300,21 @@ export function useUnidadesController() {
   }
 
   function resetForm() {
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      evaluacion_inicio_fecha: todayDateInputValue(),
+    });
     setEditingUnidadId('');
     setShowForm(false);
+  }
+
+  function startCreateUnidad() {
+    setEditingUnidadId('');
+    setForm({
+      ...EMPTY_FORM,
+      evaluacion_inicio_fecha: todayDateInputValue(),
+    });
+    setShowForm(true);
   }
 
   function startEditUnidad(unidad) {
@@ -239,6 +323,7 @@ export function useUnidadesController() {
       nombre: unidad.nombre || '',
       genero: unidad.genero || 'M',
       descripcion: unidad.descripcion || '',
+      evaluacion_inicio_fecha: unidad.evaluacion_inicio_fecha || '',
     });
     setShowForm(true);
   }
@@ -258,6 +343,7 @@ export function useUnidadesController() {
       nombre: form.nombre.trim(),
       genero: form.genero,
       descripcion: form.descripcion.trim() || null,
+      evaluacionInicioFecha: form.evaluacion_inicio_fecha || null,
     };
 
     const result = editingUnidadId
@@ -370,6 +456,124 @@ export function useUnidadesController() {
     await refreshUnidades();
   }
 
+  async function saveEvalConfig(nextConfig) {
+    if (!canManage || !clubId) return;
+    setError('');
+    setMessage('');
+    setSavingEval(true);
+
+    const { error: saveError } = await UnidadEvaluacionModel.saveClubUnidadEvalConfig(clubId, nextConfig);
+    setSavingEval(false);
+
+    if (saveError) {
+      setError(saveError.message || t('unidadEvalSaveError'));
+      return;
+    }
+
+    setEvalConfig(nextConfig);
+    setMessage(t('unidadEvalSaved'));
+  }
+
+  async function saveEvalItem({ itemId, nombre, descripcion, puntos }) {
+    if (!canManage || !clubId || !nombre) return;
+    setError('');
+    setMessage('');
+    setSavingItemId(itemId || 'new');
+
+    const { error: saveError } = await UnidadEvaluacionModel.upsertClubUnidadEvalItem({
+      clubId,
+      itemId,
+      nombre,
+      descripcion,
+      puntos,
+      orden: evalItems.length,
+    });
+
+    setSavingItemId('');
+
+    if (saveError) {
+      setError(saveError.message || t('unidadEvalItemSaveError'));
+      return;
+    }
+
+    setMessage(itemId ? t('unidadEvalItemUpdated') : t('unidadEvalItemCreated'));
+    await loadEvalData(clubId, unidades, members);
+  }
+
+  async function removeEvalItem(itemId) {
+    if (!canManage || !itemId) return;
+    setError('');
+    setSavingItemId(itemId);
+
+    const { error: deleteError } = await UnidadEvaluacionModel.deactivateClubUnidadEvalItem(itemId);
+    setSavingItemId('');
+
+    if (deleteError) {
+      setError(deleteError.message || t('unidadEvalItemDeleteError'));
+      return;
+    }
+
+    setMessage(t('unidadEvalItemDeleted'));
+    await loadEvalData(clubId, unidades, members);
+  }
+
+  async function setEvalItemCantidad({ unidadId, evalItemId, cantidad }) {
+    if (!canManage || !unidadId || !evalItemId) return;
+    const key = `${unidadId}:${evalItemId}`;
+    setSavingCantidadKey(key);
+
+    const { error: saveError } = await UnidadEvaluacionModel.setUnidadEvalItemCantidad({
+      unidadId,
+      evalItemId,
+      cantidad,
+    });
+
+    setSavingCantidadKey('');
+
+    if (saveError) {
+      setError(saveError.message || t('unidadEvalCountSaveError'));
+      return;
+    }
+
+    setEvalCantidades(prev => {
+      const next = [...prev];
+      const index = next.findIndex(
+        row => row.unidad_id === unidadId && row.eval_item_id === evalItemId
+      );
+      if (index >= 0) {
+        next[index] = { ...next[index], cantidad };
+      } else {
+        next.push({ unidad_id: unidadId, eval_item_id: evalItemId, cantidad });
+      }
+      return next;
+    });
+  }
+
+  async function saveUnidadValidationStart(unidadId, evaluacionInicioFecha) {
+    if (!canManage || !unidadId) return;
+    setError('');
+    setSavingValidationStartId(unidadId);
+
+    const { error: saveError } = await UnidadesModel.updateUnidadEvaluacionInicio(
+      unidadId,
+      evaluacionInicioFecha || null,
+    );
+
+    setSavingValidationStartId('');
+
+    if (saveError) {
+      setError(saveError.message || t('unidadEvalValidationStartSaveError'));
+      return;
+    }
+
+    setUnidades(prev => prev.map(unidad => (
+      unidad.id === unidadId
+        ? { ...unidad, evaluacion_inicio_fecha: evaluacionInicioFecha || null }
+        : unidad
+    )));
+    setMessage(t('unidadEvalValidationStartSaved'));
+  }
+
   return {
     canManage,
     clubId,
@@ -406,5 +610,23 @@ export function useUnidadesController() {
     roleLabel: rol => UnidadesModel.roleLabel(rol, t),
     roles: UnidadesModel.UNIDAD_ROLES,
     getCaptainName: unidad => UnidadesModel.getUnidadCaptainName(unidad, UnidadesModel.memberDisplayNameFromRow),
+    evalConfig,
+    evalItems,
+    evalCantidades,
+    evalScoresByUnidadId,
+    evalSchemaAvailable,
+    savingEval,
+    savingItemId,
+    savingCantidadKey,
+    savingValidationStartId,
+    saveEvalConfig,
+    saveEvalItem,
+    removeEvalItem,
+    setEvalItemCantidad,
+    saveUnidadValidationStart,
+    startCreateUnidad,
+    formatEvalPoints,
+    formatEvalPercent,
+    formatValidationStartDate,
   };
 }

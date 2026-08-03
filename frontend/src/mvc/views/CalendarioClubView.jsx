@@ -8,6 +8,8 @@ import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
+import * as EventosModel from '../../mvc/models/eventos.model';
+import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
   AttendanceControls,
   ConfirmationControls,
@@ -414,6 +416,7 @@ function EventDetailModal({
                               eventoMiembroId={row.id}
                               eventoId={event.id}
                               current={asistencia}
+                              currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
                               canManage={canManage}
                               onSet={setAttendance}
                               confirmBeforeSet={buildConfirmBeforeAttendance(name)}
@@ -427,7 +430,7 @@ function EventDetailModal({
                             {t('attendanceConfirmation')}: {confirmationLabel(confirmacion, t)}
                           </span>
                           <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                            {t('attendanceList')}: {attendanceLabel(asistencia, t)}
+                            {t('attendanceList')}: {attendanceLabel(getAttendanceDisplayEstado(row), t)}
                           </span>
                         </div>
                       )}
