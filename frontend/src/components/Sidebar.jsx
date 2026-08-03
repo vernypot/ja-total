@@ -77,6 +77,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('portalNavCalendar')}
             </NavLinkItem>
+            <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
+              {t('portalNavReglamento')}
+            </NavLinkItem>
           </>
         ) : (
           <>
@@ -93,6 +96,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             </NavLinkItem>
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('clubCalendar')}
+            </NavLinkItem>
+            <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
+              {t('reglamentoNav')}
             </NavLinkItem>
             {(adminOrAbove || eventOperator) && (
               <NavLinkItem to="/dashboard/eventos" icon="events" active={isActive('/dashboard/eventos')}>

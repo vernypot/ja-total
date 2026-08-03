@@ -211,6 +211,55 @@ describe('validation start date', () => {
     expect(result.breakdown.a_tiempo).toBe(0);
     expect(result.efficiencyPercent).toBe(0);
   });
+
+  it('reduces efficiency when reglamento penalties apply', () => {
+    const withoutPenalty = computeUnidadEvaluation({
+      unidad: {
+        id: 'u1',
+        miembro_unidad: [{ miembro_id: 'm1' }],
+      },
+      memberEventRows: [{
+        miembro_id: 'm1',
+        confirmacion_estado: 'confirmado',
+        evento_asistencia: { estado: 'a_tiempo' },
+        eventos: pastEvent,
+      }],
+      config: baseConfig,
+      evalItems: [],
+      cantidadMap: {},
+      reglamentoInfracciones: [],
+      reglamentoNodosById: {},
+    });
+
+    const withPenalty = computeUnidadEvaluation({
+      unidad: {
+        id: 'u1',
+        miembro_unidad: [{ miembro_id: 'm1' }],
+      },
+      memberEventRows: [{
+        miembro_id: 'm1',
+        confirmacion_estado: 'confirmado',
+        evento_asistencia: { estado: 'a_tiempo' },
+        eventos: pastEvent,
+      }],
+      config: baseConfig,
+      evalItems: [],
+      cantidadMap: {},
+      reglamentoInfracciones: [{
+        unidad_id: 'u1',
+        reglamento_nodo_id: 'rule1',
+        cantidad: 1,
+        fecha: '2020-01-01',
+      }],
+      reglamentoNodosById: {
+        rule1: { id: 'rule1', puntos_penalizacion: 10 },
+      },
+    });
+
+    expect(withoutPenalty.efficiencyPercent).toBe(100);
+    expect(withPenalty.penaltyPoints).toBe(10);
+    expect(withPenalty.efficiencyPercent).toBeLessThan(withoutPenalty.efficiencyPercent);
+  });
 });
 
 describe('countMemberAttendanceBreakdown', () => {

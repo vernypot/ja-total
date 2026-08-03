@@ -11,6 +11,10 @@ import {
   isEventoIncludedInMemberStats,
 } from '../mvc/models/eventos.model';
 import { normalizeEventDate } from './eventTimezone';
+import {
+  computePenaltyPointsForUnidad,
+  filterInfraccionesForValidationPeriod,
+} from './reglamento';
 
 export const ATTENDANCE_EVAL_KEYS = [
   'confirmacion',
@@ -268,10 +272,12 @@ export function computeUnidadPercentages({
   helpers,
   config,
   otherPoints,
+  penaltyPoints = 0,
 }) {
   const ids = [...(memberIds || [])];
   const memberCount = ids.length;
   const otherPerMember = memberCount > 0 ? (otherPoints || 0) / memberCount : 0;
+  const penaltyPerMember = memberCount > 0 ? (penaltyPoints || 0) / memberCount : 0;
 
   if (!memberCount) {
     return {
@@ -292,7 +298,10 @@ export function computeUnidadPercentages({
     const opportunities = countMemberOpportunities(memberRows, helpers);
     const cuotaCount = countMemberPaidCuotas(memberRows, helpers);
 
-    const efficiencyEarned = computeMemberEfficiencyEarned(breakdown, cuotaCount, config);
+    const efficiencyEarned = Math.max(
+      0,
+      computeMemberEfficiencyEarned(breakdown, cuotaCount, config) - penaltyPerMember,
+    );
     const efficiencyMax = computeMemberEfficiencyMax(opportunities, config);
     const efficiencyPercent = toEvalPercent(efficiencyEarned, efficiencyMax);
     if (efficiencyPercent != null) {
@@ -378,6 +387,8 @@ export function computeUnidadEvaluation({
   config,
   evalItems,
   cantidadMap,
+  reglamentoInfracciones = [],
+  reglamentoNodosById = {},
 }) {
   const normalizedConfig = normalizeEvalConfig(config);
   const memberIds = new Set(
@@ -414,13 +425,20 @@ export function computeUnidadEvaluation({
   const otherPoints = validationActive
     ? computeOtherPointsForUnidad(unidad?.id, evalItems, cantidadMap)
     : 0;
-  const total = attendanceByCategory.total + cuotaPoints + otherPoints;
+  const relevantInfracciones = validationActive
+    ? filterInfraccionesForValidationPeriod(reglamentoInfracciones, validationStartDate)
+    : [];
+  const penaltyPoints = validationActive
+    ? computePenaltyPointsForUnidad(unidad?.id, relevantInfracciones, reglamentoNodosById)
+    : 0;
+  const total = Math.max(0, attendanceByCategory.total + cuotaPoints + otherPoints - penaltyPoints);
   const percentages = computeUnidadPercentages({
     memberIds,
     relevantRows,
     helpers,
     config: normalizedConfig,
     otherPoints,
+    penaltyPoints,
   });
 
   return {
@@ -432,6 +450,7 @@ export function computeUnidadEvaluation({
     attendancePoints: attendanceByCategory.total,
     cuotaPoints,
     otherPoints,
+    penaltyPoints,
     total,
     efficiencyPercent: validationActive ? percentages.efficiencyPercent : null,
     excellencePercent: validationActive ? percentages.excellencePercent : null,
@@ -446,8 +465,14 @@ export function computeAllUnidadEvaluations({
   config,
   evalItems,
   cantidades,
+  reglamentoInfracciones = [],
+  reglamentoNodos = [],
 }) {
   const cantidadMap = buildCantidadMap(cantidades);
+  const reglamentoNodosById = {};
+  for (const nodo of reglamentoNodos || []) {
+    if (nodo?.id) reglamentoNodosById[nodo.id] = nodo;
+  }
   const scoresByUnidadId = {};
 
   for (const unidad of unidades || []) {
@@ -458,6 +483,8 @@ export function computeAllUnidadEvaluations({
       config,
       evalItems,
       cantidadMap,
+      reglamentoInfracciones,
+      reglamentoNodosById,
     });
   }
 

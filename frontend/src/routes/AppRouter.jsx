@@ -43,6 +43,7 @@ import MemberPortalHome from "../pages/MemberPortalHome";
 import MemberPortalProfile from "../pages/MemberPortalProfile";
 import MemberPortalEventos from "../pages/MemberPortalEventos";
 import MemberPortalCalendario from "../pages/MemberPortalCalendario";
+import Reglamento from "../pages/Reglamento";
 import ProtectedRoute from "../components/ProtectedRoute";
 import StaffOnlyRoute from "../components/StaffOnlyRoute";
 import PortalOrStaffPage from "../components/PortalOrStaffPage";
@@ -74,6 +75,7 @@ export default function AppRouter() {
         <Route path="/portal/noticias" element={<Navigate to="/dashboard/noticias" replace />} />
         <Route path="/portal/eventos" element={<Navigate to="/dashboard/eventos" replace />} />
         <Route path="/portal/calendario" element={<Navigate to="/dashboard/calendario" replace />} />
+        <Route path="/portal/reglamento" element={<Navigate to="/dashboard/reglamento" replace />} />
 
         <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />}>
           <Route index element={<Navigate to={DASHBOARD_HOME_PATH} replace />} />
@@ -110,6 +112,7 @@ export default function AppRouter() {
             path="calendario"
             element={<PortalOrStaffPage portal={MemberPortalCalendario} staff={CalendarioClub} />}
           />
+          <Route path="reglamento" element={<Reglamento />} />
           <Route path="planificacion" element={<StaffOnlyRoute element={<AdminRoute element={<PlanificacionPeriodo />} />} />} />
           <Route path="tipos-evento" element={<StaffOnlyRoute element={<AdminRoute element={<TiposEvento />} />} />} />
           <Route path="distinciones" element={<StaffOnlyRoute element={<AdminRoute element={<Distinciones />} />} />} />
