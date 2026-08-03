@@ -8,6 +8,7 @@ import MemberEventConfirmationStatus from '../../components/MemberEventConfirmat
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import * as EventosModel from '../../mvc/models/eventos.model';
+import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
   AttendanceBadge,
   AttendanceControls,
@@ -38,6 +39,7 @@ function MemberEventCard({
 }) {
   const evento = getEventoFromRow(row);
   const asistencia = getAsistenciaFromRow(row);
+  const asistenciaDisplay = getAttendanceDisplayEstado(row);
   const confirmacion = getConfirmacionFromRow(row);
   const checkedInAt = getCheckedInAtFromRow(row);
   const clubName = evento?.clubes?.nombre;
@@ -104,6 +106,7 @@ function MemberEventCard({
               eventoMiembroId={row.id}
               eventoId={evento?.id}
               current={asistencia}
+              currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
               canManage={canManage}
               onSet={(eventoMiembroId, estado) => updateAttendance(eventoMiembroId, estado)}
               confirmBeforeSet={confirmBeforeAttendanceSet}
@@ -147,7 +150,7 @@ function MemberEventCard({
       {!canManage && showMemberAttendance && (
         <div className="member-event-attendance-summary">
           <div className="event-attendance-row-label">{t('attendanceList')}</div>
-          <AttendanceBadge estado={asistencia} t={t} />
+          <AttendanceBadge estado={asistenciaDisplay} t={t} />
         </div>
       )}
     </div>
@@ -155,33 +158,37 @@ function MemberEventCard({
 }
 
 export default function MiembroEventosView({
-  rows,
+  rows = [],
   allRows,
-  attendedCount,
-  attendanceFilter,
-  setAttendanceFilter,
+  attendedCount = 0,
+  attendanceFilter = 'attended',
+  setAttendanceFilter = () => {},
   timeFilter = 'all',
   setTimeFilter,
   showTimeFilter = false,
   totalEventCount = 0,
   error,
   loading,
-  canManage,
-  updateAttendance,
-  updateConfirmation,
+  canManage = false,
+  updateAttendance = () => {},
+  updateConfirmation = () => {},
   getEventoFromRow,
   getAsistenciaFromRow,
   getCheckedInAtFromRow,
   getConfirmacionFromRow,
-  memberAttendedEvent,
+  memberAttendedEvent = () => false,
   eventRequiresConfirmation,
   getTipoEventoNombre,
   isEventInFuture,
   getEventChurchTimezone,
   savingConfirmationId = null,
   listPagination,
+  embedded = false,
+  renderBeforeList = null,
 }) {
   const { t, language } = useLanguage();
+  const resolvedAllRows = allRows ?? rows ?? [];
+  const resolvedRows = rows ?? [];
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
@@ -245,33 +252,36 @@ export default function MiembroEventosView({
 
   const attendedRowsAll = useMemo(
     () => EventosModel.sortMemberEventRowsByEventDateDesc(
-      allRows.filter(memberAttendedEvent)
+      resolvedAllRows.filter(memberAttendedEvent)
     ),
-    [allRows, memberAttendedEvent]
+    [resolvedAllRows, memberAttendedEvent]
   );
 
   const attendedRowsListed = useMemo(
     () => (attendanceFilter === 'attended'
-      ? EventosModel.sortMemberEventRowsByEventDateDesc(rows)
+      ? EventosModel.sortMemberEventRowsByEventDateDesc(resolvedRows)
       : attendedRowsAll),
-    [attendanceFilter, rows, attendedRowsAll]
+    [attendanceFilter, resolvedRows, attendedRowsAll]
   );
 
   const otherRows = useMemo(() => {
     if (attendanceFilter === 'attended') return [];
-    return rows.filter(row => !memberAttendedEvent(row));
-  }, [rows, attendanceFilter, memberAttendedEvent]);
+    return resolvedRows.filter(row => !memberAttendedEvent(row));
+  }, [resolvedRows, attendanceFilter, memberAttendedEvent]);
 
   if (loading) {
-    return <p>{t('loadingEvents')}</p>;
+    return embedded ? null : <p>{t('loadingEvents')}</p>;
   }
 
   return (
     <div>
-      <h3>{t('tabEvents')} <PageHelpLink pageId="memberEvents" compact /></h3>
-      {error && <div className="alert alert-error">{error}</div>}
+      {!embedded && (
+        <h3>{t('tabEvents')} <PageHelpLink pageId="memberEvents" compact /></h3>
+      )}
+      {!embedded && error && <div className="alert alert-error">{error}</div>}
+      {renderBeforeList}
 
-      {(allRows.length > 0 || totalEventCount > 0) && (
+      {(resolvedAllRows.length > 0 || totalEventCount > 0) && (
         <div className="member-events-toolbar">
           <span className="member-events-attended-summary">
             {t('memberEventsAttendedSummary').replace('{count}', String(attendedCount))}
@@ -326,7 +336,7 @@ export default function MiembroEventosView({
 
       {totalEventCount === 0 ? (
         <p className="text-muted">{t('noMemberEvents')}</p>
-      ) : allRows.length === 0 ? (
+      ) : resolvedAllRows.length === 0 ? (
         <p className="text-muted">
           {timeFilter === 'past'
             ? t('noMemberEventsPast')

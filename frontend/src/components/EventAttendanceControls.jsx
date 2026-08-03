@@ -140,24 +140,29 @@ export function AttendanceControls({
   eventoMiembroId,
   eventoId,
   current,
+  currentJustificada = false,
   canManage,
   onSet,
   confirmBeforeSet,
   t,
 }) {
+  const displayCurrent = current === 'ausente' && currentJustificada
+    ? 'ausente_justificado'
+    : current;
+
   if (!canManage) {
-    return <AttendanceBadge estado={current} t={t} />;
+    return <AttendanceBadge estado={displayCurrent} t={t} />;
   }
 
   return (
     <div className="event-status-toggle-group">
-      {['a_tiempo', 'tarde', 'ausente'].map(estado => (
+      {['a_tiempo', 'tarde', 'ausente', 'ausente_justificado'].map(estado => (
         <EventStatusToggleButton
           key={estado}
           estado={estado}
-          selected={current === estado}
+          selected={displayCurrent === estado}
           label={attendanceLabel(estado, t)}
-          className={`event-status-toggle--${estado === 'a_tiempo' ? 'confirmado' : estado}`}
+          className={`event-status-toggle--${estado === 'a_tiempo' ? 'confirmado' : estado === 'ausente_justificado' ? 'pendiente' : estado}`}
           onClick={() => invokeSet(
             confirmBeforeSet,
             estado,
@@ -197,6 +202,7 @@ export function AttendanceBadge({ estado, t }) {
     a_tiempo: { bg: 'var(--success-light)', color: 'var(--color-text-primary)', border: 'var(--success)' },
     tarde: { bg: 'var(--warning-light)', color: 'var(--color-text-primary)', border: 'var(--warning)' },
     ausente: { bg: 'var(--danger-light)', color: 'var(--color-text-primary)', border: 'var(--danger)' },
+    ausente_justificado: { bg: '#e0e7ff', color: 'var(--color-text-primary)', border: '#6366f1' },
   };
   const style = colors[estado] || { bg: 'var(--gray-100)', color: 'var(--color-text-muted)', border: 'var(--gray-300)' };
 

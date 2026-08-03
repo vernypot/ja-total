@@ -48,6 +48,7 @@ BEGIN
           'estado', e.estado,
           'requiere_confirmacion', e.requiere_confirmacion,
           'asistencia_grupo_id', e.asistencia_grupo_id,
+          'excluir_registro_asistencia', e.excluir_registro_asistencia,
           'cuota_aplica', e.cuota_aplica,
           'cuota_monto_override', e.cuota_monto_override,
           'tipo_evento_id', e.tipo_evento_id,
@@ -86,6 +87,7 @@ BEGIN
     LEFT JOIN public.tipos_evento te ON te.id = e.tipo_evento_id
     WHERE em.miembro_id = p_miembro_id
       AND e.estado IN ('activo', 'finalizado')
+      AND NOT coalesce(e.excluir_registro_asistencia, false)
 
     UNION ALL
 
@@ -108,6 +110,7 @@ BEGIN
           'estado', e.estado,
           'requiere_confirmacion', e.requiere_confirmacion,
           'asistencia_grupo_id', e.asistencia_grupo_id,
+          'excluir_registro_asistencia', e.excluir_registro_asistencia,
           'cuota_aplica', e.cuota_aplica,
           'cuota_monto_override', e.cuota_monto_override,
           'tipo_evento_id', e.tipo_evento_id,
@@ -137,6 +140,7 @@ BEGIN
     LEFT JOIN public.iglesias i ON i.id = c.iglesia_id
     LEFT JOIN public.tipos_evento te ON te.id = e.tipo_evento_id
     WHERE e.estado IN ('activo', 'finalizado')
+      AND NOT coalesce(e.excluir_registro_asistencia, false)
       AND coalesce(e.requiere_confirmacion, true) = false
       AND NOT EXISTS (
         SELECT 1

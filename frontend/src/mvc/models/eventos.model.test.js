@@ -359,6 +359,33 @@ describe('merged member event attendance', () => {
     expect(stats.attended).toBe(2);
     expect(stats.onTime).toBe(2);
   });
+
+  it('does not propagate attendance from excluded merged siblings', () => {
+    const rows = [
+      {
+        id: 'em-1',
+        eventos: {
+          id: 'evt-a',
+          asistencia_grupo_id: 'grupo-1',
+          excluir_registro_asistencia: true,
+        },
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: 'em-2',
+        eventos: {
+          id: 'evt-b',
+          asistencia_grupo_id: 'grupo-1',
+        },
+        evento_asistencia: null,
+      },
+    ];
+
+    const context = buildMemberMergedAttendanceContext(rows);
+
+    expect(memberAttendedEvent(rows[1], context)).toBe(false);
+    expect(getMemberEventAsistencia(rows[1], context)).toBeNull();
+  });
 });
 
 describe('memberAttendedEvent', () => {

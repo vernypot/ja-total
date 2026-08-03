@@ -605,6 +605,7 @@ export function useMemberPortalAsistenciaController() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [attendanceFilter, setAttendanceFilter] = useState('attended');
   const [savingConfirmationId, setSavingConfirmationId] = useState(null);
 
   const attendanceHelpers = {
@@ -635,15 +636,7 @@ export function useMemberPortalAsistenciaController() {
       return;
     }
 
-    const sorted = [...(data || [])].sort((a, b) => {
-      const eventA = EventosModel.getEventoFromRow(a);
-      const eventB = EventosModel.getEventoFromRow(b);
-      return compareEventsByLocalDateTime(eventB, eventA);
-    });
-
-    setRows(sorted.filter(row => EventosModel.isEventoIncludedInMemberStats(
-      EventosModel.getEventoFromRow(row)
-    )));
+    setRows(EventosModel.sortMemberEventRowsByEventDateDesc(data || []));
     if (!silent) setLoading(false);
   }
 
@@ -682,14 +675,35 @@ export function useMemberPortalAsistenciaController() {
     await load({ silent: true });
   }
 
+  const statsRows = useMemo(
+    () => rows.filter(row => EventosModel.isEventoIncludedInMemberStats(
+      EventosModel.getEventoFromRow(row)
+    )),
+    [rows]
+  );
+
   const mergedAttendanceHelpers = useMemo(
     () => EventosModel.createMemberMergedAttendanceHelpers(rows),
     [rows]
   );
 
+  const attendedCount = useMemo(
+    () => rows.filter(mergedAttendanceHelpers.memberAttendedEvent).length,
+    [rows, mergedAttendanceHelpers]
+  );
+
+  const filteredRows = useMemo(() => {
+    if (attendanceFilter === 'attended') {
+      return EventosModel.sortMemberEventRowsByEventDateDesc(
+        rows.filter(mergedAttendanceHelpers.memberAttendedEvent)
+      );
+    }
+    return rows;
+  }, [rows, attendanceFilter, mergedAttendanceHelpers]);
+
   const stats = useMemo(
-    () => EventosModel.computeMemberAttendanceStats(rows, attendanceHelpers),
-    [rows]
+    () => EventosModel.computeMemberAttendanceStats(statsRows, attendanceHelpers),
+    [statsRows],
   );
 
   useEffect(() => {
@@ -699,14 +713,21 @@ export function useMemberPortalAsistenciaController() {
   const {
     pageItems: paginatedRows,
     ...listPagination
-  } = useListPagination(rows, [session?.sessionToken]);
+  } = useListPagination(filteredRows, [session?.sessionToken, attendanceFilter]);
 
   return {
     rows: paginatedRows,
+    allRows: rows,
+    attendedCount,
+    totalEventCount: rows.length,
+    attendanceFilter,
+    setAttendanceFilter,
     listPagination,
     stats,
     error,
     loading,
+    canManage: false,
+    updateAttendance: () => {},
     getEventoFromRow: EventosModel.getEventoFromRow,
     getAsistenciaFromRow: mergedAttendanceHelpers.getAsistenciaFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,

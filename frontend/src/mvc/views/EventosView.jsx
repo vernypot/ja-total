@@ -1349,6 +1349,7 @@ export default function EventosView({
                                       eventoMiembroId={row.id}
                                       eventoId={evento.id}
                                       current={getAsistenciaFromRow(row)}
+                                      currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
                                       canManage={canOperateEvents}
                                       onSet={setAttendance}
                                       confirmBeforeSet={buildConfirmBeforeAttendance(eventName, memberName)}

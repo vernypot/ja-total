@@ -13,7 +13,6 @@ import Especialidades from './Especialidades';
 import Cargos from './Cargos';
 import Distinciones from './Distinciones';
 import Clases from './Clases';
-import MiembroEventos from './miembro/tabs/Eventos';
 import Asistencia from './miembro/tabs/Asistencia';
 import Carnet from './miembro/tabs/Carnet';
 
@@ -41,7 +40,6 @@ export default function MiembroDetalle() {
             <Link to="cargos">{t('tabCargos')}</Link>
             <Link to="distinciones">{t('tabDistinciones')}</Link>
             <Link to="clases">{t('tabClasses')}</Link>
-            <Link to="eventos">{t('tabEvents')}</Link>
             <Link to="asistencia">{t('tabAttendance')}</Link>
             {canViewCarnet && <Link to="carnet">{t('tabCarnet')}</Link>}
           </>
@@ -58,7 +56,7 @@ export default function MiembroDetalle() {
           <Route path="cargos" element={<Cargos miembroId={id} />} />
           <Route path="distinciones" element={<Distinciones miembroId={id} />} />
           <Route path="clases" element={<Clases miembroId={id} />} />
-          <Route path="eventos" element={<MiembroEventos miembroId={id} />} />
+          <Route path="eventos" element={<Navigate to="../asistencia" replace />} />
           <Route path="asistencia" element={<Asistencia miembroId={id} />} />
           <Route
             path="carnet"
