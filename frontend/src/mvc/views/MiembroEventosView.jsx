@@ -6,6 +6,7 @@ import ListPagination from '../../components/ListPagination';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
+import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import * as EventosModel from '../../mvc/models/eventos.model';
 import {
   AttendanceBadge,
@@ -67,6 +68,7 @@ function MemberEventCard({
               {t('clubLabel')}: {clubName}
             </div>
           )}
+          <MemberEventCuotaSummary row={row} evento={evento} language={language} t={t} />
           <EventDescriptionToggle description={evento?.descripcion} />
           {checkedInAt && (
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
@@ -241,9 +243,18 @@ export default function MiembroEventosView({
     };
   }
 
-  const attendedRows = useMemo(
-    () => allRows.filter(memberAttendedEvent),
+  const attendedRowsAll = useMemo(
+    () => EventosModel.sortMemberEventRowsByEventDateDesc(
+      allRows.filter(memberAttendedEvent)
+    ),
     [allRows, memberAttendedEvent]
+  );
+
+  const attendedRowsListed = useMemo(
+    () => (attendanceFilter === 'attended'
+      ? EventosModel.sortMemberEventRowsByEventDateDesc(rows)
+      : attendedRowsAll),
+    [attendanceFilter, rows, attendedRowsAll]
   );
 
   const otherRows = useMemo(() => {
@@ -325,22 +336,22 @@ export default function MiembroEventosView({
         </p>
       ) : (
         <>
-          {attendanceFilter === 'all' && attendedRows.length > 0 && (
+          {attendanceFilter === 'all' && attendedRowsAll.length > 0 && (
             <section className="member-events-attended-section">
               <h4 className="member-events-section-title">{t('memberEventsAttendedSection')}</h4>
               <div style={{ display: 'grid', gap: '12px' }}>
-                {attendedRows.map(row => (
+                {attendedRowsAll.map(row => (
                   <MemberEventCard key={`attended-${row.id || row.evento_id}`} row={row} {...cardPropsForRow(row)} />
                 ))}
               </div>
             </section>
           )}
 
-          {attendanceFilter === 'attended' && attendedRows.length === 0 ? (
+          {attendanceFilter === 'attended' && attendedRowsListed.length === 0 ? (
             <p className="text-muted">{t('noMemberEventsAttended')}</p>
           ) : attendanceFilter === 'attended' ? (
             <div style={{ display: 'grid', gap: '12px' }}>
-              {attendedRows.map(row => (
+              {attendedRowsListed.map(row => (
                 <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
               ))}
             </div>
@@ -356,7 +367,7 @@ export default function MiembroEventosView({
                   </div>
                 </section>
               )}
-              {otherRows.length === 0 && attendedRows.length > 0 && (
+              {otherRows.length === 0 && attendedRowsAll.length > 0 && (
                 <p className="text-muted">{t('memberEventsAllAttended')}</p>
               )}
             </>

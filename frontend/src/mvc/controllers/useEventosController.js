@@ -14,6 +14,7 @@ import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
+import { emptyEventCuotaForm } from '../../utils/cuota';
 
 const emptyForm = () => ({
   nombre: '',
@@ -26,6 +27,7 @@ const emptyForm = () => ({
   memberAssignmentMode: 'all',
   selectedMemberIds: [],
   actividad_inicio_local: '',
+  ...emptyEventCuotaForm(),
 });
 
 export function useEventosController() {
@@ -235,10 +237,15 @@ export function useEventosController() {
   }
 
   function resolveMemberIdsForForm() {
-    if (!eventForm.requiere_confirmacion) return [];
+    const needsMembers = eventForm.requiere_confirmacion || eventForm.cuota_aplica;
+    if (!needsMembers) return [];
     return eventForm.memberAssignmentMode === 'all'
       ? clubMembers.map(m => m.id)
       : eventForm.selectedMemberIds;
+  }
+
+  function eventNeedsMemberAssignment(form = eventForm) {
+    return Boolean(form.requiere_confirmacion || form.cuota_aplica);
   }
 
   async function openEditForm(evento) {
@@ -270,6 +277,7 @@ export function useEventosController() {
         evento.actividad_inicio_at,
         EventosModel.getEventChurchTimezone(evento) || churchTz.timeZone
       ),
+      ...emptyEventCuotaForm(evento, activeClubData),
     });
   }
 
@@ -310,6 +318,9 @@ export function useEventosController() {
             EventosModel.getEventChurchTimezone(events.find(e => e.id === editingEventId)) || churchTz.timeZone
           )
           : null,
+        cuotaAplica: Boolean(eventForm.cuota_aplica),
+        cuotaUseDefault: Boolean(eventForm.cuota_use_default),
+        cuotaMontoOverride: eventForm.cuota_monto_override,
       });
 
       if (saveError) {
@@ -318,7 +329,8 @@ export function useEventosController() {
         return;
       }
 
-      if (eventForm.requiere_confirmacion) {
+      const needsMembers = eventForm.requiere_confirmacion || eventForm.cuota_aplica;
+      if (needsMembers) {
         const { error: syncError } = await EventosModel.syncEventoAttendees(
           editingEventId,
           miembroIds,
@@ -373,6 +385,9 @@ export function useEventosController() {
       descripcion: eventForm.descripcion,
       tipoEventoId: eventForm.tipo_evento_id || null,
       requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
+      cuotaAplica: Boolean(eventForm.cuota_aplica),
+      cuotaUseDefault: Boolean(eventForm.cuota_use_default),
+      cuotaMontoOverride: eventForm.cuota_monto_override,
       miembroIds,
     });
     setSavingEvent(false);

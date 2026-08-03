@@ -9,7 +9,11 @@ import {
   canMemberCancelEventConfirmation,
   computeCheckinAttendanceEstado,
   computeEventAttendanceSummary,
+  computeEventCuotaSummary,
   groupEventAttendanceAttendees,
+  sortMemberEventRowsByEventDateDesc,
+  buildMemberMergedAttendanceContext,
+  createMemberMergedAttendanceHelpers,
   computeMemberAttendanceStats,
   eventRequiresConfirmation,
   getAsistenciaFromRow,
@@ -19,6 +23,7 @@ import {
   isEventoEnded,
   isEventoIncludedInMemberStats,
   isEventoExcludedFromAttendance,
+  getMemberEventAsistencia,
   memberAttendedEvent,
   shouldCorrectLateCheckin,
   wasMemberCheckedInToEvent,
@@ -294,6 +299,68 @@ describe('computeEventAttendanceSummary', () => {
   });
 });
 
+describe('merged member event attendance', () => {
+  it('treats attendance on one merged event as attendance on siblings', () => {
+    const rows = [
+      {
+        id: 'em-1',
+        eventos: {
+          id: 'evt-a',
+          asistencia_grupo_id: 'grupo-1',
+        },
+        evento_asistencia: { estado: 'a_tiempo', checked_in_at: '2026-07-13T01:00:00Z' },
+      },
+      {
+        id: 'em-2',
+        eventos: {
+          id: 'evt-b',
+          asistencia_grupo_id: 'grupo-1',
+        },
+        evento_asistencia: null,
+      },
+    ];
+
+    const context = buildMemberMergedAttendanceContext(rows);
+
+    expect(memberAttendedEvent(rows[0], context)).toBe(true);
+    expect(memberAttendedEvent(rows[1], context)).toBe(true);
+    expect(getMemberEventAsistencia(rows[1], context)).toBe('a_tiempo');
+  });
+
+  it('includes merged attendance in member stats', () => {
+    const stats = computeMemberAttendanceStats([
+      {
+        eventos: {
+          fecha: '2020-01-01',
+          hora: '19:00:00',
+          estado: 'finalizado',
+          asistencia_grupo_id: 'grupo-1',
+          clubes: { iglesias: { timezone: 'America/Bogota' } },
+        },
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        eventos: {
+          fecha: '2020-01-01',
+          hora: '21:00:00',
+          estado: 'finalizado',
+          asistencia_grupo_id: 'grupo-1',
+          clubes: { iglesias: { timezone: 'America/Bogota' } },
+        },
+        evento_asistencia: null,
+      },
+    ], {
+      getEventoFromRow: row => row.eventos,
+      getAsistenciaFromRow: row => row.evento_asistencia?.estado,
+      getConfirmacionFromRow: () => 'confirmado',
+      eventRequiresConfirmation: () => false,
+    });
+
+    expect(stats.attended).toBe(2);
+    expect(stats.onTime).toBe(2);
+  });
+});
+
 describe('memberAttendedEvent', () => {
   it('returns true for on-time and late attendance', () => {
     expect(memberAttendedEvent({
@@ -315,6 +382,67 @@ describe('memberAttendedEvent', () => {
     expect(getAsistenciaFromRow({
       evento_asistencia: [{ estado: 'a_tiempo' }],
     })).toBe('a_tiempo');
+  });
+});
+
+describe('sortMemberEventRowsByEventDateDesc', () => {
+  it('orders member event rows with the latest event first', () => {
+    const rows = [
+      { id: '1', eventos: { fecha: '2026-01-10', hora: '10:00:00' } },
+      { id: '2', eventos: { fecha: '2026-03-15', hora: '18:30:00' } },
+      { id: '3', eventos: { fecha: '2026-03-15', hora: '09:00:00' } },
+    ];
+
+    expect(sortMemberEventRowsByEventDateDesc(rows).map(row => row.id)).toEqual(['2', '3', '1']);
+  });
+});
+
+describe('computeEventCuotaSummary', () => {
+  const evento = { cuota_aplica: true, cuota_monto_override: 10 };
+  const club = { cuota_moneda_simbolo: '$' };
+
+  it('returns applies false when event has no cuota', () => {
+    expect(computeEventCuotaSummary([], { evento: { cuota_aplica: false }, club })).toEqual({
+      applies: false,
+      totalCollected: 0,
+      paidCount: 0,
+      attendedCount: 0,
+      unpaidCount: 0,
+    });
+  });
+
+  it('sums paid cuotas for attended members only', () => {
+    const rows = [
+      {
+        id: '1',
+        cuota_pagada: true,
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: '2',
+        cuota_pagada: true,
+        cuota_monto_override: 15,
+        evento_asistencia: { estado: 'tarde' },
+      },
+      {
+        id: '3',
+        cuota_pagada: false,
+        evento_asistencia: { estado: 'a_tiempo' },
+      },
+      {
+        id: '4',
+        cuota_pagada: true,
+        evento_asistencia: { estado: 'ausente' },
+      },
+    ];
+
+    expect(computeEventCuotaSummary(rows, { evento, club })).toEqual({
+      applies: true,
+      totalCollected: 25,
+      paidCount: 2,
+      attendedCount: 3,
+      unpaidCount: 1,
+    });
   });
 });
 

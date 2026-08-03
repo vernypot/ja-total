@@ -319,6 +319,51 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   gap: 8px;
 }
 
+.member-event-cuota-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.member-event-cuota-summary--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 0;
+  gap: 6px;
+}
+
+.member-event-cuota-summary__label {
+  font-weight: 600;
+  color: var(--color-text-secondary, #4b5563);
+}
+
+.member-event-cuota-summary__amount {
+  color: var(--color-text-primary, #111827);
+}
+
+.member-event-cuota-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.member-event-cuota-badge--paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.member-event-cuota-badge--unpaid {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
 .checkin-session-page {
   padding: 24px 0;
 }
@@ -662,6 +707,10 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   color: #92400e;
 }
 
+.event-list-card__hint--cuota {
+  color: #166534;
+}
+
 .event-list-card__actions,
 .event-list-bulk-actions {
   display: flex;
@@ -730,6 +779,12 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   justify-content: center;
   padding: 16px;
   background: rgba(15, 23, 42, 0.45);
+  touch-action: none;
+}
+
+.event-list--overlay-open {
+  pointer-events: none;
+  user-select: none;
 }
 
 .event-overflow-menu {

@@ -44,6 +44,11 @@ export function useMiembroAsistenciaController(miembroId) {
     ...listPagination
   } = useListPagination(rows, [miembroId]);
 
+  const mergedAttendanceHelpers = useMemo(
+    () => EventosModel.createMemberMergedAttendanceHelpers(rows),
+    [rows]
+  );
+
   const stats = useMemo(
     () => EventosModel.computeMemberAttendanceStats(rows, attendanceHelpers),
     [rows],
@@ -60,13 +65,13 @@ export function useMiembroAsistenciaController(miembroId) {
     error,
     loading,
     getEventoFromRow: EventosModel.getEventoFromRow,
-    getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
+    getAsistenciaFromRow: mergedAttendanceHelpers.getAsistenciaFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
-    getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
+    getCheckedInAtFromRow: mergedAttendanceHelpers.getCheckedInAtFromRow,
     eventRequiresConfirmation: EventosModel.eventRequiresConfirmation,
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     isEventInFuture: EventosModel.isEventInFuture,
     isEventInPast: EventosModel.isEventInPast,
-    memberAttendedEvent: EventosModel.memberAttendedEvent,
+    memberAttendedEvent: mergedAttendanceHelpers.memberAttendedEvent,
   };
 }

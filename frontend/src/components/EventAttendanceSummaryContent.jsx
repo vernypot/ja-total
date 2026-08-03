@@ -1,5 +1,6 @@
 import * as EventosModel from '../mvc/models/eventos.model';
 import { attendanceLabel, confirmationLabel } from '../i18n/helpers';
+import { formatCuotaMonto, resolveEventCuotaClub } from '../utils/cuota';
 
 function SummaryStat({ label, value }) {
   return (
@@ -115,6 +116,8 @@ function GroupedAttendees({
 export default function EventAttendanceSummaryContent({
   evento,
   rows,
+  club,
+  language = 'es',
   needsConfirmation,
   formatEventTime,
   formatEventTimestamp,
@@ -124,6 +127,16 @@ export default function EventAttendanceSummaryContent({
 }) {
   const { stats, attendees } = EventosModel.computeEventAttendanceSummary(rows, { needsConfirmation });
   const groups = EventosModel.groupEventAttendanceAttendees(attendees, { needsConfirmation });
+  const cuotaSummary = EventosModel.computeEventCuotaSummary(rows, {
+    evento,
+    club: resolveEventCuotaClub(evento, club),
+  });
+  const cuotaCollectedLabel = cuotaSummary.applies
+    ? formatCuotaMonto(cuotaSummary.totalCollected, {
+      language,
+      club: resolveEventCuotaClub(evento, club),
+    })
+    : null;
 
   if (stats.assigned === 0) {
     return variant === 'print'
@@ -153,6 +166,12 @@ export default function EventAttendanceSummaryContent({
           <div className="event-summary-print-stat"><strong>{stats.late}</strong><span>{t('attendanceStatLate')}</span></div>
           <div className="event-summary-print-stat"><strong>{stats.absent}</strong><span>{t('attendanceStatMisses')}</span></div>
           <div className="event-summary-print-stat"><strong>{stats.notRecorded}</strong><span>{t('attendancePending')}</span></div>
+          {cuotaSummary.applies && (
+            <div className="event-summary-print-stat event-summary-print-stat--cuota">
+              <strong>{cuotaCollectedLabel}</strong>
+              <span>{t('eventAttendanceSummaryCuotaCollected')}</span>
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -168,6 +187,12 @@ export default function EventAttendanceSummaryContent({
           <SummaryStat label={t('attendanceStatLate')} value={stats.late} />
           <SummaryStat label={t('attendanceStatMisses')} value={stats.absent} />
           <SummaryStat label={t('attendancePending')} value={stats.notRecorded} />
+          {cuotaSummary.applies && (
+            <SummaryStat
+              label={t('eventAttendanceSummaryCuotaCollected')}
+              value={cuotaCollectedLabel}
+            />
+          )}
         </>
       )}
     </div>

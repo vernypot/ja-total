@@ -1,4 +1,5 @@
 import { sb } from '../../services/supabase';
+import { resolveMemberEventCuotaMonto } from '../../utils/cuota';
 import { memberDisplayName as resolveMemberDisplayName, MIEMBRO_NAME_FIELDS } from '../../utils/memberDisplayName';
 import {
   compareEventsByLocalDateTime,
@@ -72,6 +73,14 @@ export function filterRowsForMemberAttendanceStats(rows) {
   return (rows || []).filter(row => isEventoIncludedInMemberStats(getEventoFromRow(row)));
 }
 
+export function sortMemberEventRowsByEventDateDesc(rows) {
+  return [...(rows || [])].sort((a, b) => {
+    const eventA = getEventoFromRow(a);
+    const eventB = getEventoFromRow(b);
+    return compareEventsByLocalDateTime(eventB, eventA);
+  });
+}
+
 function isRlsError(error) {
   const msg = error?.message || '';
   return msg.includes('row-level security') || msg.includes('permission denied');
@@ -83,6 +92,7 @@ function isMissingColumnError(error, column) {
 }
 
 const EVENTO_SELECTS = [
+  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,cuota_aplica,cuota_monto_override,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
   'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
   'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
   'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
@@ -95,7 +105,7 @@ const EVENTO_SELECTS = [
 ];
 
 const EVENTO_MIEMBRO_SELECTS = [
-  `id, evento_id, miembro_id, confirmacion_estado, confirmado_at, justificacion_asignacion, asignado_manualmente_at,
+  `id, evento_id, miembro_id, cuota_monto_override, cuota_pagada, cuota_pagada_at, confirmacion_estado, confirmado_at, justificacion_asignacion, asignado_manualmente_at,
    miembros ( id, ${MIEMBRO_NAME_FIELDS}, estado ),
    evento_asistencia ( id, estado, updated_at, checked_in_at )`,
   `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
@@ -110,7 +120,7 @@ async function queryEventos(buildQuery) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await buildQuery(select);
     if (!error) return { data: data || [], error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: [], error };
@@ -132,7 +142,7 @@ export async function fetchEventoById(id) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await sb.from('eventos').select(select).eq('id', id).maybeSingle();
     if (!error) return { data, error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
+    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: null, error };
@@ -175,12 +185,12 @@ export async function fetchMiembroEventos(miembroId) {
   }
 
   const selects = [
-    `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, tipo_evento_id,
-       clubes ( id, nombre, iglesia_id, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
+    `id, evento_id, miembro_id, cuota_pagada, cuota_pagada_at, cuota_monto_override, confirmacion_estado, confirmado_at,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, descripcion, estado, requiere_confirmacion, asistencia_grupo_id, cuota_aplica, cuota_monto_override, tipo_evento_id,
+       clubes ( id, nombre, iglesia_id, cuota_activa, cuota_monto, cuota_moneda_nombre, cuota_moneda_simbolo, iglesias ( id, timezone ) ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id, confirmacion_estado, confirmado_at,
-     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, tipo_evento_id,
+     eventos ( id, club_id, nombre, fecha, hora, lugar, estado, requiere_confirmacion, asistencia_grupo_id, tipo_evento_id,
        clubes ( id, nombre ), tipos_evento ( id, nombre ) ),
      evento_asistencia ( id, estado, updated_at, checked_in_at )`,
     `id, evento_id, miembro_id,
@@ -197,7 +207,7 @@ export async function fetchMiembroEventos(miembroId) {
     if (!error) {
       return { data: filterRowsForMemberAttendanceStats(data || []), error: null };
     }
-    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'requiere_confirmacion')) {
+    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_pagada') || isMissingColumnError(error, 'cuota_aplica')) {
       continue;
     }
     return { data: [], error };
@@ -215,7 +225,7 @@ export async function fetchEventoAssignments(eventoId) {
       .select(select)
       .eq('evento_id', eventoId);
     if (!error) return { data: data || [], error: null };
-    if (isMissingColumnError(error, 'confirmacion_estado')) continue;
+    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'cuota_pagada')) continue;
     return { data: [], error };
   }
   return { data: [], error: null };
@@ -241,7 +251,7 @@ export async function fetchAssignmentsForEventIds(eventoIds) {
       .select(select)
       .in('evento_id', eventoIds);
     if (!error) return { data: groupAssignmentsByEvento(data), error: null };
-    if (isMissingColumnError(error, 'confirmacion_estado')) continue;
+    if (isMissingColumnError(error, 'confirmacion_estado') || isMissingColumnError(error, 'cuota_pagada')) continue;
     return { data: {}, error };
   }
 
@@ -252,10 +262,28 @@ function buildConfirmacionEstado(requiereConfirmacion) {
   return requiereConfirmacion ? 'pendiente' : 'confirmado';
 }
 
-async function resolveCreateMemberIds(clubId, requiereConfirmacion, miembroIds) {
-  if (!requiereConfirmacion) return [];
+async function resolveCreateMemberIds(clubId, requiereConfirmacion, miembroIds, { cuotaAplica = false } = {}) {
+  if (!requiereConfirmacion && !cuotaAplica) return [];
   if (miembroIds.length) return miembroIds;
   return fetchActiveClubMemberIds(clubId);
+}
+
+function buildEventoCuotaFields({ cuotaAplica, cuotaMontoOverride, cuotaUseDefault }) {
+  if (cuotaAplica === undefined) return {};
+  const fields = { cuota_aplica: Boolean(cuotaAplica) };
+  if (!cuotaAplica) {
+    fields.cuota_monto_override = null;
+    return fields;
+  }
+  if (cuotaUseDefault) {
+    fields.cuota_monto_override = null;
+  } else if (cuotaMontoOverride !== undefined) {
+    const parsed = cuotaMontoOverride === '' || cuotaMontoOverride == null
+      ? null
+      : Number(cuotaMontoOverride);
+    fields.cuota_monto_override = Number.isFinite(parsed) ? parsed : null;
+  }
+  return fields;
 }
 
 export async function createEvento({
@@ -267,6 +295,9 @@ export async function createEvento({
   descripcion,
   tipoEventoId,
   requiereConfirmacion = true,
+  cuotaAplica = false,
+  cuotaUseDefault = true,
+  cuotaMontoOverride,
   miembroIds = [],
 }) {
   const payload = {
@@ -276,11 +307,17 @@ export async function createEvento({
     hora,
     lugar: lugar.trim(),
     descripcion: descripcion?.trim() || null,
+    ...buildEventoCuotaFields({ cuotaAplica, cuotaMontoOverride, cuotaUseDefault }),
   };
   if (tipoEventoId) payload.tipo_evento_id = tipoEventoId;
   if (requiereConfirmacion !== undefined) payload.requiere_confirmacion = Boolean(requiereConfirmacion);
 
-  const assignIds = await resolveCreateMemberIds(clubId, Boolean(requiereConfirmacion), miembroIds);
+  const assignIds = await resolveCreateMemberIds(
+    clubId,
+    Boolean(requiereConfirmacion),
+    miembroIds,
+    { cuotaAplica: Boolean(cuotaAplica) }
+  );
 
   const direct = await sb.from('eventos').insert([payload]).select('id').single();
 
@@ -296,8 +333,17 @@ export async function createEvento({
       isMissingColumnError(direct.error, 'tipo_evento_id')
       || isMissingColumnError(direct.error, 'requiere_confirmacion')
       || isMissingColumnError(direct.error, 'descripcion')
+      || isMissingColumnError(direct.error, 'cuota_aplica')
+      || isMissingColumnError(direct.error, 'cuota_monto_override')
     ) {
-      const { tipo_evento_id, requiere_confirmacion, descripcion: _descripcion, ...base } = payload;
+      const {
+        tipo_evento_id,
+        requiere_confirmacion,
+        descripcion: _descripcion,
+        cuota_aplica,
+        cuota_monto_override,
+        ...base
+      } = payload;
       const retry = await sb.from('eventos').insert([base]).select('id').single();
       if (!retry.error && retry.data?.id) {
         if (assignIds.length) await assignMiembrosToEvento(retry.data.id, assignIds, { requiereConfirmacion });
@@ -333,8 +379,14 @@ export async function updateEvento(eventoId, {
   tipoEventoId,
   requiereConfirmacion,
   actividadInicioAt,
+  cuotaAplica,
+  cuotaUseDefault,
+  cuotaMontoOverride,
 }) {
-  const payload = { updated_at: new Date().toISOString() };
+  const payload = {
+    updated_at: new Date().toISOString(),
+    ...buildEventoCuotaFields({ cuotaAplica, cuotaMontoOverride, cuotaUseDefault }),
+  };
   if (nombre !== undefined) payload.nombre = nombre?.trim() || null;
   if (fecha !== undefined) payload.fecha = fecha;
   if (hora !== undefined) payload.hora = hora;
@@ -351,12 +403,16 @@ export async function updateEvento(eventoId, {
     || isMissingColumnError(direct.error, 'requiere_confirmacion')
     || isMissingColumnError(direct.error, 'descripcion')
     || isMissingColumnError(direct.error, 'actividad_inicio_at')
+    || isMissingColumnError(direct.error, 'cuota_aplica')
+    || isMissingColumnError(direct.error, 'cuota_monto_override')
   ) {
     const {
       tipo_evento_id,
       requiere_confirmacion,
       descripcion: _descripcion,
       actividad_inicio_at,
+      cuota_aplica,
+      cuota_monto_override,
       ...base
     } = payload;
     return sb.from('eventos').update(base).eq('id', eventoId);
@@ -580,6 +636,34 @@ export async function setEventoAsistencia(eventoMiembroId, estado) {
   });
 }
 
+export async function setEventoMiembroCuotaPagada(eventoMiembroId, pagada) {
+  const payload = {
+    cuota_pagada: Boolean(pagada),
+    cuota_pagada_at: pagada ? new Date().toISOString() : null,
+  };
+
+  const direct = await sb
+    .from('evento_miembro')
+    .update(payload)
+    .eq('id', eventoMiembroId);
+
+  if (!direct.error) return direct;
+  if (!isRlsError(direct.error)) {
+    if (isMissingColumnError(direct.error, 'cuota_pagada')) {
+      return sb.rpc('admin_set_evento_miembro_cuota_pagada', {
+        p_evento_miembro_id: eventoMiembroId,
+        p_pagada: Boolean(pagada),
+      });
+    }
+    return direct;
+  }
+
+  return sb.rpc('admin_set_evento_miembro_cuota_pagada', {
+    p_evento_miembro_id: eventoMiembroId,
+    p_pagada: Boolean(pagada),
+  });
+}
+
 export async function setEventoConfirmacion(eventoMiembroId, confirmacionEstado) {
   const payload = {
     confirmacion_estado: confirmacionEstado,
@@ -769,24 +853,135 @@ export async function syncEventoAttendees(eventoId, miembroIds, { requiereConfir
   return { error: null };
 }
 
-export function memberAttendedEvent(value) {
-  const estado = typeof value === 'string' ? value : getAsistenciaFromRow(value);
+export function getCuotaPagadaFromRow(row) {
+  return Boolean(row?.cuota_pagada);
+}
+
+function isAttendedAsistenciaEstado(estado) {
   return estado === 'a_tiempo' || estado === 'tarde';
 }
 
-export function wasMemberCheckedInToEvent(row) {
+function pickMergedAsistenciaEstado(current, next) {
+  if (next === 'a_tiempo' || current === 'a_tiempo') return 'a_tiempo';
+  if (next === 'tarde' || current === 'tarde') return 'tarde';
+  return current || next || null;
+}
+
+export function buildMemberMergedAttendanceContext(rows) {
+  const byGrupo = new Map();
+
+  for (const row of rows || []) {
+    const evento = getEventoFromRow(row);
+    const grupoId = evento?.asistencia_grupo_id;
+    if (!grupoId) continue;
+
+    const asistencia = getAsistenciaFromRow(row);
+    if (!isAttendedAsistenciaEstado(asistencia)) continue;
+
+    const existing = byGrupo.get(grupoId) || {
+      asistencia: null,
+      checkedInAt: null,
+    };
+
+    existing.asistencia = pickMergedAsistenciaEstado(existing.asistencia, asistencia);
+    existing.checkedInAt = existing.checkedInAt || getCheckedInAtFromRow(row) || null;
+    byGrupo.set(grupoId, existing);
+  }
+
+  return { byGrupo };
+}
+
+export function getMemberEventAsistencia(row, context = null) {
+  const direct = getAsistenciaFromRow(row);
+  if (isAttendedAsistenciaEstado(direct)) return direct;
+
+  const grupoId = getEventoFromRow(row)?.asistencia_grupo_id;
+  if (!grupoId || !context?.byGrupo) return direct;
+
+  const merged = context.byGrupo.get(grupoId);
+  if (merged?.asistencia && isAttendedAsistenciaEstado(merged.asistencia)) {
+    return merged.asistencia;
+  }
+
+  return direct;
+}
+
+export function getMemberEventCheckedInAt(row, context = null) {
+  const direct = getCheckedInAtFromRow(row);
+  if (direct) return direct;
+
+  const grupoId = getEventoFromRow(row)?.asistencia_grupo_id;
+  if (!grupoId || !context?.byGrupo) return null;
+
+  return context.byGrupo.get(grupoId)?.checkedInAt || null;
+}
+
+export function createMemberMergedAttendanceHelpers(rows) {
+  const mergedAttendanceContext = buildMemberMergedAttendanceContext(rows);
+
+  return {
+    mergedAttendanceContext,
+    getAsistenciaFromRow: row => getMemberEventAsistencia(row, mergedAttendanceContext),
+    getCheckedInAtFromRow: row => getMemberEventCheckedInAt(row, mergedAttendanceContext),
+    memberAttendedEvent: row => memberAttendedEvent(row, mergedAttendanceContext),
+  };
+}
+
+export function filterAttendedRowsForCuota(rows) {
+  return (rows || []).filter(row => memberAttendedEvent(row));
+}
+
+export function computeEventCuotaSummary(rows, { evento, club } = {}) {
+  if (!evento?.cuota_aplica) {
+    return {
+      applies: false,
+      totalCollected: 0,
+      paidCount: 0,
+      attendedCount: 0,
+      unpaidCount: 0,
+    };
+  }
+
+  const attendedRows = filterAttendedRowsForCuota(rows);
+  let totalCollected = 0;
+  let paidCount = 0;
+
+  for (const row of attendedRows) {
+    if (!getCuotaPagadaFromRow(row)) continue;
+    paidCount += 1;
+    const amount = resolveMemberEventCuotaMonto({ evento, club, memberRow: row });
+    if (amount != null) totalCollected += amount;
+  }
+
+  return {
+    applies: true,
+    totalCollected,
+    paidCount,
+    attendedCount: attendedRows.length,
+    unpaidCount: attendedRows.length - paidCount,
+  };
+}
+
+export function memberAttendedEvent(value, context = null) {
+  if (typeof value === 'string') {
+    return isAttendedAsistenciaEstado(value);
+  }
+  return isAttendedAsistenciaEstado(getMemberEventAsistencia(value, context));
+}
+
+export function wasMemberCheckedInToEvent(row, context = null) {
   if (!row) return false;
-  if (getCheckedInAtFromRow(row)) return true;
-  return memberAttendedEvent(row);
+  if (getMemberEventCheckedInAt(row, context)) return true;
+  return memberAttendedEvent(row, context);
 }
 
 export function computeMemberAttendanceStats(rows, helpers) {
   const {
-    getEventoFromRow,
-    getAsistenciaFromRow,
+    getEventoFromRow: resolveEventoFromRow = getEventoFromRow,
     getConfirmacionFromRow,
     eventRequiresConfirmation,
   } = helpers;
+  const mergedContext = buildMemberMergedAttendanceContext(rows);
 
   const stats = {
     assigned: 0,
@@ -803,13 +998,13 @@ export function computeMemberAttendanceStats(rows, helpers) {
   };
 
   for (const row of rows) {
-    const evento = getEventoFromRow(row);
+    const evento = resolveEventoFromRow(row);
     if (!evento || !isEventoIncludedInMemberStats(evento)) continue;
 
     stats.assigned += 1;
 
     const isFuture = isEventInFuture(evento);
-    const asistencia = getAsistenciaFromRow(row);
+    const asistencia = getMemberEventAsistencia(row, mergedContext);
     const confirmacion = getConfirmacionFromRow(row);
     const needsConfirmation = eventRequiresConfirmation(evento);
 

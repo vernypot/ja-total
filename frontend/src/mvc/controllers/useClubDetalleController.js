@@ -3,6 +3,9 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, canManageClubs } from '../../utils/permissions';
+import { validateForm } from '../../utils/validateForm';
+import { emptyClubCuotaForm } from '../../utils/cuota';
+import { CUOTA_FRECUENCIA_VALUES } from '../../constants/cuotaFrequencies';
 import { useLanguage } from '../../hooks/useLanguage';
 import * as ClubesModel from '../models/clubes.model';
 import * as IglesiasModel from '../models/iglesias.model';
@@ -22,6 +25,9 @@ export function useClubDetalleController() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [logoUploading, setLogoUploading] = useState({ kind: '' });
+  const [cuotaForm, setCuotaForm] = useState(emptyClubCuotaForm());
+  const [cuotaFieldErrors, setCuotaFieldErrors] = useState({});
+  const [savingCuota, setSavingCuota] = useState(false);
 
   const iglesiaQuery = params.get('iglesia') || club?.iglesia_id || '';
 
@@ -45,6 +51,7 @@ export function useClubDetalleController() {
     }
 
     setClub(clubData);
+    setCuotaForm(emptyClubCuotaForm(clubData));
     updateActiveClub({
       id: clubData.id,
       nombre: clubData.nombre,
@@ -149,6 +156,26 @@ export function useClubDetalleController() {
     await load();
   }
 
+  async function saveClubCuota() {
+    if (!canManage || !clubId) return;
+    setError('');
+    const validation = validateForm('clubCuota', cuotaForm, t);
+    setCuotaFieldErrors(validation.fieldErrors);
+    if (!validation.valid) {
+      setError(validation.firstError);
+      return;
+    }
+
+    setSavingCuota(true);
+    const { error: saveError } = await ClubesModel.updateClubCuota(clubId, cuotaForm);
+    setSavingCuota(false);
+    if (saveError) {
+      setError(`${t('errorSavingClubCuota')}: ${saveError.message}`);
+      return;
+    }
+    await load();
+  }
+
   useEffect(() => {
     load();
   }, [clubId]);
@@ -170,5 +197,11 @@ export function useClubDetalleController() {
     handleClubLogoRemove,
     handleTipoLogoUpload,
     handleTipoLogoRemove,
+    cuotaForm,
+    setCuotaForm,
+    cuotaFieldErrors,
+    savingCuota,
+    saveClubCuota,
+    cuotaFrequencyOptions: CUOTA_FRECUENCIA_VALUES,
   };
 }

@@ -16,8 +16,10 @@ import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import HorizontalScrollRow from '../../components/HorizontalScrollRow';
 import EventListActionsModal, { EventListOverflowTrigger } from '../../components/EventListActionsModal';
 import EventAttendanceSummaryModal from '../../components/EventAttendanceSummaryModal';
+import EventCuotaValidationModal from '../../components/EventCuotaValidationModal';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
 import * as EventosModel from '../models/eventos.model';
+import { clubHasDefaultCuota, formatCuotaMonto, resolveEventCuotaMonto, resolveEventCuotaClub } from '../../utils/cuota';
 import '../../styles/form.css';
 
 function FormSection({ title, children, className = '' }) {
@@ -205,6 +207,79 @@ function EventDetailsFields({
   );
 }
 
+function EventCuotaFields({
+  eventForm,
+  setEventForm,
+  activeClubData,
+  fieldErrors,
+  t,
+  language,
+  cuotaUseDefaultName = 'eventCuotaUseDefault',
+}) {
+  const defaultAmount = clubHasDefaultCuota(activeClubData)
+    ? formatCuotaMonto(activeClubData.cuota_monto, { language, club: activeClubData })
+    : null;
+
+  return (
+    <FormSection title={t('eventCuotaSection')}>
+      <div className="form-choice-group">
+        <ChoiceOption
+          checked={eventForm.cuota_aplica}
+          onChange={e => setEventForm({ ...eventForm, cuota_aplica: e.target.checked })}
+          label={t('eventCuotaApply')}
+          hint={defaultAmount
+            ? t('eventCuotaApplyHintDefault').replace('{{amount}}', defaultAmount)
+            : t('eventCuotaApplyHintNoDefault')}
+        />
+      </div>
+      {eventForm.cuota_aplica && (
+        <div className="form-choice-group form-choice-group--grid" style={{ marginTop: '14px' }}>
+          <ChoiceOption
+            type="radio"
+            name={cuotaUseDefaultName}
+            checked={eventForm.cuota_use_default}
+            onChange={() => setEventForm({ ...eventForm, cuota_use_default: true })}
+            label={t('eventCuotaUseClubDefault')}
+            hint={defaultAmount || t('clubCuotaNotConfigured')}
+          />
+          <ChoiceOption
+            type="radio"
+            name={cuotaUseDefaultName}
+            checked={!eventForm.cuota_use_default}
+            onChange={() => setEventForm({ ...eventForm, cuota_use_default: false })}
+            label={t('eventCuotaCustomAmount')}
+            hint={t('eventCuotaCustomAmountHint')}
+          />
+        </div>
+      )}
+      {eventForm.cuota_aplica && !eventForm.cuota_use_default && (
+        <FormField
+          label={t('eventCuotaAmount')}
+          htmlFor="event-cuota-monto"
+          error={fieldErrors.cuota_monto_override}
+          required
+          style={{ marginTop: '14px' }}
+        >
+          <input
+            id="event-cuota-monto"
+            type="number"
+            min="0"
+            step="0.01"
+            className="form-input"
+            value={eventForm.cuota_monto_override}
+            onChange={e => setEventForm({ ...eventForm, cuota_monto_override: e.target.value })}
+          />
+        </FormField>
+      )}
+      {eventForm.cuota_aplica && (
+        <p className="text-muted" style={{ margin: '12px 0 0', fontSize: '13px' }}>
+          {t('eventCuotaPerMemberHint')}
+        </p>
+      )}
+    </FormSection>
+  );
+}
+
 function EventConfirmationAndAttendeesFields({
   eventForm,
   setEventForm,
@@ -217,6 +292,7 @@ function EventConfirmationAndAttendeesFields({
   memberAssignmentName = 'memberAssignmentMode',
 }) {
   const assignAll = eventForm.memberAssignmentMode === 'all';
+  const needsMemberAssignment = eventForm.requiere_confirmacion || eventForm.cuota_aplica;
 
   return (
     <>
@@ -233,7 +309,7 @@ function EventConfirmationAndAttendeesFields({
         </div>
       </FormSection>
 
-      {eventForm.requiere_confirmacion && (
+      {needsMemberAssignment && (
         <FormSection title={t('assignMembersToEvent')}>
           <div className="form-choice-group form-choice-group--grid">
             <ChoiceOption
@@ -444,10 +520,14 @@ export default function EventosView({
   savingSelfConfirmationId,
   loadEventAssignments,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [overflowMenuEventId, setOverflowMenuEventId] = useState(null);
   const [summaryEventId, setSummaryEventId] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [cuotaValidationEventId, setCuotaValidationEventId] = useState(null);
+  const [cuotaValidationLoading, setCuotaValidationLoading] = useState(false);
+  const [savingCuotaPaymentId, setSavingCuotaPaymentId] = useState('');
+  const [markingAllCuotaPaid, setMarkingAllCuotaPaid] = useState(false);
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
@@ -565,12 +645,69 @@ export default function EventosView({
     }
   }
 
+  async function openCuotaValidation(eventoId) {
+    setCuotaValidationEventId(eventoId);
+    if (!assignments[eventoId]) {
+      setCuotaValidationLoading(true);
+      await loadEventAssignments(eventoId);
+      setCuotaValidationLoading(false);
+    }
+  }
+
+  async function toggleCuotaPayment(eventoMiembroId, pagada) {
+    setSavingCuotaPaymentId(eventoMiembroId);
+    const { error: saveError } = await EventosModel.setEventoMiembroCuotaPagada(eventoMiembroId, pagada);
+    setSavingCuotaPaymentId('');
+    if (saveError) {
+      setError(`${t('errorSavingCuotaPayment')}: ${saveError.message}`);
+      return;
+    }
+    if (cuotaValidationEventId) {
+      await loadEventAssignments(cuotaValidationEventId);
+    }
+  }
+
+  async function markAllCuotaPaid() {
+    if (!cuotaValidationEventId) return;
+    const rows = EventosModel.filterAttendedRowsForCuota(assignments[cuotaValidationEventId] || []);
+    const unpaidRows = rows.filter(row => !EventosModel.getCuotaPagadaFromRow(row));
+    if (!unpaidRows.length) return;
+
+    setMarkingAllCuotaPaid(true);
+    setError('');
+    for (const row of unpaidRows) {
+      const { error: saveError } = await EventosModel.setEventoMiembroCuotaPagada(row.id, true);
+      if (saveError) {
+        setMarkingAllCuotaPaid(false);
+        setError(`${t('errorSavingCuotaPayment')}: ${saveError.message}`);
+        return;
+      }
+    }
+    await loadEventAssignments(cuotaValidationEventId);
+    setMarkingAllCuotaPaid(false);
+  }
+
   const summaryEvent = summaryEventId
     ? events.find(evento => evento.id === summaryEventId)
     : null;
   const summaryRows = summaryEventId
     ? sortEventAttendanceRows(assignments[summaryEventId] || [])
     : [];
+  const cuotaValidationEvent = cuotaValidationEventId
+    ? events.find(evento => evento.id === cuotaValidationEventId)
+    : null;
+  const cuotaValidationRows = cuotaValidationEventId
+    ? sortEventAttendanceRows(assignments[cuotaValidationEventId] || [])
+    : [];
+  const overflowMenuEvent = overflowMenuEventId
+    ? events.find(evento => evento.id === overflowMenuEventId)
+    : null;
+  const overflowMenuRows = overflowMenuEventId
+    ? sortEventAttendanceRows(assignments[overflowMenuEventId] || [])
+    : [];
+  const overflowMenuSelfRow = overflowMenuEvent && getSelfEventRow
+    ? getSelfEventRow(overflowMenuEvent, overflowMenuRows)
+    : null;
 
   return (
     <div className="container">
@@ -652,6 +789,15 @@ export default function EventosView({
                   />
                 </FormSection>
 
+                <EventCuotaFields
+                  eventForm={eventForm}
+                  setEventForm={setEventForm}
+                  activeClubData={activeClubData}
+                  fieldErrors={fieldErrors}
+                  t={t}
+                  language={language}
+                />
+
                 <EventConfirmationAndAttendeesFields
                   eventForm={eventForm}
                   setEventForm={setEventForm}
@@ -682,7 +828,12 @@ export default function EventosView({
           ) : events.length === 0 ? (
             <p className="text-muted">{t('noEvents')}</p>
           ) : (
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div
+              className={overflowMenuEventId ? 'event-list event-list--overlay-open' : 'event-list'}
+              style={{ display: 'grid', gap: '12px' }}
+              inert={overflowMenuEventId ? '' : undefined}
+              aria-hidden={overflowMenuEventId ? true : undefined}
+            >
               {events.map(evento => {
                 const expanded = expandedEventId === evento.id;
                 const editingAttendees = editingAttendeesEventId === evento.id;
@@ -709,6 +860,21 @@ export default function EventosView({
                   && EventosModel.eventRequiresConfirmation(evento)
                   && EventosModel.canMemberConfirmEvent(selfRow)
                 );
+                const cuotaCollectedHint = (() => {
+                  if (!evento.cuota_aplica || isExcluded) return null;
+                  const cuotaSummary = EventosModel.computeEventCuotaSummary(rows, {
+                    evento,
+                    club: resolveEventCuotaClub(evento, activeClubData),
+                  });
+                  if (!cuotaSummary.applies) return null;
+                  return t('eventCuotaCollectedHint').replace(
+                    '{{amount}}',
+                    formatCuotaMonto(cuotaSummary.totalCollected, {
+                      language,
+                      club: resolveEventCuotaClub(evento, activeClubData),
+                    })
+                  );
+                })();
 
                 return (
                   <div
@@ -741,6 +907,20 @@ export default function EventosView({
                           <div className="event-list-card__meta">
                             {evento.fecha} · {formatEventTime(evento.hora)} · {evento.lugar}
                             {tipoNombre && <> · {tipoNombre}</>}
+                            {evento.cuota_aplica && (
+                              <>
+                                {' · '}
+                                <span className="event-list-card__cuota-badge">
+                                  💵 {t('eventCuotaBadge').replace(
+                                    '{{amount}}',
+                                    formatCuotaMonto(
+                                      resolveEventCuotaMonto(evento, activeClubData),
+                                      { language, club: resolveEventCuotaClub(evento, activeClubData) }
+                                    )
+                                  )}
+                                </span>
+                              </>
+                            )}
                           </div>
                           <EventDescriptionToggle description={evento.descripcion} />
                           {evento.asistencia_grupo_id && grupoSiblings.length > 0 && !isExcluded && (
@@ -780,6 +960,11 @@ export default function EventosView({
                               {t('attendanceSummary')
                                 .replace('{assigned}', String(rows.length))
                                 .replace('{recorded}', String(recordedCount))}
+                            </div>
+                          )}
+                          {cuotaCollectedHint && (
+                            <div className="event-list-card__hint event-list-card__hint--cuota">
+                              {cuotaCollectedHint}
                             </div>
                           )}
                         </div>
@@ -851,32 +1036,6 @@ export default function EventosView({
                           className="event-list-self-confirm"
                         />
                       )}
-                      <EventListActionsModal
-                        open={overflowMenuEventId === evento.id}
-                        onClose={() => setOverflowMenuEventId(null)}
-                        evento={evento}
-                        t={t}
-                        canManage={canManage}
-                        isActive={isActive}
-                        isExcluded={isExcluded}
-                        isFuture={isFuture}
-                        needsConfirmation={needsConfirmation}
-                        isEditing={isEditing}
-                        expanded={expanded}
-                        editingAttendees={editingAttendees}
-                        selfRow={selfRow}
-                        updateSelfConfirmation={updateSelfConfirmation}
-                        savingSelfConfirmationId={savingSelfConfirmationId}
-                        onEdit={() => (isEditing ? closeEditForm() : openEditForm(evento))}
-                        onManageAttendance={() => toggleEventExpand(evento.id)}
-                        onUpdateAttendees={() => (editingAttendees ? closeAttendeeEditor() : openAttendeeEditor(evento.id))}
-                        onExclude={() => confirmExcludeFromAttendance(evento)}
-                        onRestore={() => confirmRestoreToAttendance(evento)}
-                        onCancelEvent={() => confirmCancelEvent(evento)}
-                        onDeactivate={() => confirmDeactivateEvent(evento)}
-                        onShowAttendanceList={!canManage ? () => toggleEventExpand(evento.id) : undefined}
-                        onShowSummary={() => openAttendanceSummary(evento.id)}
-                      />
                     </div>
 
                     {isEditing && canManage && (
@@ -893,6 +1052,16 @@ export default function EventosView({
                               showActivityStart
                             />
                           </FormSection>
+
+                          <EventCuotaFields
+                            eventForm={eventForm}
+                            setEventForm={setEventForm}
+                            activeClubData={activeClubData}
+                            fieldErrors={fieldErrors}
+                            t={t}
+                            language={language}
+                            cuotaUseDefaultName="editEventCuotaUseDefault"
+                          />
 
                           <EventConfirmationAndAttendeesFields
                             eventForm={eventForm}
@@ -1215,6 +1384,58 @@ export default function EventosView({
         t={t}
       />
       {confirmDialog}
+      <EventListActionsModal
+        open={Boolean(overflowMenuEventId)}
+        onClose={() => setOverflowMenuEventId(null)}
+        evento={overflowMenuEvent}
+        t={t}
+        canManage={canManage}
+        isActive={overflowMenuEvent ? isEventoActive(overflowMenuEvent) : false}
+        isExcluded={overflowMenuEvent ? isEventoExcludedFromAttendance(overflowMenuEvent) : false}
+        isFuture={overflowMenuEvent ? isEventInFuture(overflowMenuEvent) : false}
+        needsConfirmation={overflowMenuEvent ? eventRequiresConfirmation(overflowMenuEvent) : false}
+        isEditing={Boolean(overflowMenuEventId && editingEventId === overflowMenuEventId)}
+        expanded={Boolean(overflowMenuEventId && expandedEventId === overflowMenuEventId)}
+        editingAttendees={Boolean(overflowMenuEventId && editingAttendeesEventId === overflowMenuEventId)}
+        selfRow={overflowMenuSelfRow}
+        updateSelfConfirmation={updateSelfConfirmation}
+        savingSelfConfirmationId={savingSelfConfirmationId}
+        onEdit={() => {
+          const isOverflowEditing = editingEventId === overflowMenuEventId;
+          if (isOverflowEditing) closeEditForm();
+          else if (overflowMenuEvent) openEditForm(overflowMenuEvent);
+        }}
+        onManageAttendance={() => {
+          if (overflowMenuEventId) toggleEventExpand(overflowMenuEventId);
+        }}
+        onUpdateAttendees={() => {
+          const isOverflowEditingAttendees = editingAttendeesEventId === overflowMenuEventId;
+          if (isOverflowEditingAttendees) closeAttendeeEditor();
+          else if (overflowMenuEventId) openAttendeeEditor(overflowMenuEventId);
+        }}
+        onExclude={() => {
+          if (overflowMenuEvent) confirmExcludeFromAttendance(overflowMenuEvent);
+        }}
+        onRestore={() => {
+          if (overflowMenuEvent) confirmRestoreToAttendance(overflowMenuEvent);
+        }}
+        onCancelEvent={() => {
+          if (overflowMenuEvent) confirmCancelEvent(overflowMenuEvent);
+        }}
+        onDeactivate={() => {
+          if (overflowMenuEvent) confirmDeactivateEvent(overflowMenuEvent);
+        }}
+        onShowAttendanceList={!canManage && overflowMenuEventId
+          ? () => toggleEventExpand(overflowMenuEventId)
+          : undefined}
+        onShowSummary={() => {
+          if (overflowMenuEventId) openAttendanceSummary(overflowMenuEventId);
+        }}
+        onValidateCuota={() => {
+          if (overflowMenuEventId) openCuotaValidation(overflowMenuEventId);
+        }}
+        hasCuota={Boolean(overflowMenuEvent?.cuota_aplica)}
+      />
       <EventAttendanceSummaryModal
         open={Boolean(summaryEventId)}
         onClose={() => {
@@ -1223,12 +1444,36 @@ export default function EventosView({
         }}
         evento={summaryEvent}
         rows={summaryRows}
+        club={activeClubData}
+        language={language}
         loading={summaryLoading}
         needsConfirmation={summaryEvent ? eventRequiresConfirmation(summaryEvent) : false}
         formatEventTime={formatEventTime}
         formatEventTimestamp={formatEventTimestamp}
         formatPrintedAt={formatEventTimestamp(new Date().toISOString())}
         t={t}
+      />
+      <EventCuotaValidationModal
+        open={Boolean(cuotaValidationEventId)}
+        onClose={() => {
+          setCuotaValidationEventId(null);
+          setCuotaValidationLoading(false);
+          setSavingCuotaPaymentId('');
+          setMarkingAllCuotaPaid(false);
+        }}
+        evento={cuotaValidationEvent}
+        club={activeClubData}
+        rows={cuotaValidationRows}
+        loading={cuotaValidationLoading}
+        savingPaymentId={savingCuotaPaymentId}
+        onTogglePayment={toggleCuotaPayment}
+        onMarkAllPaid={markAllCuotaPaid}
+        markingAllPaid={markingAllCuotaPaid}
+        t={t}
+        language={language}
+        memberDisplayName={memberDisplayName}
+        formatEventTime={formatEventTime}
+        getAsistenciaFromRow={getAsistenciaFromRow}
       />
     </div>
   );

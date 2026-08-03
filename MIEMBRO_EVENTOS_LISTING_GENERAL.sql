@@ -24,6 +24,9 @@ BEGIN
         'miembro_id', em.miembro_id,
         'confirmacion_estado', em.confirmacion_estado,
         'confirmado_at', em.confirmado_at,
+        'cuota_pagada', em.cuota_pagada,
+        'cuota_pagada_at', em.cuota_pagada_at,
+        'cuota_monto_override', em.cuota_monto_override,
         'evento_asistencia', coalesce((
           SELECT json_agg(json_build_object(
             'id', ea.id,
@@ -44,11 +47,18 @@ BEGIN
           'descripcion', e.descripcion,
           'estado', e.estado,
           'requiere_confirmacion', e.requiere_confirmacion,
+          'asistencia_grupo_id', e.asistencia_grupo_id,
+          'cuota_aplica', e.cuota_aplica,
+          'cuota_monto_override', e.cuota_monto_override,
           'tipo_evento_id', e.tipo_evento_id,
           'clubes', json_build_object(
             'id', c.id,
             'nombre', c.nombre,
             'iglesia_id', c.iglesia_id,
+            'cuota_activa', c.cuota_activa,
+            'cuota_monto', c.cuota_monto,
+            'cuota_moneda_nombre', c.cuota_moneda_nombre,
+            'cuota_moneda_simbolo', c.cuota_moneda_simbolo,
             'iglesias', json_build_object('id', i.id, 'timezone', i.timezone)
           ),
           'tipos_evento', CASE
@@ -97,11 +107,18 @@ BEGIN
           'descripcion', e.descripcion,
           'estado', e.estado,
           'requiere_confirmacion', e.requiere_confirmacion,
+          'asistencia_grupo_id', e.asistencia_grupo_id,
+          'cuota_aplica', e.cuota_aplica,
+          'cuota_monto_override', e.cuota_monto_override,
           'tipo_evento_id', e.tipo_evento_id,
           'clubes', json_build_object(
             'id', c.id,
             'nombre', c.nombre,
             'iglesia_id', c.iglesia_id,
+            'cuota_activa', c.cuota_activa,
+            'cuota_monto', c.cuota_monto,
+            'cuota_moneda_nombre', c.cuota_moneda_nombre,
+            'cuota_moneda_simbolo', c.cuota_moneda_simbolo,
             'iglesias', json_build_object('id', i.id, 'timezone', i.timezone)
           ),
           'tipos_evento', CASE
