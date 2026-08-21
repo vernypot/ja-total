@@ -1,6 +1,8 @@
 -- =============================================================================
 -- Club Reglamento: hierarchical rules (sections / items / sub-items) + penalties
 -- Run in Supabase Dashboard → SQL Editor after UNIDADES_SCHEMA.sql
+--
+-- If Supabase reports rls_disabled_in_public, run CLUB_REGLAMENTO_RLS_FIX.sql
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.club_reglamento_nodo (
@@ -422,7 +424,6 @@ CREATE OR REPLACE FUNCTION public.member_portal_fetch_reglamento(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$

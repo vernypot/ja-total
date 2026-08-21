@@ -140,7 +140,9 @@ USING (
 -- ============================================
 
 -- View: Get all users with their churches
-CREATE OR REPLACE VIEW v_usuarios_con_iglesias AS
+CREATE OR REPLACE VIEW public.v_usuarios_con_iglesias
+WITH (security_invoker = true)
+AS
 SELECT 
   u.id,
   u.email,
@@ -159,7 +161,9 @@ LEFT JOIN iglesias i ON ui.iglesia_id = i.id
 ORDER BY u.email, i.nombre;
 
 -- View: Get church administrators
-CREATE OR REPLACE VIEW v_administradores_iglesia AS
+CREATE OR REPLACE VIEW public.v_administradores_iglesia
+WITH (security_invoker = true)
+AS
 SELECT 
   u.id,
   u.email,
@@ -194,8 +198,8 @@ ORDER BY i.nombre, u.nombre;
 -- ============================================
 -- STEP 9: Grant permissions to authenticated users
 -- ============================================
-GRANT SELECT ON v_usuarios_con_iglesias TO authenticated;
-GRANT SELECT ON v_administradores_iglesia TO authenticated;
+GRANT SELECT ON public.v_usuarios_con_iglesias TO authenticated;
+GRANT SELECT ON public.v_administradores_iglesia TO authenticated;
 
 -- ============================================
 -- END OF SCHEMA UPDATE

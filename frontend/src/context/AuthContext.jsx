@@ -3,6 +3,7 @@ import * as AuthModel from '../mvc/models/auth.model';
 import * as UsuariosModel from '../mvc/models/usuarios.model';
 import { endActiveStaffAppSession } from '../hooks/useAppUsageTracking';
 import { isSuperAdminEmail } from '../utils/permissions';
+import { clearStaffActivity } from '../utils/staffSessionActivity';
 
 export const AuthContext = createContext();
 
@@ -83,6 +84,7 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    clearStaffActivity();
     await endActiveStaffAppSession();
     await AuthModel.signOut();
     setUser(null);

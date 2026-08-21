@@ -535,6 +535,33 @@ BEGIN
 END;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- RLS: evento_asistencia_grupo
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.evento_asistencia_grupo ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS evento_asistencia_grupo_select ON public.evento_asistencia_grupo;
+CREATE POLICY evento_asistencia_grupo_select ON public.evento_asistencia_grupo
+  FOR SELECT TO authenticated
+  USING (public.user_can_access_club(club_id));
+
+DROP POLICY IF EXISTS evento_asistencia_grupo_insert ON public.evento_asistencia_grupo;
+CREATE POLICY evento_asistencia_grupo_insert ON public.evento_asistencia_grupo
+  FOR INSERT TO authenticated
+  WITH CHECK (public.user_can_manage_club(club_id));
+
+DROP POLICY IF EXISTS evento_asistencia_grupo_update ON public.evento_asistencia_grupo;
+CREATE POLICY evento_asistencia_grupo_update ON public.evento_asistencia_grupo
+  FOR UPDATE TO authenticated
+  USING (public.user_can_manage_club(club_id))
+  WITH CHECK (public.user_can_manage_club(club_id));
+
+DROP POLICY IF EXISTS evento_asistencia_grupo_delete ON public.evento_asistencia_grupo;
+CREATE POLICY evento_asistencia_grupo_delete ON public.evento_asistencia_grupo
+  FOR DELETE TO authenticated
+  USING (public.user_can_manage_club(club_id));
+
 GRANT SELECT ON public.evento_asistencia_grupo TO authenticated;
 GRANT EXECUTE ON FUNCTION public.evento_asistencia_grupo_ids(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.sync_evento_checkin_to_grupo(UUID, UUID, TEXT, TIMESTAMPTZ) TO authenticated;

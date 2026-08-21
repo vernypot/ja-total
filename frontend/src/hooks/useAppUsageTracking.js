@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as UsuarioUsageModel from '../mvc/models/usuarioUsage.model';
+import { isStaffSessionIdle } from '../utils/staffSessionActivity';
 
 const HEARTBEAT_MS = 60_000;
 
@@ -30,6 +31,8 @@ export function useAppUsageTracking(enabled) {
     }
 
     async function heartbeat() {
+      if (isStaffSessionIdle()) return;
+
       const sessionId = sessionIdRef.current || UsuarioUsageModel.getStoredStaffSessionId();
       if (!sessionId) {
         await ensureSession();
