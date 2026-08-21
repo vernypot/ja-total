@@ -5,6 +5,7 @@ import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
 import UnidadEvalConfigPanel from '../../components/UnidadEvalConfigPanel';
 import UnidadReglamentoInfraccionesPanel from '../../components/UnidadReglamentoInfraccionesPanel';
+import UnidadFormModal from '../../components/UnidadFormModal';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
@@ -132,7 +133,6 @@ export default function UnidadesView({
   searchQuery,
   setSearchQuery,
   showForm,
-  setShowForm,
   form,
   setForm,
   editingUnidadId,
@@ -245,69 +245,16 @@ export default function UnidadesView({
         <p className="text-muted">{t('selectClubForUnidades')}</p>
       ) : (
         <>
-          {showForm && (
-            <div className="card unidades-form-card">
-              <h2 style={{ marginTop: 0 }}>{editingUnidadId ? t('unidadEdit') : t('unidadNew')}</h2>
-              <div className="unidades-form-grid">
-                <label className="unidades-field">
-                  <span className="unidades-field__label">{t('unidadName')}</span>
-                  <input
-                    className="form-input"
-                    value={form.nombre}
-                    onChange={e => setForm(prev => ({ ...prev, nombre: e.target.value }))}
-                  />
-                </label>
-                <label className="unidades-field">
-                  <span className="unidades-field__label">{t('unidadGender')}</span>
-                  <select
-                    className="form-input"
-                    value={form.genero}
-                    onChange={e => setForm(prev => ({ ...prev, genero: e.target.value }))}
-                  >
-                    <option value="M">{t('unidadGenderMale')}</option>
-                    <option value="F">{t('unidadGenderFemale')}</option>
-                  </select>
-                </label>
-                <label className="unidades-field">
-                  <span className="unidades-field__label">{t('unidadEvalValidationStartLabel')}</span>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={form.evaluacion_inicio_fecha}
-                    onChange={e => setForm(prev => ({
-                      ...prev,
-                      evaluacion_inicio_fecha: e.target.value,
-                    }))}
-                  />
-                </label>
-                <label className="unidades-field unidades-field--full">
-                  <span className="unidades-field__hint">{t('unidadEvalValidationStartFieldHint')}</span>
-                </label>
-                <label className="unidades-field unidades-field--full">
-                  <span className="unidades-field__label">{t('unidadDescription')}</span>
-                  <textarea
-                    className="form-input"
-                    rows={3}
-                    value={form.descripcion}
-                    onChange={e => setForm(prev => ({ ...prev, descripcion: e.target.value }))}
-                  />
-                </label>
-              </div>
-              <div className="unidades-form-actions">
-                <button type="button" className="btn btn-secondary" onClick={resetForm}>
-                  {t('cancel')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={Boolean(savingUnidadId)}
-                  onClick={saveUnidad}
-                >
-                  {savingUnidadId ? t('saving') : t('save')}
-                </button>
-              </div>
-            </div>
-          )}
+          <UnidadFormModal
+            open={showForm}
+            editingUnidadId={editingUnidadId}
+            form={form}
+            setForm={setForm}
+            savingUnidadId={savingUnidadId}
+            onSave={saveUnidad}
+            onClose={resetForm}
+            t={t}
+          />
 
           {loading && unidades.length === 0 ? (
             <p>{t('loading')}</p>

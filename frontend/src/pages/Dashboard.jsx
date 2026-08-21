@@ -9,6 +9,7 @@ import PortalBottomNav from '../components/portal/PortalBottomNav';
 import HorizontalScrollEnhancer from '../components/HorizontalScrollEnhancer';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
 import { useAppUsageTracking } from '../hooks/useAppUsageTracking';
+import { useStaffSessionIdleTimeout } from '../hooks/useStaffSessionIdleTimeout';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
@@ -16,8 +17,9 @@ import { isBlixLayoutTheme } from '../constants/uiThemes';
 
 
 export default function Dashboard() {
-  const { isMemberView } = useDashboardAuth();
-  useAppUsageTracking(!isMemberView);
+  const { isMemberView, isStaff } = useDashboardAuth();
+  useAppUsageTracking(isStaff);
+  useStaffSessionIdleTimeout(isStaff);
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();
