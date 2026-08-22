@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeCheckinAttendanceEstado,
   formatEventLocalDate,
+  formatEventListDate,
   formatEventLocalTime,
   formatIsoDateInTimezone,
   getEventChurchTimezone,
@@ -70,6 +71,12 @@ describe('eventTimezone', () => {
     expect(isEventInFuture(evento, beforeStart, 'America/Bogota')).toBe(true);
     expect(isEventInFuture(evento, afterStart, 'America/Bogota')).toBe(false);
     expect(isEventToday(evento, beforeStart, 'America/Bogota')).toBe(true);
+  });
+
+  it('formats compact list dates as dd/MM/YY', () => {
+    expect(formatEventListDate('2026-08-22')).toBe('22/08/26');
+    expect(formatEventListDate('2026-12-13T00:00:00.000Z')).toBe('13/12/26');
+    expect(formatEventListDate('')).toBe('');
   });
 
   it('formats event dates in church timezone', () => {

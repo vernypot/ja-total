@@ -95,7 +95,7 @@ export function useSorteosController() {
         )
       )
     );
-    setEvents(eventLists.flat().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))));
+    setEvents(EventosModel.sortEventosByDateAsc(eventLists.flat()));
   }, [effectiveIglesiaId]);
 
   const load = useCallback(async () => {

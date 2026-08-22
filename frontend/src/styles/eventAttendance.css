@@ -690,6 +690,11 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   margin-top: 4px;
 }
 
+.event-list-card__meta-date {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .event-list-card__hint {
   font-size: 12px;
   margin-top: 4px;

@@ -263,9 +263,7 @@ export function useMiembrosController() {
       }),
     );
 
-    const eventos = eventoResults
-      .flat()
-      .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+    const eventos = EventosModel.sortEventosByDateAsc(eventoResults.flat());
 
     setFilterEventos(eventos);
   }

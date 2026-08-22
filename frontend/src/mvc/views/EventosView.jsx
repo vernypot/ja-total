@@ -498,6 +498,7 @@ export default function EventosView({
   getTipoEventoNombre,
   memberDisplayName,
   formatEventTime,
+  formatEventDate,
   formatEventTimestamp,
   mergeAnchorEvent,
   mergeCandidates,
@@ -905,7 +906,9 @@ export default function EventosView({
                             )}
                           </div>
                           <div className="event-list-card__meta">
-                            {evento.fecha} · {formatEventTime(evento.hora)} · {evento.lugar}
+                            <strong className="event-list-card__meta-date">{formatEventDate(evento.fecha)}</strong>
+                            {' · '}
+                            {formatEventTime(evento.hora)} · {evento.lugar}
                             {tipoNombre && <> · {tipoNombre}</>}
                             {evento.cuota_aplica && (
                               <>
