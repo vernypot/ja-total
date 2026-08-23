@@ -8,9 +8,16 @@ import {
   paginateItems,
 } from '../utils/listPagination';
 
-export function useListPagination(items, resetDeps = []) {
+export function useListPagination(items, resetDeps = [], options = {}) {
+  const {
+    defaultPageSize,
+    pageSizeOptions = LIST_PAGE_SIZE_OPTIONS,
+  } = options;
+  const fixedPageSize = Number.isFinite(Number(defaultPageSize)) && Number(defaultPageSize) > 0
+    ? Number(defaultPageSize)
+    : null;
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const [pageSize, setPageSize] = useState(LIST_PAGE_SIZE_DESKTOP_DEFAULT);
+  const [pageSize, setPageSize] = useState(fixedPageSize ?? LIST_PAGE_SIZE_DESKTOP_DEFAULT);
   const [page, setPage] = useState(1);
   const [pageSizeCustomized, setPageSizeCustomized] = useState(false);
 
@@ -18,10 +25,10 @@ export function useListPagination(items, resetDeps = []) {
   const { totalPages, page: safePage } = getListPageRange(page, pageSize, totalItems);
 
   useEffect(() => {
-    if (!pageSizeCustomized) {
+    if (!pageSizeCustomized && !fixedPageSize) {
       setPageSize(getDefaultListPageSize(isMobile));
     }
-  }, [isMobile, pageSizeCustomized]);
+  }, [isMobile, pageSizeCustomized, fixedPageSize]);
 
   useEffect(() => {
     setPage(1);
@@ -53,6 +60,6 @@ export function useListPagination(items, resetDeps = []) {
     totalPages,
     pageStart: start,
     pageEnd: end,
-    pageSizeOptions: LIST_PAGE_SIZE_OPTIONS,
+    pageSizeOptions,
   };
 }

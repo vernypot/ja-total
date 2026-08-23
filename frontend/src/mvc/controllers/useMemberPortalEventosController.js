@@ -20,13 +20,21 @@ export function useMemberPortalEventosController() {
   function isUpcomingRow(row) {
     const evento = eventFromRow(row);
     if (!evento) return false;
-    return EventosModel.isEventInFuture(evento, new Date(), EventosModel.getEventChurchTimezone(evento));
+    return EventosModel.isEventListingUpcoming(
+      evento,
+      new Date(),
+      EventosModel.getEventChurchTimezone(evento)
+    );
   }
 
   function isPastRow(row) {
     const evento = eventFromRow(row);
     if (!evento) return false;
-    return EventosModel.isEventInPast(evento, new Date(), EventosModel.getEventChurchTimezone(evento));
+    return EventosModel.isEventListingPast(
+      evento,
+      new Date(),
+      EventosModel.getEventChurchTimezone(evento)
+    );
   }
 
   const timeFilteredRows = useMemo(() => {

@@ -20,6 +20,7 @@ import {
   isEventOpenForMemberConfirmation,
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
+  normalizeEventDate,
   toLocalDateKey,
 } from '../../utils/eventTimezone';
 
@@ -58,6 +59,22 @@ export function isEventoActive(evento) {
 
 export function isEventoEnded(evento) {
   return evento?.estado === EVENTO_ESTADO.FINALIZADO;
+}
+
+/** Past for event listings: concluded and scheduled before today (today always stays visible). */
+export function isEventListingPast(evento, now = new Date(), timeZone = EVENT_TIMEZONE) {
+  if (!evento?.fecha || isEventToday(evento, now, timeZone)) return false;
+  const fecha = normalizeEventDate(evento.fecha);
+  const today = getLocalTodayIso(now, timeZone);
+  if (!fecha || fecha >= today) return false;
+  return isEventoEnded(evento);
+}
+
+/** Upcoming for event listings: today or a future scheduled date. */
+export function isEventListingUpcoming(evento, now = new Date(), timeZone = EVENT_TIMEZONE) {
+  if (!evento?.fecha) return false;
+  const tz = timeZone || getEventChurchTimezone(evento);
+  return isEventToday(evento, now, tz) || isEventInFuture(evento, now, tz);
 }
 
 export function isEventoExcludedFromAttendance(evento) {

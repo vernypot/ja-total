@@ -17,6 +17,9 @@ import * as TiposEventoModel from '../models/tiposEvento.model';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
 import { emptyEventCuotaForm } from '../../utils/cuota';
+import { EVENTS_NEAREST_PAGE_SIZE } from '../../constants/memberEvents';
+
+const EVENTS_PAGE_SIZE_OPTIONS = [5, 15, 30, 50];
 
 const emptyForm = () => ({
   nombre: '',
@@ -68,6 +71,7 @@ export function useEventosController() {
   const [attendeeEditIds, setAttendeeEditIds] = useState([]);
   const [savingAttendees, setSavingAttendees] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [showPast, setShowPast] = useState(false);
   const [editingEventId, setEditingEventId] = useState('');
   const [savingEvent, setSavingEvent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -88,21 +92,32 @@ export function useEventosController() {
     [clubs, clubId, activeClub]
   );
 
-  const filteredEvents = useMemo(
-    () => filterBySearch(events, searchQuery, e => [
+  const filteredEvents = useMemo(() => {
+    let list = events;
+    if (!showPast) {
+      const now = new Date();
+      list = list.filter(evento => !EventosModel.isEventListingPast(
+        evento,
+        now,
+        EventosModel.getEventChurchTimezone(evento)
+      ));
+    }
+    return filterBySearch(list, searchQuery, e => [
       e.nombre,
       e.lugar,
       e.descripcion,
       e.fecha,
       e.clubes?.nombre,
-    ]),
-    [events, searchQuery]
-  );
+    ]);
+  }, [events, searchQuery, showPast]);
 
   const {
     pageItems: paginatedEvents,
     ...listPagination
-  } = useListPagination(filteredEvents, [searchQuery, showInactive, clubId]);
+  } = useListPagination(filteredEvents, [searchQuery, showInactive, showPast, clubId], {
+    defaultPageSize: EVENTS_NEAREST_PAGE_SIZE,
+    pageSizeOptions: EVENTS_PAGE_SIZE_OPTIONS,
+  });
 
   async function loadTiposEvento() {
     const { data } = await TiposEventoModel.fetchTiposEvento({ showInactive: false });
@@ -987,6 +1002,8 @@ export function useEventosController() {
     setClubId,
     showInactive,
     setShowInactive,
+    showPast,
+    setShowPast,
     editingEventId,
     openEditForm,
     closeEditForm,

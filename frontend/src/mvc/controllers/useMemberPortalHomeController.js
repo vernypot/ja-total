@@ -173,7 +173,7 @@ export function useMemberPortalHomeController() {
     () => [...eventRows]
       .filter(row => {
         const evento = EventosModel.getEventoFromRow(row);
-        return evento && EventosModel.isEventInFuture(
+        return evento && EventosModel.isEventListingUpcoming(
           evento,
           new Date(),
           EventosModel.getEventChurchTimezone(evento)

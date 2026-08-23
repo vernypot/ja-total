@@ -456,6 +456,8 @@ export default function EventosView({
   setClubId,
   showInactive,
   setShowInactive,
+  showPast,
+  setShowPast,
   editingEventId,
   openEditForm,
   closeEditForm,
@@ -770,6 +772,10 @@ export default function EventosView({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <h3 style={{ margin: 0 }}>{t('clubEventsList')}</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)} />
+                {t('showPastEvents')}
+              </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                 <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
                 {t('showInactiveEvents')}

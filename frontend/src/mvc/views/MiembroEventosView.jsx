@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { useListPagination } from '../../hooks/useListPagination';
 import { PageHelpLink } from '../../components/PageHelp';
 import ListPagination from '../../components/ListPagination';
 import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
@@ -8,7 +9,9 @@ import MemberEventConfirmationStatus from '../../components/MemberEventConfirmat
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import * as EventosModel from '../../mvc/models/eventos.model';
-import { MEMBER_UPCOMING_EVENTS_PREVIEW } from '../../constants/memberEvents';
+import { EVENTS_NEAREST_PAGE_SIZE } from '../../constants/memberEvents';
+
+const MEMBER_EVENTS_PAGE_SIZE_OPTIONS = [5, 10, 15, 30];
 import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
   AttendanceBadge,
@@ -190,16 +193,11 @@ export default function MiembroEventosView({
   const { t, language } = useLanguage();
   const resolvedAllRows = allRows ?? rows ?? [];
   const resolvedRows = rows ?? [];
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const memberUpcomingPreview = !canManage && timeFilter === 'upcoming';
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
   });
-
-  useEffect(() => {
-    setShowAllUpcoming(false);
-  }, [timeFilter]);
 
   function buildConfirmBeforeConfirmation(eventName) {
     return (estado, proceed) => {
@@ -287,14 +285,24 @@ export default function MiembroEventosView({
     memberUpcomingPreview,
   ]);
 
-  const hiddenUpcomingCount = memberUpcomingPreview && !showAllUpcoming
-    ? Math.max(0, otherRowsAll.length - MEMBER_UPCOMING_EVENTS_PREVIEW)
-    : 0;
+  const {
+    pageItems: otherRows,
+    ...otherListPagination
+  } = useListPagination(otherRowsAll, [otherRowsAll.length, timeFilter, attendanceFilter], {
+    defaultPageSize: EVENTS_NEAREST_PAGE_SIZE,
+    pageSizeOptions: MEMBER_EVENTS_PAGE_SIZE_OPTIONS,
+  });
 
-  const otherRows = useMemo(() => {
-    if (!memberUpcomingPreview || showAllUpcoming) return otherRowsAll;
-    return otherRowsAll.slice(0, MEMBER_UPCOMING_EVENTS_PREVIEW);
-  }, [otherRowsAll, memberUpcomingPreview, showAllUpcoming]);
+  const {
+    pageItems: attendedPageRows,
+    ...attendedListPagination
+  } = useListPagination(attendedRowsListed, [attendedRowsListed.length, timeFilter, attendanceFilter], {
+    defaultPageSize: EVENTS_NEAREST_PAGE_SIZE,
+    pageSizeOptions: MEMBER_EVENTS_PAGE_SIZE_OPTIONS,
+  });
+
+  const displayedOtherRows = canManage ? otherRowsAll : otherRows;
+  const displayedAttendedRows = canManage ? attendedRowsListed : attendedPageRows;
 
   if (loading) {
     return embedded ? null : <p>{t('loadingEvents')}</p>;
@@ -384,49 +392,37 @@ export default function MiembroEventosView({
             </section>
           )}
 
-          {attendanceFilter === 'attended' && attendedRowsListed.length === 0 ? (
+          {attendanceFilter === 'attended' && displayedAttendedRows.length === 0 ? (
             <p className="text-muted">{t('noMemberEventsAttended')}</p>
           ) : attendanceFilter === 'attended' ? (
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {attendedRowsListed.map(row => (
-                <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
-              ))}
-            </div>
+            <>
+              {!canManage && <ListPagination {...attendedListPagination} />}
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {displayedAttendedRows.map(row => (
+                  <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
+                ))}
+              </div>
+              {!canManage && attendedListPagination?.totalPages > 1 && (
+                <ListPagination {...attendedListPagination} />
+              )}
+            </>
           ) : (
             <>
-              {otherRows.length > 0 && (
+              {displayedOtherRows.length > 0 && (
                 <section className="member-events-other-section">
                   <h4 className="member-events-section-title">{t('memberEventsOtherSection')}</h4>
+                  {!canManage && <ListPagination {...otherListPagination} />}
                   <div style={{ display: 'grid', gap: '12px' }}>
-                    {otherRows.map(row => (
+                    {displayedOtherRows.map(row => (
                       <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
                     ))}
                   </div>
-                  {hiddenUpcomingCount > 0 && (
-                    <div className="member-events-show-more">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => setShowAllUpcoming(true)}
-                      >
-                        {t('memberEventsShowRemaining').replace('{count}', String(hiddenUpcomingCount))}
-                      </button>
-                    </div>
-                  )}
-                  {memberUpcomingPreview && showAllUpcoming && otherRowsAll.length > MEMBER_UPCOMING_EVENTS_PREVIEW && (
-                    <div className="member-events-show-more">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => setShowAllUpcoming(false)}
-                      >
-                        {t('memberEventsShowFewer')}
-                      </button>
-                    </div>
+                  {!canManage && otherListPagination?.totalPages > 1 && (
+                    <ListPagination {...otherListPagination} />
                   )}
                 </section>
               )}
-              {otherRows.length === 0 && attendedRowsAll.length > 0 && (
+              {displayedOtherRows.length === 0 && attendedRowsAll.length > 0 && (
                 <p className="text-muted">{t('memberEventsAllAttended')}</p>
               )}
             </>
