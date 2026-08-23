@@ -83,6 +83,14 @@ export function sortMemberEventRowsByEventDateDesc(rows) {
   });
 }
 
+export function sortMemberEventRowsByEventDateAsc(rows) {
+  return [...(rows || [])].sort((a, b) => {
+    const eventA = getEventoFromRow(a);
+    const eventB = getEventoFromRow(b);
+    return compareEventsByLocalDateTime(eventA, eventB);
+  });
+}
+
 export function sortEventosByDateAsc(events) {
   return [...(events || [])].sort(compareEventsByLocalDateTime);
 }

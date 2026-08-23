@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMemberPortal } from '../../context/MemberPortalContext';
-import { useListPagination } from '../../hooks/useListPagination';
 import * as MemberPortalModel from '../models/memberPortal.model';
 import * as EventosModel from '../models/eventos.model';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
@@ -31,9 +30,18 @@ export function useMemberPortalEventosController() {
   }
 
   const timeFilteredRows = useMemo(() => {
-    if (timeFilter === 'past') return rows.filter(isPastRow);
-    if (timeFilter === 'upcoming') return rows.filter(isUpcomingRow);
-    return rows;
+    let filtered;
+    if (timeFilter === 'past') filtered = rows.filter(isPastRow);
+    else if (timeFilter === 'upcoming') filtered = rows.filter(isUpcomingRow);
+    else filtered = rows;
+
+    const ascending = timeFilter === 'upcoming';
+    return [...filtered].sort((a, b) => {
+      const eventA = EventosModel.getEventoFromRow(a);
+      const eventB = EventosModel.getEventoFromRow(b);
+      const cmp = compareEventsByLocalDateTime(eventA, eventB);
+      return ascending ? cmp : -cmp;
+    });
   }, [rows, timeFilter]);
 
   async function load({ silent = false } = {}) {
@@ -57,11 +65,7 @@ export function useMemberPortalEventosController() {
       return;
     }
 
-    const sorted = [...(data || [])].sort((a, b) => {
-      const eventA = EventosModel.getEventoFromRow(a);
-      const eventB = EventosModel.getEventoFromRow(b);
-      return compareEventsByLocalDateTime(eventB, eventA);
-    });
+    const sorted = EventosModel.sortMemberEventRowsByEventDateAsc(data || []);
 
     setRows(sorted);
     if (!silent) setLoading(false);
@@ -119,18 +123,13 @@ export function useMemberPortalEventosController() {
     return timeFilteredRows;
   }, [timeFilteredRows, attendanceFilter, mergedAttendanceHelpers]);
 
-  const {
-    pageItems: paginatedRows,
-    ...listPagination
-  } = useListPagination(filteredRows, [attendanceFilter, timeFilter]);
-
   useEffect(() => {
     load();
   }, [session?.sessionToken]);
 
   return {
-    rows: paginatedRows,
-    listPagination,
+    rows: filteredRows,
+    listPagination: { totalItems: 0 },
     allRows: timeFilteredRows,
     attendedCount,
     attendanceFilter,

@@ -9,6 +9,8 @@ import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as EventosModel from '../models/eventos.model';
+import * as EventoAsistenciaItemsModel from '../models/eventoAsistenciaItems.model';
+import { normalizeAsistenciaItem, mapAsistenciaItemsByKey } from '../../utils/eventoAsistenciaItems';
 import * as MiembrosModel from '../models/miembros.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
@@ -27,6 +29,7 @@ const emptyForm = () => ({
   memberAssignmentMode: 'all',
   selectedMemberIds: [],
   actividad_inicio_local: '',
+  asistenciaItems: [],
   ...emptyEventCuotaForm(),
 });
 
@@ -78,6 +81,7 @@ export function useEventosController() {
   const [mergeAnchorEventId, setMergeAnchorEventId] = useState('');
   const [mergeTargetEventId, setMergeTargetEventId] = useState('');
   const [mergingAttendance, setMergingAttendance] = useState(false);
+  const [eventAsistenciaItemsById, setEventAsistenciaItemsById] = useState({});
 
   const activeClubData = useMemo(
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
@@ -156,6 +160,14 @@ export function useEventosController() {
     setLoading(false);
 
     const eventList = data || [];
+    const eventIds = eventList.map(evento => evento.id);
+    if (eventIds.length) {
+      const { data: itemRows } = await EventoAsistenciaItemsModel.fetchEventoAsistenciaItemsByEventIds(eventIds);
+      setEventAsistenciaItemsById(mapAsistenciaItemsByKey(itemRows || [], 'evento_id'));
+    } else {
+      setEventAsistenciaItemsById({});
+    }
+
     if (canOperate && eventList.length) {
       await loadAllAssignments(eventList);
     }
@@ -263,6 +275,8 @@ export function useEventosController() {
       && assignedIds.length === allMemberIds.length
       && assignedIds.every(id => allMemberIds.includes(id));
 
+    const { data: itemRows } = await EventoAsistenciaItemsModel.fetchEventoAsistenciaItems(evento.id);
+
     setEventForm({
       nombre: evento.nombre || '',
       fecha: evento.fecha || '',
@@ -278,6 +292,7 @@ export function useEventosController() {
         EventosModel.getEventChurchTimezone(evento) || churchTz.timeZone
       ),
       ...emptyEventCuotaForm(evento, activeClubData),
+      asistenciaItems: (itemRows || []).map(normalizeAsistenciaItem).filter(Boolean),
     });
   }
 
@@ -329,6 +344,16 @@ export function useEventosController() {
         return;
       }
 
+      const { error: itemsError } = await EventoAsistenciaItemsModel.saveEventoAsistenciaItems(
+        editingEventId,
+        eventForm.asistenciaItems
+      );
+      if (itemsError) {
+        setSavingEvent(false);
+        setError('Error saving attendee items: ' + itemsError.message);
+        return;
+      }
+
       const needsMembers = eventForm.requiere_confirmacion || eventForm.cuota_aplica;
       if (needsMembers) {
         const { error: syncError } = await EventosModel.syncEventoAttendees(
@@ -376,7 +401,7 @@ export function useEventosController() {
     }
 
     setSavingEvent(true);
-    const { error: saveError } = await EventosModel.createEvento({
+    const { data: created, error: saveError } = await EventosModel.createEvento({
       clubId,
       nombre: eventForm.nombre,
       fecha: eventForm.fecha,
@@ -395,6 +420,17 @@ export function useEventosController() {
     if (saveError) {
       setError('Error creating event: ' + saveError.message);
       return;
+    }
+
+    if (created?.id) {
+      const { error: itemsError } = await EventoAsistenciaItemsModel.saveEventoAsistenciaItems(
+        created.id,
+        eventForm.asistenciaItems
+      );
+      if (itemsError) {
+        setError('Error saving attendee items: ' + itemsError.message);
+        return;
+      }
     }
 
     closeEventForm();
@@ -526,6 +562,15 @@ export function useEventosController() {
 
   async function initializeEvent(eventoId) {
     if (!canOperate || !eventoId) return;
+    const evento = filteredEvents.find(e => e.id === eventoId);
+    if (!evento || !EventosModel.isEventToday(
+      evento,
+      new Date(),
+      EventosModel.getEventChurchTimezone(evento)
+    )) {
+      setError(t('eventCheckinNotToday'));
+      return;
+    }
     setError('');
 
     setInitializingEventId(eventoId);
@@ -542,6 +587,15 @@ export function useEventosController() {
 
   async function scanAttendees(eventoId) {
     if (!canOperate || !eventoId) return;
+    const evento = filteredEvents.find(e => e.id === eventoId);
+    if (!evento || !EventosModel.isEventToday(
+      evento,
+      new Date(),
+      EventosModel.getEventChurchTimezone(evento)
+    )) {
+      setError(t('eventCheckinNotToday'));
+      return;
+    }
     setError('');
 
     const { error: scanError } = await EventosModel.startEventoEscaneo(eventoId);
@@ -986,6 +1040,11 @@ export function useEventosController() {
     isEventoActive: EventosModel.isEventoActive,
     isEventoEnded: EventosModel.isEventoEnded,
     isEventInFuture: churchTz.isEventInFuture,
+    isEventToday: (evento) => EventosModel.isEventToday(
+      evento,
+      new Date(),
+      EventosModel.getEventChurchTimezone(evento)
+    ),
     getAsistenciaFromRow: EventosModel.getAsistenciaFromRow,
     getCheckedInAtFromRow: EventosModel.getCheckedInAtFromRow,
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
@@ -996,6 +1055,7 @@ export function useEventosController() {
     formatEventTime,
     formatEventDate,
     formatEventTimestamp,
+    eventAsistenciaItemsById,
     linkedMiembroId,
     buildSelfEventRow: buildSelfRow,
     getSelfEventRow,

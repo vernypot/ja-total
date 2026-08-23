@@ -9,6 +9,8 @@ import { filterBySearch } from '../../utils/listSearch';
 import { useListPagination } from '../../hooks/useListPagination';
 import { validateForm } from '../../utils/validateForm';
 import * as PlanModel from '../models/planificacion.model';
+import * as EventoAsistenciaItemsModel from '../models/eventoAsistenciaItems.model';
+import { normalizeAsistenciaItem, mapAsistenciaItemsByKey } from '../../utils/eventoAsistenciaItems';
 import * as ClasesModel from '../models/clases.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
@@ -42,6 +44,7 @@ export function usePlanificacionPeriodoController() {
   const [planDetail, setPlanDetail] = useState(null);
   const [requisitosPool, setRequisitosPool] = useState([]);
   const [assignmentsByMeeting, setAssignmentsByMeeting] = useState({});
+  const [asistenciaItemsByMeeting, setAsistenciaItemsByMeeting] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -140,6 +143,7 @@ export function usePlanificacionPeriodoController() {
       setPlanDetail(null);
       setRequisitosPool([]);
       setAssignmentsByMeeting({});
+      setAsistenciaItemsByMeeting({});
       return;
     }
     setDetailLoading(true);
@@ -175,6 +179,11 @@ export function usePlanificacionPeriodoController() {
     setPlanDetail(detail);
     setRequisitosPool(pool);
     setAssignmentsByMeeting(PlanModel.mapAssignmentsByMeeting(detail.assignments));
+
+    const reunionIds = (detail.reuniones || []).map(reunion => reunion.id);
+    const { data: itemRows } = await EventoAsistenciaItemsModel.fetchPlanReunionAsistenciaItems(reunionIds);
+    setAsistenciaItemsByMeeting(mapAsistenciaItemsByKey(itemRows || [], 'reunion_id'));
+
     setDetailLoading(false);
   }
 
@@ -184,6 +193,7 @@ export function usePlanificacionPeriodoController() {
       setPlanDetail(null);
       setRequisitosPool([]);
       setAssignmentsByMeeting({});
+      setAsistenciaItemsByMeeting({});
       return;
     }
     setExpandedPlanId(planId);
@@ -401,7 +411,7 @@ export function usePlanificacionPeriodoController() {
     return true;
   }, [canManage, expandedPlanId, assignmentsByMeeting]);
 
-  const updateMeeting = useCallback(async (reunionId, { titulo, tipoEventoId, notas, fecha, hora, lugar }) => {
+  const updateMeeting = useCallback(async (reunionId, { titulo, tipoEventoId, notas, fecha, hora, lugar, asistenciaItems }) => {
     if (!canManage) return false;
     setError('');
 
@@ -442,6 +452,22 @@ export function usePlanificacionPeriodoController() {
       setPlanDetail(prev => ({ ...prev, reuniones: previousReuniones }));
       setError('Error updating meeting: ' + updateError.message);
       return false;
+    }
+
+    if (asistenciaItems !== undefined) {
+      const { error: itemsError } = await EventoAsistenciaItemsModel.savePlanReunionAsistenciaItems(
+        reunionId,
+        asistenciaItems
+      );
+      if (itemsError) {
+        setPlanDetail(prev => ({ ...prev, reuniones: previousReuniones }));
+        setError('Error saving attendee items: ' + itemsError.message);
+        return false;
+      }
+      setAsistenciaItemsByMeeting(prev => ({
+        ...prev,
+        [reunionId]: (asistenciaItems || []).map(normalizeAsistenciaItem).filter(Boolean),
+      }));
     }
 
     let updatedReunion = {
@@ -555,6 +581,7 @@ export function usePlanificacionPeriodoController() {
     planDetail,
     reuniones: planDetail?.reuniones || [],
     assignmentsByMeeting,
+    asistenciaItemsByMeeting,
     unassignedRequisitos,
     groupedUnassignedPool,
     requisitosPool,

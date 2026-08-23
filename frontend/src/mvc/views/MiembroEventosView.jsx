@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { PageHelpLink } from '../../components/PageHelp';
@@ -8,6 +8,7 @@ import MemberEventConfirmationStatus from '../../components/MemberEventConfirmat
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import MemberEventCuotaSummary from '../../components/MemberEventCuotaSummary';
 import * as EventosModel from '../../mvc/models/eventos.model';
+import { MEMBER_UPCOMING_EVENTS_PREVIEW } from '../../constants/memberEvents';
 import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
   AttendanceBadge,
@@ -189,10 +190,16 @@ export default function MiembroEventosView({
   const { t, language } = useLanguage();
   const resolvedAllRows = allRows ?? rows ?? [];
   const resolvedRows = rows ?? [];
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const memberUpcomingPreview = !canManage && timeFilter === 'upcoming';
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
     confirmingLabel: t('saving'),
   });
+
+  useEffect(() => {
+    setShowAllUpcoming(false);
+  }, [timeFilter]);
 
   function buildConfirmBeforeConfirmation(eventName) {
     return (estado, proceed) => {
@@ -264,10 +271,30 @@ export default function MiembroEventosView({
     [attendanceFilter, resolvedRows, attendedRowsAll]
   );
 
-  const otherRows = useMemo(() => {
+  const otherRowsAll = useMemo(() => {
     if (attendanceFilter === 'attended') return [];
-    return resolvedRows.filter(row => !memberAttendedEvent(row));
-  }, [resolvedRows, attendanceFilter, memberAttendedEvent]);
+    const source = memberUpcomingPreview ? resolvedAllRows : resolvedRows;
+    const filtered = source.filter(row => !memberAttendedEvent(row));
+    if (memberUpcomingPreview) {
+      return EventosModel.sortMemberEventRowsByEventDateAsc(filtered);
+    }
+    return filtered;
+  }, [
+    resolvedAllRows,
+    resolvedRows,
+    attendanceFilter,
+    memberAttendedEvent,
+    memberUpcomingPreview,
+  ]);
+
+  const hiddenUpcomingCount = memberUpcomingPreview && !showAllUpcoming
+    ? Math.max(0, otherRowsAll.length - MEMBER_UPCOMING_EVENTS_PREVIEW)
+    : 0;
+
+  const otherRows = useMemo(() => {
+    if (!memberUpcomingPreview || showAllUpcoming) return otherRowsAll;
+    return otherRowsAll.slice(0, MEMBER_UPCOMING_EVENTS_PREVIEW);
+  }, [otherRowsAll, memberUpcomingPreview, showAllUpcoming]);
 
   if (loading) {
     return embedded ? null : <p>{t('loadingEvents')}</p>;
@@ -332,7 +359,7 @@ export default function MiembroEventosView({
         </div>
       )}
 
-      <ListPagination {...listPagination} />
+      {canManage && <ListPagination {...listPagination} />}
 
       {totalEventCount === 0 ? (
         <p className="text-muted">{t('noMemberEvents')}</p>
@@ -375,6 +402,28 @@ export default function MiembroEventosView({
                       <MemberEventCard key={row.id || row.evento_id} row={row} {...cardPropsForRow(row)} />
                     ))}
                   </div>
+                  {hiddenUpcomingCount > 0 && (
+                    <div className="member-events-show-more">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setShowAllUpcoming(true)}
+                      >
+                        {t('memberEventsShowRemaining').replace('{count}', String(hiddenUpcomingCount))}
+                      </button>
+                    </div>
+                  )}
+                  {memberUpcomingPreview && showAllUpcoming && otherRowsAll.length > MEMBER_UPCOMING_EVENTS_PREVIEW && (
+                    <div className="member-events-show-more">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setShowAllUpcoming(false)}
+                      >
+                        {t('memberEventsShowFewer')}
+                      </button>
+                    </div>
+                  )}
                 </section>
               )}
               {otherRows.length === 0 && attendedRowsAll.length > 0 && (
@@ -384,7 +433,7 @@ export default function MiembroEventosView({
           )}
         </>
       )}
-      {listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
+      {canManage && listPagination?.totalPages > 1 && <ListPagination {...listPagination} />}
       {confirmDialog}
     </div>
   );
