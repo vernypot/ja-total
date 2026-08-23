@@ -885,6 +885,10 @@ export function useEventosController() {
     return EventosModel.formatEventLocalTime(hora, language);
   }
 
+  function formatEventDate(fecha) {
+    return EventosModel.formatEventListDate(fecha);
+  }
+
   function formatEventTimestamp(iso) {
     return EventosModel.formatEventTimestamp(
       iso,
@@ -990,6 +994,7 @@ export function useEventosController() {
     getTipoEventoNombre: EventosModel.getTipoEventoNombre,
     memberDisplayName: EventosModel.memberDisplayName,
     formatEventTime,
+    formatEventDate,
     formatEventTimestamp,
     linkedMiembroId,
     buildSelfEventRow: buildSelfRow,

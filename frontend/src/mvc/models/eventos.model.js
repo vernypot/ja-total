@@ -7,6 +7,7 @@ import {
   CHECKIN_ON_TIME_GRACE_MINUTES,
   EVENT_TIMEZONE,
   formatEventLocalDate,
+  formatEventListDate,
   formatEventLocalTime,
   formatEventTimestamp,
   getActivityStartInstant,
@@ -28,6 +29,7 @@ export {
   compareEventsByLocalDateTime,
   computeCheckinAttendanceEstado,
   formatEventLocalDate,
+  formatEventListDate,
   formatEventLocalTime,
   formatEventTimestamp,
   getActivityStartInstant,
@@ -81,6 +83,10 @@ export function sortMemberEventRowsByEventDateDesc(rows) {
   });
 }
 
+export function sortEventosByDateAsc(events) {
+  return [...(events || [])].sort(compareEventsByLocalDateTime);
+}
+
 function isRlsError(error) {
   const msg = error?.message || '';
   return msg.includes('row-level security') || msg.includes('permission denied');
@@ -130,7 +136,9 @@ async function queryEventos(buildQuery) {
 
 export async function fetchEventosByClub(clubId, { showInactive = false } = {}) {
   return queryEventos(select => {
-    let query = sb.from('eventos').select(select).eq('club_id', clubId).order('fecha', { ascending: false });
+    let query = sb.from('eventos').select(select).eq('club_id', clubId)
+      .order('fecha', { ascending: true })
+      .order('hora', { ascending: true });
     if (!showInactive) query = query.in('estado', [EVENTO_ESTADO.ACTIVO, EVENTO_ESTADO.FINALIZADO]);
     return query;
   });

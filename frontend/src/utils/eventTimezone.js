@@ -298,6 +298,15 @@ export function formatEventLocalDate(fecha, language = 'es', options = {}) {
   return formatted === 'Invalid Date' || formatted === 'Invalid time value' ? '' : formatted;
 }
 
+/** Compact list date: dd/MM/YY (calendar date, no timezone shift). */
+export function formatEventListDate(fecha) {
+  const normalizedFecha = normalizeEventDate(fecha);
+  if (!normalizedFecha) return '';
+  const [year, month, day] = normalizedFecha.split('-');
+  if (!year || !month || !day) return normalizedFecha;
+  return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year.slice(-2)}`;
+}
+
 export function formatEventLocalTime(hora, language = 'es') {
   if (!hora) return '';
   const normalized = normalizeEventHora(hora);
