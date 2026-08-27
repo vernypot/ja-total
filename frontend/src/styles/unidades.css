@@ -6,6 +6,20 @@
   line-height: 1.5;
 }
 
+.unidades-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.unidades-table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
 .unidades-form-card {
   margin-bottom: 16px;
 }

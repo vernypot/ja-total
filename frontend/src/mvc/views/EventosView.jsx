@@ -19,9 +19,12 @@ import EventListActionsModal, { EventListOverflowTrigger } from '../../component
 import EventAttendanceSummaryModal from '../../components/EventAttendanceSummaryModal';
 import EventCuotaValidationModal from '../../components/EventCuotaValidationModal';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
+import PrintRemainingYearEventsButton from '../../components/PrintRemainingYearEventsButton';
+import ClubRemainingYearEventsPrint from '../../components/ClubRemainingYearEventsPrint';
 import * as EventosModel from '../models/eventos.model';
 import { clubHasDefaultCuota, formatCuotaMonto, resolveEventCuotaMonto, resolveEventCuotaClub } from '../../utils/cuota';
 import '../../styles/form.css';
+import '../../styles/clubRemainingYearEventsPrint.css';
 
 function FormSection({ title, children, className = '' }) {
   return (
@@ -525,6 +528,9 @@ export default function EventosView({
   updateSelfConfirmation,
   savingSelfConfirmationId,
   loadEventAssignments,
+  printingRemainingYearEvents,
+  printRemainingYearEvents,
+  remainingYearPrintPayload,
 }) {
   const { t, language } = useLanguage();
   const [overflowMenuEventId, setOverflowMenuEventId] = useState(null);
@@ -726,23 +732,32 @@ export default function EventosView({
             </p>
           )}
         </div>
-        {canManage && clubId && (
-          <button
-            onClick={() => (showForm ? closeEventForm() : openEventForm())}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-            }}
-          >
-            {showForm ? `✕ ${t('cancel')}` : `➕ ${t('newEvent')}`}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {clubId && (
+            <PrintRemainingYearEventsButton
+              onClick={printRemainingYearEvents}
+              loading={printingRemainingYearEvents}
+              t={t}
+            />
+          )}
+          {canManage && clubId && (
+            <button
+              onClick={() => (showForm ? closeEventForm() : openEventForm())}
+              style={{
+                padding: '10px 15px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+              }}
+            >
+              {showForm ? `✕ ${t('cancel')}` : `➕ ${t('newEvent')}`}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -1524,6 +1539,15 @@ export default function EventosView({
         formatEventTime={formatEventTime}
         getAsistenciaFromRow={getAsistenciaFromRow}
       />
+      {remainingYearPrintPayload && (
+        <div className="club-events-year-print-source" aria-hidden="true">
+          <ClubRemainingYearEventsPrint
+            {...remainingYearPrintPayload}
+            t={t}
+            language={language}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   formatEvalPercent,
   formatValidationStartDate,
 } from '../../utils/unidadEvaluacion';
+import { useUnidadWeeklyReportPrint } from '../../hooks/useUnidadWeeklyReportPrint';
 
 const EMPTY_FORM = {
   nombre: '',
@@ -645,6 +646,16 @@ export function useUnidadesController() {
     await loadEvalData(clubId, unidades, members);
   }
 
+  const {
+    printWeeklyReportTemplate,
+    unidadReportPrintPayload,
+  } = useUnidadWeeklyReportPrint({
+    club,
+    membersById,
+    memberDisplayName: UnidadesModel.memberDisplayNameFromRow,
+    roleLabel: rol => UnidadesModel.roleLabel(rol, t),
+  });
+
   return {
     canManage,
     clubId,
@@ -705,5 +716,7 @@ export function useUnidadesController() {
     savingInfraccionId,
     saveReglamentoInfraccion,
     removeReglamentoInfraccion,
+    printWeeklyReportTemplate,
+    unidadReportPrintPayload,
   };
 }

@@ -17,6 +17,7 @@ import {
 } from '../../utils/calendar';
 import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
+import { useClubRemainingYearEventsPrint } from '../../hooks/useClubRemainingYearEventsPrint';
 import { clubDisplayName } from '../../utils/club';
 
 export function useCalendarioClubController() {
@@ -62,6 +63,17 @@ export function useCalendarioClubController() {
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
     [clubs, clubId, activeClub]
   );
+
+  const {
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
+  } = useClubRemainingYearEventsPrint({
+    clubId,
+    activeClubData,
+    timeZone: churchTz.timeZone,
+    onError: (message) => setError(message),
+  });
 
   const visibleRange = useMemo(
     () => visibleRangeForView(viewMode, focusDate),
@@ -350,5 +362,8 @@ export function useCalendarioClubController() {
     buildSelfEventRow: buildSelfRow,
     updateSelfConfirmation,
     savingSelfConfirmationId,
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
   };
 }
