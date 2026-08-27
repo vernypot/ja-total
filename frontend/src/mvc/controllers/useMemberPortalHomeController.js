@@ -7,6 +7,7 @@ import * as MemberPortalModel from '../models/memberPortal.model';
 import * as EventosModel from '../models/eventos.model';
 import * as ClasesModel from '../models/clases.model';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
+import { MEMBER_UPCOMING_EVENTS_PREVIEW } from '../../constants/memberEvents';
 import { memberDisplayName } from '../../utils/memberDisplayName';
 import {
   dismissAllPortalNotifications,
@@ -172,7 +173,7 @@ export function useMemberPortalHomeController() {
     () => [...eventRows]
       .filter(row => {
         const evento = EventosModel.getEventoFromRow(row);
-        return evento && EventosModel.isEventInFuture(
+        return evento && EventosModel.isEventListingUpcoming(
           evento,
           new Date(),
           EventosModel.getEventChurchTimezone(evento)
@@ -182,7 +183,7 @@ export function useMemberPortalHomeController() {
         EventosModel.getEventoFromRow(a),
         EventosModel.getEventoFromRow(b)
       ))
-      .slice(0, 6),
+      .slice(0, MEMBER_UPCOMING_EVENTS_PREVIEW),
     [eventRows]
   );
 

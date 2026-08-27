@@ -3,7 +3,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useLanguage } from '../hooks/useLanguage';
 import { parseTokenFromQrPayload } from '../mvc/models/carnet.model';
 
-export default function EventCheckinScanner({ eventoId, onCheckin, disabled, scannerId }) {
+export default function EventCheckinScanner({ eventoId, onCheckin, disabled, disabledHint, scannerId }) {
   const { t } = useLanguage();
   const lastScanRef = useRef('');
   const onCheckinRef = useRef(onCheckin);
@@ -44,7 +44,7 @@ export default function EventCheckinScanner({ eventoId, onCheckin, disabled, sca
       <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{t('scanMemberQr')}</h4>
       <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#166534' }}>{t('scanMemberQrHint')}</p>
       {disabled ? (
-        <p className="text-muted">{t('checkinDisabled')}</p>
+        <p className="text-muted">{disabledHint || t('checkinDisabled')}</p>
       ) : (
         <div id={elementId} />
       )}

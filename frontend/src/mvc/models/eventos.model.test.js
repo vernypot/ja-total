@@ -21,6 +21,8 @@ import {
   getEventoMiembroRowId,
   isEventoActive,
   isEventoEnded,
+  isEventListingPast,
+  isEventListingUpcoming,
   isEventoIncludedInMemberStats,
   isEventoExcludedFromAttendance,
   getMemberEventAsistencia,
@@ -44,6 +46,41 @@ describe('isEventoEnded', () => {
   it('detects finalizado estado', () => {
     expect(isEventoEnded({ estado: 'finalizado' })).toBe(true);
     expect(isEventoEnded({ estado: 'activo' })).toBe(false);
+  });
+});
+
+describe('isEventListingPast', () => {
+  const now = new Date('2026-08-23T18:00:00.000Z');
+  const tz = 'America/Bogota';
+
+  it('treats concluded events before today as past', () => {
+    expect(isEventListingPast({ fecha: '2026-08-22', estado: 'finalizado' }, now, tz)).toBe(true);
+  });
+
+  it('keeps today events visible even when concluded', () => {
+    expect(isEventListingPast({ fecha: '2026-08-23', hora: '08:00:00', estado: 'finalizado' }, now, tz)).toBe(false);
+  });
+
+  it('keeps prior-day active events in the default list', () => {
+    expect(isEventListingPast({ fecha: '2026-08-22', estado: 'activo' }, now, tz)).toBe(false);
+  });
+
+  it('does not treat future concluded events as listing past', () => {
+    expect(isEventListingPast({ fecha: '2026-08-24', estado: 'finalizado' }, now, tz)).toBe(false);
+  });
+});
+
+describe('isEventListingUpcoming', () => {
+  const now = new Date('2026-08-23T18:00:00.000Z');
+  const tz = 'America/Bogota';
+
+  it('includes today and future events', () => {
+    expect(isEventListingUpcoming({ fecha: '2026-08-23', hora: '08:00:00' }, now, tz)).toBe(true);
+    expect(isEventListingUpcoming({ fecha: '2026-08-24', hora: '19:00:00' }, now, tz)).toBe(true);
+  });
+
+  it('excludes concluded events from prior days', () => {
+    expect(isEventListingUpcoming({ fecha: '2026-08-22', estado: 'finalizado' }, now, tz)).toBe(false);
   });
 });
 

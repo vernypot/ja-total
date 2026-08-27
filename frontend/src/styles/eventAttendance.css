@@ -188,6 +188,12 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   color: var(--color-text-primary);
 }
 
+.member-events-show-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
 .list-item--needs-confirm {
   border-color: #fdba74;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15);

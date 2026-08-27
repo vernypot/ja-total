@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { isMeetingScheduled, normalizeMeetingHora } from '../mvc/models/planificacion.model';
 import { clampSesiones, defaultSesionesEsperadas } from '../mvc/models/clases.model';
 import DatePickerInput from './DatePickerInput';
+import EventAsistenciaItemsEditor, { EventAsistenciaItemsList } from './EventAsistenciaItemsEditor';
 
 const DRAG_TYPE = 'application/x-plan-requisito';
 
@@ -516,6 +517,7 @@ function UnassignedPool({
 function MeetingColumn({
   reunion,
   items,
+  asistenciaItems = [],
   canManage,
   tiposEvento,
   defaultClubPlace = '',
@@ -538,6 +540,12 @@ function MeetingColumn({
     hora: normalizeMeetingHora(reunion.hora),
     lugar: reunion.lugar || '',
   });
+
+  const [draftAsistenciaItems, setDraftAsistenciaItems] = useState(asistenciaItems);
+
+  useEffect(() => {
+    setDraftAsistenciaItems(asistenciaItems);
+  }, [reunion.id, asistenciaItems]);
 
   useEffect(() => {
     setDraft({
@@ -580,6 +588,7 @@ function MeetingColumn({
       fecha: draft.fecha || null,
       hora: draft.hora || null,
       lugar: draft.lugar || null,
+      asistenciaItems: draftAsistenciaItems,
     });
     setSavingMeta(false);
     if (ok) setEditing(false);
@@ -668,6 +677,11 @@ function MeetingColumn({
               <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: 1.35 }}>
                 {reunion.notas.trim()}
               </p>
+            )}
+            {!editing && asistenciaItems.length > 0 && (
+              <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--color-text-muted)' }}>
+                <EventAsistenciaItemsList items={asistenciaItems} t={t} />
+              </div>
             )}
             <span style={{ display: 'block', fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '10px', marginTop: '4px' }}>
               {items.length} {items.length === 1 ? t('planReqSingular') : t('planReqPlural')}
@@ -764,6 +778,13 @@ function MeetingColumn({
                 rows={2}
                 style={{ ...fieldStyle, resize: 'vertical', minHeight: '48px' }}
               />
+              <div style={{ marginTop: '8px' }}>
+                <EventAsistenciaItemsEditor
+                  items={draftAsistenciaItems}
+                  onChange={setDraftAsistenciaItems}
+                  t={t}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleSaveMeta}
@@ -829,6 +850,7 @@ function MeetingColumn({
 export default function PlanAgendaBoard({
   reuniones = [],
   assignmentsByMeeting = {},
+  asistenciaItemsByMeeting = {},
   unassignedRequisitos = [],
   groupedUnassignedPool = [],
   canManage = false,
@@ -985,6 +1007,7 @@ export default function PlanAgendaBoard({
               key={reunion.id}
               reunion={reunion}
               items={items}
+              asistenciaItems={asistenciaItemsByMeeting[reunion.id] || []}
               canManage={canManage}
               tiposEvento={tiposEvento}
               defaultClubPlace={defaultClubPlace}

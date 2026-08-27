@@ -19,6 +19,7 @@ function InitializeEventPanel({
   savingActivityStart,
   formatTimestamp,
   canManage,
+  canOpenCheckin,
   t,
 }) {
   const initialized = Boolean(
@@ -39,7 +40,7 @@ function InitializeEventPanel({
         <p className="text-muted event-checkin-action__status">{t('activityStartNotSet')}</p>
       )}
 
-      {canManage && (
+      {canManage && canOpenCheckin && (
         <>
           <EventActionButton
             tone="primary"
@@ -79,12 +80,12 @@ function InitializeEventPanel({
   );
 }
 
-function ScanAttendeesPanel({ onScan, startingScan, isActive, t }) {
+function ScanAttendeesPanel({ onScan, startingScan, isActive, canOpenCheckin, t }) {
   return (
     <section className="event-checkin-action card event-checkin-action--scan">
       <h2 style={{ marginTop: 0 }}>{t('scanAttendees')}</h2>
       <p className="event-checkin-action__hint">{t('scanAttendeesHint')}</p>
-      <EventActionButton tone="success" onClick={onScan} disabled={!isActive || startingScan}>
+      <EventActionButton tone="success" onClick={onScan} disabled={!isActive || !canOpenCheckin || startingScan}>
         ▶ {startingScan ? t('loading') : t('scanAttendees')}
       </EventActionButton>
     </section>
@@ -103,6 +104,7 @@ export default function Checkin() {
     error,
     notice,
     canManage,
+    canOpenCheckin,
     sessionStarted,
     isActive,
     isEnded,
@@ -252,6 +254,8 @@ export default function Checkin() {
         <div className="alert alert-warning">{t('checkinExcludedFromAttendance')}</div>
       ) : isEnded ? (
         <div className="alert alert-warning">{t('eventEndedHint')}</div>
+      ) : !canOpenCheckin ? (
+        <div className="alert alert-warning">{t('eventCheckinNotToday')}</div>
       ) : !sessionStarted ? (
         <div className="event-checkin-actions">
           <InitializeEventPanel
@@ -263,12 +267,14 @@ export default function Checkin() {
             savingActivityStart={savingActivityStart}
             formatTimestamp={formatTimestamp}
             canManage={canManage}
+            canOpenCheckin={canOpenCheckin}
             t={t}
           />
           <ScanAttendeesPanel
             onScan={beginEvent}
             startingScan={startingScan}
             isActive={isActive}
+            canOpenCheckin={canOpenCheckin}
             t={t}
           />
         </div>
@@ -284,6 +290,7 @@ export default function Checkin() {
               savingActivityStart={savingActivityStart}
               formatTimestamp={formatTimestamp}
               canManage={canManage}
+              canOpenCheckin={canOpenCheckin}
               t={t}
             />
           )}
@@ -302,6 +309,7 @@ export default function Checkin() {
             eventoId={eventoId}
             scannerId="checkin-session-qr-reader"
             disabled={!scannerEnabled}
+            disabledHint={canOpenCheckin ? t('checkinDisabled') : t('eventCheckinNotToday')}
             onCheckin={checkin}
           />
 

@@ -25,6 +25,7 @@ export default function PlanificacionPeriodoView({
   planDetail,
   reuniones,
   assignmentsByMeeting,
+  asistenciaItemsByMeeting,
   unassignedRequisitos,
   groupedUnassignedPool,
   assignedCount,
@@ -355,6 +356,7 @@ export default function PlanificacionPeriodoView({
                             <PlanAgendaBoard
                               reuniones={reuniones}
                               assignmentsByMeeting={assignmentsByMeeting}
+                              asistenciaItemsByMeeting={asistenciaItemsByMeeting}
                               unassignedRequisitos={unassignedRequisitos}
                               groupedUnassignedPool={groupedUnassignedPool}
                               canManage={canManage}
@@ -369,6 +371,7 @@ export default function PlanificacionPeriodoView({
                             <PlanSessionsSummary
                               reuniones={reuniones}
                               assignmentsByMeeting={assignmentsByMeeting}
+                              asistenciaItemsByMeeting={asistenciaItemsByMeeting}
                               t={t}
                             />
                           </>

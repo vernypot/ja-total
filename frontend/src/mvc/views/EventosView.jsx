@@ -13,6 +13,7 @@ import {
 } from '../../components/EventAttendanceControls';
 import { clubDisplayName } from '../../utils/club';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
+import EventAsistenciaItemsEditor, { EventAsistenciaItemsList } from '../../components/EventAsistenciaItemsEditor';
 import HorizontalScrollRow from '../../components/HorizontalScrollRow';
 import EventListActionsModal, { EventListOverflowTrigger } from '../../components/EventListActionsModal';
 import EventAttendanceSummaryModal from '../../components/EventAttendanceSummaryModal';
@@ -455,6 +456,8 @@ export default function EventosView({
   setClubId,
   showInactive,
   setShowInactive,
+  showPast,
+  setShowPast,
   editingEventId,
   openEditForm,
   closeEditForm,
@@ -490,6 +493,7 @@ export default function EventosView({
   isEventoEnded,
   sortEventAttendanceRows,
   isEventInFuture,
+  isEventToday,
   getCheckedInAtFromRow,
   getAsistenciaFromRow,
   getConfirmacionFromRow,
@@ -500,6 +504,7 @@ export default function EventosView({
   formatEventTime,
   formatEventDate,
   formatEventTimestamp,
+  eventAsistenciaItemsById = {},
   mergeAnchorEvent,
   mergeCandidates,
   mergeTargetEventId,
@@ -768,6 +773,10 @@ export default function EventosView({
             <h3 style={{ margin: 0 }}>{t('clubEventsList')}</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)} />
+                {t('showPastEvents')}
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                 <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
                 {t('showInactiveEvents')}
               </label>
@@ -797,6 +806,12 @@ export default function EventosView({
                   fieldErrors={fieldErrors}
                   t={t}
                   language={language}
+                />
+
+                <EventAsistenciaItemsEditor
+                  items={eventForm.asistenciaItems || []}
+                  onChange={items => setEventForm(prev => ({ ...prev, asistenciaItems: items }))}
+                  t={t}
                 />
 
                 <EventConfirmationAndAttendeesFields
@@ -842,6 +857,9 @@ export default function EventosView({
                 const isFuture = isEventInFuture(evento);
                 const isActive = isEventoActive(evento);
                 const isEnded = isEventoEnded(evento);
+                const isExcluded = isEventoExcludedFromAttendance(evento);
+                const isToday = isEventToday(evento);
+                const canOpenCheckin = isToday && isActive && !isExcluded;
                 const rows = sortEventAttendanceRows(assignments[evento.id] || []);
                 const recordedCount = rows.filter(row => getAsistenciaFromRow(row)).length;
                 const confirmedCount = rows.filter(row => getConfirmacionFromRow(row) === 'confirmado').length;
@@ -851,7 +869,6 @@ export default function EventosView({
                 const availableManualAddMembers = clubMembers.filter(m => !assignedMemberIds.has(m.id));
                 const showingManualAdd = manualAddEventId === evento.id;
                 const grupoSiblings = getGrupoSiblingEventos(allClubEvents, evento);
-                const isExcluded = isEventoExcludedFromAttendance(evento);
                 const canCombineEvent = canManage && isActive && !isExcluded && canCombineEventoAttendance(allClubEvents, evento);
                 const selfRow = getSelfEventRow?.(evento, rows) || null;
                 const showSelfConfirmInRow = Boolean(
@@ -926,6 +943,17 @@ export default function EventosView({
                             )}
                           </div>
                           <EventDescriptionToggle description={evento.descripcion} />
+                          {(eventAsistenciaItemsById[evento.id] || []).length > 0 && (
+                            <div className="event-list-card__attendee-items">
+                              <span className="event-list-card__attendee-items-label">
+                                {t('eventAttendeeItemsBadge')}:
+                              </span>
+                              <EventAsistenciaItemsList
+                                items={eventAsistenciaItemsById[evento.id]}
+                                t={t}
+                              />
+                            </div>
+                          )}
                           {evento.asistencia_grupo_id && grupoSiblings.length > 0 && !isExcluded && (
                             <div className="event-merge-badge">
                               {t('eventMergedAttendanceBadge')}: {formatMergedEventoLabels([evento, ...grupoSiblings])}
@@ -972,7 +1000,12 @@ export default function EventosView({
                           )}
                         </div>
                         <HorizontalScrollRow className="event-list-card__actions">
-                          {canOperateEvents && isActive && !isExcluded && (
+                          {canOperateEvents && isActive && !isExcluded && !canOpenCheckin && (
+                            <div className="event-list-card__hint event-list-card__hint--muted">
+                              {t('eventCheckinNotToday')}
+                            </div>
+                          )}
+                          {canOperateEvents && canOpenCheckin && (
                             <>
                               <EventActionButton
                                 tone="primary"
@@ -987,23 +1020,23 @@ export default function EventosView({
                               >
                                 ▶ {t('scanAttendees')}
                               </EventActionButton>
-                              {canManage && canCombineEvent && (
-                                <EventActionButton
-                                  tone="info"
-                                  onClick={() => openMergeAttendance(evento.id)}
-                                >
-                                  🔗 {t('eventMergeAction')}
-                                </EventActionButton>
-                              )}
-                              {evento.asistencia_grupo_id && (
-                                <EventActionButton
-                                  tone="warning"
-                                  onClick={() => unmergeAttendance(evento.id)}
-                                >
-                                  {t('eventUnmergeAction')}
-                                </EventActionButton>
-                              )}
                             </>
+                          )}
+                          {canOperateEvents && isActive && !isExcluded && canManage && canCombineEvent && (
+                            <EventActionButton
+                              tone="info"
+                              onClick={() => openMergeAttendance(evento.id)}
+                            >
+                              🔗 {t('eventMergeAction')}
+                            </EventActionButton>
+                          )}
+                          {canOperateEvents && isActive && !isExcluded && evento.asistencia_grupo_id && (
+                            <EventActionButton
+                              tone="warning"
+                              onClick={() => unmergeAttendance(evento.id)}
+                            >
+                              {t('eventUnmergeAction')}
+                            </EventActionButton>
                           )}
                           {canOperateEvents && isActive && (
                             <EventActionButton tone="muted" onClick={() => confirmEndEvent(evento)}>
@@ -1064,6 +1097,12 @@ export default function EventosView({
                             t={t}
                             language={language}
                             cuotaUseDefaultName="editEventCuotaUseDefault"
+                          />
+
+                          <EventAsistenciaItemsEditor
+                            items={eventForm.asistenciaItems || []}
+                            onChange={items => setEventForm(prev => ({ ...prev, asistenciaItems: items }))}
+                            t={t}
                           />
 
                           <EventConfirmationAndAttendeesFields
@@ -1262,8 +1301,12 @@ export default function EventosView({
                             )}
                           </div>
                         )}
-                        {canOperateEvents && isActive && (
+                        {canOperateEvents && isActive && !isExcluded && (
                           <div className="event-checkin-actions event-checkin-actions--inline">
+                            {!canOpenCheckin ? (
+                              <p className="text-muted event-checkin-not-today">{t('eventCheckinNotToday')}</p>
+                            ) : (
+                              <>
                             <div className="event-start-scan-cta">
                               <p>{t('initializeEventHint')}</p>
                               <EventActionButton
@@ -1285,6 +1328,8 @@ export default function EventosView({
                                 ▶ {t('scanAttendees')}
                               </EventActionButton>
                             </div>
+                              </>
+                            )}
                             {canManage && canCombineEvent && (
                               <div className="event-start-scan-cta">
                                 <p>{t('eventMergeHint')}</p>

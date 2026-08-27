@@ -40,13 +40,16 @@ export function useEventCheckinController() {
   const [startingScan, setStartingScan] = useState(false);
   const [grupoEventos, setGrupoEventos] = useState([]);
 
-  const sessionStarted = sessionStartedParam
-    || Boolean(evento?.escaneo_inicio_at || evento?.evento_asistencia_grupo?.escaneo_inicio_at);
-  const isFuture = evento ? EventosModel.isEventInFuture(evento, new Date(), getEventChurchTimezone(evento)) : false;
+  const eventTimezone = evento ? getEventChurchTimezone(evento) : timeZone;
+  const isFuture = evento ? EventosModel.isEventInFuture(evento, new Date(), eventTimezone) : false;
   const isActive = evento ? EventosModel.isEventoActive(evento) : false;
   const isEnded = evento ? EventosModel.isEventoEnded(evento) : false;
   const isExcludedFromAttendance = evento ? EventosModel.isEventoExcludedFromAttendance(evento) : false;
-  const scannerEnabled = isActive && !isExcludedFromAttendance && (sessionStarted || !isFuture);
+  const isToday = evento ? EventosModel.isEventToday(evento, new Date(), eventTimezone) : false;
+  const canOpenCheckin = isToday && isActive && !isExcludedFromAttendance;
+  const sessionStarted = sessionStartedParam
+    || Boolean(evento?.escaneo_inicio_at || evento?.evento_asistencia_grupo?.escaneo_inicio_at);
+  const scannerEnabled = canOpenCheckin && (sessionStarted || !isFuture);
   const recordedCount = useMemo(
     () => rows.filter(row => EventosModel.getAsistenciaFromRow(row)).length,
     [rows]
@@ -120,7 +123,7 @@ export function useEventCheckinController() {
   }, [eventoId, loadRegistry, t, timeZone]);
 
   const checkin = useCallback(async (token) => {
-    if (!canManage || !eventoId || !token) return;
+    if (!canManage || !eventoId || !token || !isToday) return;
 
     setError('');
     setNotice('');
@@ -151,7 +154,7 @@ export function useEventCheckinController() {
       : t('checkinRecorded'));
 
     await loadRegistry();
-  }, [canManage, evento, eventoId, loadRegistry, rows, t]);
+  }, [canManage, evento, eventoId, isToday, loadRegistry, rows, t]);
 
   useEffect(() => {
     loadEvent();
@@ -165,7 +168,7 @@ export function useEventCheckinController() {
   }, [eventoId, tokenFromUrl, canManage, checkin]);
 
   const beginEvent = useCallback(async () => {
-    if (!eventoId || !EventosModel.isEventoActive(evento)) return;
+    if (!eventoId || !EventosModel.isEventoActive(evento) || !isToday) return;
 
     setStartingScan(true);
     setError('');
@@ -180,10 +183,10 @@ export function useEventCheckinController() {
 
     if (data) setEvento(data);
     navigate(`/dashboard/checkin?evento=${encodeURIComponent(eventoId)}&started=1`, { replace: true });
-  }, [evento, eventoId, navigate]);
+  }, [evento, eventoId, isToday, navigate]);
 
   const markActivityStartedNow = useCallback(async () => {
-    if (!canManage || !eventoId) return;
+    if (!canManage || !eventoId || !isToday) return;
 
     setSavingActivityStart(true);
     setError('');
@@ -203,10 +206,10 @@ export function useEventCheckinController() {
       );
     }
     setNotice(t('eventInitializedNotice'));
-  }, [canManage, eventoId, t, timeZone]);
+  }, [canManage, eventoId, isToday, t, timeZone]);
 
   const saveActivityStartManual = useCallback(async () => {
-    if (!canManage || !eventoId || !activityStartDraft) return;
+    if (!canManage || !eventoId || !activityStartDraft || !isToday) return;
 
     const iso = datetimeLocalValueToIso(
       activityStartDraft,
@@ -235,7 +238,7 @@ export function useEventCheckinController() {
       );
     }
     setNotice(t('activityStartSaved'));
-  }, [activityStartDraft, canManage, evento, eventoId, t, timeZone]);
+  }, [activityStartDraft, canManage, evento, eventoId, isToday, t, timeZone]);
 
   const endEvent = useCallback(async () => {
     if (!canManage || !eventoId) return;
@@ -299,6 +302,8 @@ export function useEventCheckinController() {
     notice,
     canManage,
     isFuture,
+    isToday,
+    canOpenCheckin,
     isActive,
     isEnded,
     sessionStarted,

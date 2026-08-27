@@ -1,5 +1,6 @@
 import { sb } from '../../services/supabase';
 import * as EventosModel from './eventos.model';
+import { copyPlanReunionAsistenciaItemsToEvento } from './eventoAsistenciaItems.model';
 import { clampSesiones, defaultSesionesEsperadas } from './clases.model';
 
 function isMissingColumnError(error, column) {
@@ -340,6 +341,7 @@ export async function syncMeetingToClubAgenda({ reunion, clubId, clubName = '' }
     if (updateError) return { data: null, error: updateError };
 
     await EventosModel.setEventoEstado(reunion.evento_id, 'activo');
+    await copyPlanReunionAsistenciaItemsToEvento(reunion.id, reunion.evento_id);
     return { data: { evento_id: reunion.evento_id }, error: null };
   }
 
@@ -357,6 +359,8 @@ export async function syncMeetingToClubAgenda({ reunion, clubId, clubName = '' }
 
   const link = await setMeetingEventoId(reunion.id, data?.id);
   if (link.error) return { data: null, error: link.error };
+
+  await copyPlanReunionAsistenciaItemsToEvento(reunion.id, data?.id);
 
   return { data: { evento_id: data?.id, reunion: link.data }, error: null };
 }
