@@ -23,6 +23,7 @@ import {
   normalizeEventDate,
   toLocalDateKey,
 } from '../../utils/eventTimezone';
+import { getLatestAgendaTimestamp } from '../../utils/clubRemainingYearEvents';
 
 export {
   CHECKIN_ON_TIME_GRACE_MINUTES,
@@ -123,16 +124,16 @@ function isMissingColumnError(error, column) {
 }
 
 const EVENTO_SELECTS = [
-  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,cuota_aplica,cuota_monto_override,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
-  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
-  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
-  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre),tipos_evento(id,nombre)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,created_at,clubes(id,nombre)',
-  'id,club_id,nombre,fecha,hora,lugar,estado,created_at,clubes(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,cuota_aplica,cuota_monto_override,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
+  'id,club_id,nombre,fecha,hora,lugar,descripcion,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,excluir_registro_asistencia,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre),evento_asistencia_grupo(id,nombre,fecha,actividad_inicio_at,escaneo_inicio_at)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,asistencia_grupo_id,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
+  'id,club_id,nombre,fecha,hora,lugar,estado,actividad_inicio_at,escaneo_inicio_at,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone)),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre,iglesia_id,iglesias(id,timezone))',
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre),tipos_evento(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,tipo_evento_id,requiere_confirmacion,updated_at,created_at,clubes(id,nombre)',
+  'id,club_id,nombre,fecha,hora,lugar,estado,updated_at,created_at,clubes(id,nombre)',
 ];
 
 const EVENTO_MIEMBRO_SELECTS = [
@@ -151,7 +152,7 @@ async function queryEventos(buildQuery) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await buildQuery(select);
     if (!error) return { data: data || [], error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
+    if (isMissingColumnError(error, 'updated_at') || isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: [], error };
@@ -175,7 +176,7 @@ export async function fetchEventoById(id) {
   for (const select of EVENTO_SELECTS) {
     const { data, error } = await sb.from('eventos').select(select).eq('id', id).maybeSingle();
     if (!error) return { data, error: null };
-    if (isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
+    if (isMissingColumnError(error, 'updated_at') || isMissingColumnError(error, 'tipo_evento_id') || isMissingColumnError(error, 'requiere_confirmacion') || isMissingColumnError(error, 'cuota_aplica') || isMissingColumnError(error, 'cuota_monto_override') || isMissingColumnError(error, 'cuota_moneda_nombre') || isMissingColumnError(error, 'cuota_moneda_simbolo') || isMissingColumnError(error, 'timezone') || isMissingColumnError(error, 'actividad_inicio_at') || isMissingColumnError(error, 'escaneo_inicio_at') || isMissingColumnError(error, 'asistencia_grupo_id') || isMissingColumnError(error, 'excluir_registro_asistencia')) {
       continue;
     }
     return { data: null, error };
@@ -197,6 +198,32 @@ export async function fetchEventosByClubInRange(clubId, startDate, endDate) {
       .order('fecha', { ascending: true })
       .order('hora', { ascending: true })
   );
+}
+
+export async function fetchRemainingYearEventsForClub(
+  clubId,
+  now = new Date(),
+  timeZone = EVENT_TIMEZONE
+) {
+  if (!clubId) return { data: [], error: null, year: null };
+
+  const today = getLocalTodayIso(now, timeZone);
+  const year = today.slice(0, 4);
+  const { data, error } = await fetchEventosByClubInRange(clubId, today, `${year}-12-31`);
+  if (error) return { data: [], error, year, today };
+
+  const events = sortEventosByDateAsc((data || []).filter(evento => {
+    const tz = getEventChurchTimezone(evento) || timeZone;
+    return isEventoActive(evento) && isEventListingUpcoming(evento, now, tz);
+  }));
+
+  return {
+    data: events,
+    error: null,
+    year,
+    today,
+    agendaUpdatedAt: getLatestAgendaTimestamp(events),
+  };
 }
 
 export async function fetchMiembroEventos(miembroId) {

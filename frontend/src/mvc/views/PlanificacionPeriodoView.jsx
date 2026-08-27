@@ -3,6 +3,8 @@ import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import PlanAgendaBoard from '../../components/PlanAgendaBoard';
 import PlanPeriodoPrint from '../../components/PlanPeriodoPrint';
+import PrintRemainingYearEventsButton from '../../components/PrintRemainingYearEventsButton';
+import ClubRemainingYearEventsPrint from '../../components/ClubRemainingYearEventsPrint';
 import PlanSessionsSummary from '../../components/PlanSessionsSummary';
 import { PageHelpLink } from '../../components/PageHelp';
 import FormField from '../../components/FormField';
@@ -10,6 +12,7 @@ import DatePickerInput from '../../components/DatePickerInput';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 import '../../styles/planPeriodoPrint.css';
+import '../../styles/clubRemainingYearEventsPrint.css';
 
 function toggleClaseId(ids, id) {
   return ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id];
@@ -60,6 +63,9 @@ export default function PlanificacionPeriodoView({
   printPlan,
   printPayload,
   printingPlanId,
+  printingRemainingYearEvents,
+  printRemainingYearEvents,
+  remainingYearPrintPayload,
   selectClub,
   listPagination,
 }) {
@@ -76,23 +82,32 @@ export default function PlanificacionPeriodoView({
           <h1>📋 {t('periodPlanning')} <PageHelpLink pageId="periodPlanning" /></h1>
           <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '14px' }}>{t('periodPlanningHint')}</p>
         </div>
-        {canManage && clubId && (
-          <button
-            type="button"
-            onClick={startCreate}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            ➕ {t('newPlan')}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {clubId && (
+            <PrintRemainingYearEventsButton
+              onClick={printRemainingYearEvents}
+              loading={printingRemainingYearEvents}
+              t={t}
+            />
+          )}
+          {canManage && clubId && (
+            <button
+              type="button"
+              onClick={startCreate}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              ➕ {t('newPlan')}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -394,6 +409,15 @@ export default function PlanificacionPeriodoView({
             clubName={clubDisplayName(activeClubData)}
             groupedTimeline={printPayload.groupedTimeline}
             sessionsSummary={printPayload.sessionsSummary}
+            t={t}
+            language={language}
+          />
+        </div>
+      )}
+      {remainingYearPrintPayload && (
+        <div className="club-events-year-print-source" aria-hidden="true">
+          <ClubRemainingYearEventsPrint
+            {...remainingYearPrintPayload}
             t={t}
             language={language}
           />

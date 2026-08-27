@@ -8,6 +8,8 @@ import MemberEventConfirmBlock from '../../components/MemberEventConfirmBlock';
 import MemberEventConfirmationStatus from '../../components/MemberEventConfirmationStatus';
 import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
+import PrintRemainingYearEventsButton from '../../components/PrintRemainingYearEventsButton';
+import ClubRemainingYearEventsPrint from '../../components/ClubRemainingYearEventsPrint';
 import * as EventosModel from '../../mvc/models/eventos.model';
 import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
@@ -17,6 +19,7 @@ import {
 } from '../../components/EventAttendanceControls';
 import '../../styles/calendario.css';
 import '../../styles/eventAttendance.css';
+import '../../styles/clubRemainingYearEventsPrint.css';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const VIEW_MODES = [
@@ -588,6 +591,9 @@ export default function CalendarioClubView({
   buildSelfEventRow,
   updateSelfConfirmation,
   savingSelfConfirmationId = null,
+  printingRemainingYearEvents = false,
+  printRemainingYearEvents = () => {},
+  remainingYearPrintPayload = null,
 }) {
   const { t, language } = useLanguage();
 
@@ -609,6 +615,13 @@ export default function CalendarioClubView({
           <h1>🗓️ {t('clubCalendar')} <PageHelpLink pageId="calendar" /></h1>
           <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '14px' }}>{t('clubCalendarHint')}</p>
         </div>
+        {clubId && (
+          <PrintRemainingYearEventsButton
+            onClick={printRemainingYearEvents}
+            loading={printingRemainingYearEvents}
+            t={t}
+          />
+        )}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -776,6 +789,15 @@ export default function CalendarioClubView({
           savingConfirmationId={savingConfirmationId}
           canMemberConfirmEvent={canMemberConfirmEvent}
         />
+      )}
+      {remainingYearPrintPayload && (
+        <div className="club-events-year-print-source" aria-hidden="true">
+          <ClubRemainingYearEventsPrint
+            {...remainingYearPrintPayload}
+            t={t}
+            language={language}
+          />
+        </div>
       )}
     </div>
   );

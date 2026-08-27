@@ -18,6 +18,7 @@ import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
 import { emptyEventCuotaForm } from '../../utils/cuota';
 import { EVENTS_NEAREST_PAGE_SIZE } from '../../constants/memberEvents';
+import { useClubRemainingYearEventsPrint } from '../../hooks/useClubRemainingYearEventsPrint';
 
 const EVENTS_PAGE_SIZE_OPTIONS = [5, 15, 30, 50];
 
@@ -91,6 +92,17 @@ export function useEventosController() {
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
     [clubs, clubId, activeClub]
   );
+
+  const {
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
+  } = useClubRemainingYearEventsPrint({
+    clubId,
+    activeClubData,
+    timeZone: churchTz.timeZone,
+    onError: (message) => setError(message),
+  });
 
   const filteredEvents = useMemo(() => {
     let list = events;
@@ -1078,5 +1090,8 @@ export function useEventosController() {
     getSelfEventRow,
     updateSelfConfirmation,
     savingSelfConfirmationId,
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
   };
 }

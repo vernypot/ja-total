@@ -15,6 +15,8 @@ import * as ClasesModel from '../models/clases.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as TiposEventoModel from '../models/tiposEvento.model';
 import { printPlanPeriodo } from '../../utils/printPlanPeriodo';
+import { useChurchTimezone } from '../../hooks/useChurchTimezone';
+import { useClubRemainingYearEventsPrint } from '../../hooks/useClubRemainingYearEventsPrint';
 
 const emptyForm = () => ({
   nombre: '',
@@ -30,6 +32,7 @@ export function usePlanificacionPeriodoController() {
   const { user, userData } = useContext(AuthContext);
   const { activeClub, updateActiveClub } = useContext(ClubContext);
   const { effectiveIglesiaId, canSwitchIglesia, hasIglesiaAssignment, assignedIglesiaActive } = useScopedIglesia();
+  const churchTz = useChurchTimezone();
   const userRole = getUserRole(user, userData);
   const canManage = canManageClubs(userRole);
   const [params] = useSearchParams();
@@ -63,6 +66,17 @@ export function usePlanificacionPeriodoController() {
     () => clubs.find(c => c.id === clubId) || (activeClub?.id === clubId ? activeClub : null),
     [clubs, clubId, activeClub]
   );
+
+  const {
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
+  } = useClubRemainingYearEventsPrint({
+    clubId,
+    activeClubData,
+    timeZone: churchTz.timeZone,
+    onError: (message) => setError(message),
+  });
 
   const filteredPlans = useMemo(
     () => filterBySearch(plans, searchQuery, p => [p.nombre, p.fecha_inicio, p.fecha_fin]),
@@ -617,6 +631,9 @@ export function usePlanificacionPeriodoController() {
     printPlan,
     printPayload,
     printingPlanId,
+    printingRemainingYearEvents,
+    printRemainingYearEvents,
+    remainingYearPrintPayload,
     selectClub,
     assignedCount: PlanModel.countAssignedRequisitos(assignmentsByMeeting),
     totalAssignedSessions,

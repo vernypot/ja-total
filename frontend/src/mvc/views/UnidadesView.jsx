@@ -6,10 +6,12 @@ import UnidadesBoard from '../../components/UnidadesBoard';
 import UnidadEvalConfigPanel from '../../components/UnidadEvalConfigPanel';
 import UnidadReglamentoInfraccionesPanel from '../../components/UnidadReglamentoInfraccionesPanel';
 import UnidadFormModal from '../../components/UnidadFormModal';
+import UnidadWeeklyReportPrint from '../../components/UnidadWeeklyReportPrint';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
 import '../../styles/form.css';
 import '../../styles/unidades.css';
+import '../../styles/unidadWeeklyReportPrint.css';
 
 function UnidadesListTable({
   unidades,
@@ -19,6 +21,7 @@ function UnidadesListTable({
   getCaptainName,
   memberDisplayName,
   onEditUnidad,
+  onPrintUnidadReport,
   evalScoresByUnidadId,
   formatEvalPercent,
   formatEvalPoints,
@@ -90,9 +93,19 @@ function UnidadesListTable({
                     </strong>
                   </td>
                   <td>
-                    <button type="button" className="home-link-btn" onClick={() => onEditUnidad(unidad)}>
-                      {t('edit')}
-                    </button>
+                    <div className="unidades-table-actions">
+                      <button type="button" className="home-link-btn" onClick={() => onEditUnidad(unidad)}>
+                        {t('edit')}
+                      </button>
+                      <button
+                        type="button"
+                        className="home-link-btn"
+                        onClick={() => onPrintUnidadReport(unidad)}
+                        title={t('printUnidadWeeklyReportHint')}
+                      >
+                        🖨 {t('printUnidadWeeklyReportShort')}
+                      </button>
+                    </div>
                     {assignments.length > 0 && (
                       <div className="unidades-table-members">
                         {assignments.map(row => {
@@ -176,6 +189,8 @@ export default function UnidadesView({
   savingInfraccionId,
   saveReglamentoInfraccion,
   removeReglamentoInfraccion,
+  printWeeklyReportTemplate,
+  unidadReportPrintPayload,
 }) {
   const { t, language } = useLanguage();
 
@@ -200,13 +215,23 @@ export default function UnidadesView({
           )}
         </div>
         {clubId && (
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={startCreateUnidad}
-          >
-            + {t('unidadNew')}
-          </button>
+          <div className="unidades-header-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => printWeeklyReportTemplate()}
+              title={t('printUnidadWeeklyReportHint')}
+            >
+              🖨 {t('printUnidadWeeklyReport')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={startCreateUnidad}
+            >
+              + {t('unidadNew')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -268,6 +293,7 @@ export default function UnidadesView({
                 getCaptainName={getCaptainName}
                 memberDisplayName={memberDisplayName}
                 onEditUnidad={startEditUnidad}
+                onPrintUnidadReport={printWeeklyReportTemplate}
                 evalScoresByUnidadId={evalScoresByUnidadId}
                 formatEvalPercent={formatEvalPercent}
                 formatEvalPoints={formatEvalPoints}
@@ -337,6 +363,15 @@ export default function UnidadesView({
             </>
           )}
         </>
+      )}
+      {unidadReportPrintPayload && (
+        <div className="unidad-report-print-source" aria-hidden="true">
+          <UnidadWeeklyReportPrint
+            {...unidadReportPrintPayload}
+            t={t}
+            language={language}
+          />
+        </div>
       )}
     </div>
   );

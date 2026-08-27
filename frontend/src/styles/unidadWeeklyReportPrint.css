@@ -1,0 +1,9 @@
+.club-events-year-print-source,
+.unidad-report-print-source {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 8.5in;
+  visibility: hidden;
+  pointer-events: none;
+}
