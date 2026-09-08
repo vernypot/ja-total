@@ -339,3 +339,42 @@
 .noticia-featured-image--list img {
   max-height: none;
 }
+
+.noticia-share-link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.noticia-share-link--compact {
+  margin-top: 16px;
+}
+
+.noticia-share-link__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.noticia-share-link__row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.noticia-share-link__input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.noticia-share-link__copy {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.noticia-read-share-btn {
+  text-decoration: none;
+}

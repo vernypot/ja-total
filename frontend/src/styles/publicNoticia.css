@@ -127,6 +127,13 @@
   color: rgba(27, 54, 93, 0.72);
 }
 
+.public-noticia-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.25rem;
+}
+
 @media (max-width: 768px) {
   .public-noticia-card {
     padding: 1.25rem 1rem 1.5rem;

@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import NoticiaFeaturedImage from '../../components/NoticiaFeaturedImage';
 import NoticiaHtml from '../../components/NoticiaHtml';
+import NoticiaShareLink from '../../components/NoticiaShareLink';
+import { isPublicNoticia } from '../models/noticias.model';
 import { BRAND_MARK } from '../../constants/brand';
 import '../../styles/landing.css';
 import '../../styles/noticia-html.css';
@@ -12,6 +14,7 @@ export default function PublicNoticiaView({
   noticia,
   loading,
   notFound,
+  requiresAuth,
   formatDate,
   t,
 }) {
@@ -19,6 +22,36 @@ export default function PublicNoticiaView({
     return (
       <div className="public-noticia-page">
         <p className="public-noticia-status">{t('loading')}</p>
+      </div>
+    );
+  }
+
+  if (requiresAuth) {
+    return (
+      <div className="public-noticia-page">
+        <header className="public-noticia-header">
+          <div className="public-noticia-header-inner">
+            <Link to="/" className="public-noticia-brand">
+              <img src={BRAND_MARK} alt="" className="public-noticia-brand-mark" />
+              <strong>{t('appName')}</strong>
+            </Link>
+            <LanguageSwitcher />
+          </div>
+        </header>
+        <main className="public-noticia-main">
+          <div className="public-noticia-card">
+            <h1>{t('publicNoticiaRequiresAuthTitle')}</h1>
+            <p className="public-noticia-lead">{t('publicNoticiaRequiresAuthHint')}</p>
+            <div className="public-noticia-auth-actions">
+              <Link to="/login" className="landing-btn landing-btn-primary">
+                {t('signIn')}
+              </Link>
+              <Link to="/portal" className="landing-btn landing-btn-secondary">
+                {t('portalLoginTitle')}
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -107,6 +140,13 @@ export default function PublicNoticiaView({
             html={noticia.contenido}
             variant="content"
             className="public-noticia-content noticia-html--content"
+          />
+
+          <NoticiaShareLink
+            noticiaId={noticia.id}
+            publicAccess={isPublicNoticia(noticia)}
+            t={t}
+            compact
           />
         </article>
       </main>

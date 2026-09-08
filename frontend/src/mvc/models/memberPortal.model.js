@@ -8,6 +8,7 @@ import {
 } from './eventos.model';
 import { normalizeEventDate, normalizeEventHora } from '../../utils/eventTimezone';
 import { isValidDateKey } from '../../utils/calendar';
+import { NOTICIA_PLACEMENT_IDS } from '../../constants/noticiaPlacements';
 
 const PORTAL_SESSION_KEY = 'memberPortalSession';
 
@@ -312,6 +313,17 @@ export async function fetchPortalNoticias(sessionToken, { placements = ['dashboa
   });
   if (error) return { data: [], error };
   return { data: data || [], error: null };
+}
+
+export async function fetchPortalNoticiaById(sessionToken, noticiaId) {
+  if (!sessionToken || !noticiaId) return { data: null, error: null };
+
+  const { data, error } = await fetchPortalNoticias(sessionToken, {
+    placements: NOTICIA_PLACEMENT_IDS,
+    limit: 100,
+  });
+  if (error) return { data: null, error };
+  return { data: (data || []).find(row => row.id === noticiaId) || null, error: null };
 }
 
 export async function fetchPortalNoticiasLeidas(sessionToken) {

@@ -31,6 +31,7 @@ export default function DashboardNewsListItem({
         onClose={onToggleExpand}
         t={t}
         speech={speech}
+        showShareLink
       />
     </article>
   );
