@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useNoticiaSpeech } from '../../hooks/useNoticiaSpeech';
 import { estadoLabel } from '../../i18n/helpers';
-import { isNoticiaExpired } from '../models/noticias.model';
+import { isNoticiaExpired, isPublicNoticia } from '../models/noticias.model';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
 import NoticiaListReadSection from '../../components/NoticiaListReadSection';
+import NoticiaShareLink from '../../components/NoticiaShareLink';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
 import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
 import NoticiaFeaturedImagesField from '../../components/NoticiaFeaturedImagesField';
@@ -220,6 +221,13 @@ export default function NoticiasView({
                 </select>
               </label>
             </div>
+            {editingId && (
+              <NoticiaShareLink
+                noticiaId={editingId}
+                publicAccess={isPublicNoticia(form)}
+                t={t}
+              />
+            )}
             <div className="noticia-form-actions">
               <button
                 type="button"
@@ -286,6 +294,13 @@ export default function NoticiasView({
                       speech={speech}
                       summaryClassName="noticia-html--summary"
                       contentClassName="noticia-html--content"
+                      showShareLink
+                    />
+                    <NoticiaShareLink
+                      noticiaId={item.id}
+                      publicAccess={isPublicNoticia(item)}
+                      t={t}
+                      compact
                     />
                     <div className="noticia-item-badges">
                       {isSuperAdmin && item.iglesia_nombre && (

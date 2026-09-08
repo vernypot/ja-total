@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import NoticiaHtml from './NoticiaHtml';
 import { NoticiaListenButton } from './NoticiaListenButton';
+import { publicNoticiaPath } from '../utils/dashboardRoutes';
 
 function NoticiaReadActions({
   item,
@@ -9,6 +11,7 @@ function NoticiaReadActions({
   t,
   speech,
   showCollapseButton,
+  showShareLink = false,
   extraActions = null,
 }) {
   const listenProps = speech ? {
@@ -40,6 +43,14 @@ function NoticiaReadActions({
           {t('homeReadLess')}
         </button>
       )}
+      {showShareLink && item?.id && (
+        <Link
+          to={publicNoticiaPath(item.id)}
+          className="btn btn-secondary btn-sm noticia-read-share-btn"
+        >
+          {t('noticiasOpenSharePage')}
+        </Link>
+      )}
       {expanded && extraActions}
     </div>
   );
@@ -53,6 +64,7 @@ export default function NoticiaListReadSection({
   t,
   speech = null,
   showCollapseButton = true,
+  showShareLink = false,
   extraActions = null,
   titleAs = 'span',
   titleClassName = 'noticia-html--title',
@@ -72,6 +84,7 @@ export default function NoticiaListReadSection({
       t={t}
       speech={speech}
       showCollapseButton={showCollapseButton}
+      showShareLink={showShareLink}
       extraActions={extraActions}
     />
   );

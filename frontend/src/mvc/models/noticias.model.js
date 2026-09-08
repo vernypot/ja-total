@@ -16,7 +16,9 @@ import {
   normalizeAudience,
   audienceRequiresClub,
   filterNoticiasByAudience,
+  matchesNoticiaAudience,
 } from '../../constants/noticiaAudience';
+import { fetchPortalNoticiaById } from './memberPortal.model';
 
 const NOTICIA_IMAGES_BUCKET = 'noticia-imagenes';
 
@@ -213,6 +215,46 @@ export function isPublicNoticia(noticia) {
   if (!noticia || !isNoticiaVisible(noticia)) return false;
   if (normalizeAudience(noticia.audience) !== 'general') return false;
   return hasPublicNoticiaSurface(noticia.placements);
+}
+
+export function canAccessNoticia(noticia, scope = {}) {
+  if (!noticia || !isNoticiaVisible(noticia)) return false;
+  if (isPublicNoticia(noticia)) return true;
+  return matchesNoticiaAudience(noticia, scope);
+}
+
+export async function fetchNoticiaForShare(
+  id,
+  { iglesiaId, clubId, portalSessionToken, isAuthenticated } = {}
+) {
+  if (!id) return { data: null, error: null, requiresAuth: false };
+
+  const { data: publicRow, error: publicError } = await fetchPublicNoticiaById(id);
+  if (publicError) return { data: null, error: publicError, requiresAuth: false };
+  if (publicRow) return { data: publicRow, error: null, requiresAuth: false };
+
+  if (portalSessionToken) {
+    const { data: portalRow, error: portalError } = await fetchPortalNoticiaById(
+      portalSessionToken,
+      id
+    );
+    if (portalError) return { data: null, error: portalError, requiresAuth: false };
+    if (portalRow) return { data: portalRow, error: null, requiresAuth: false };
+  }
+
+  if (isAuthenticated) {
+    const { data, error } = await fetchNoticiaById(id);
+    if (error) return { data: null, error, requiresAuth: false };
+    if (data && canAccessNoticia(data, { iglesiaId, clubId })) {
+      return { data, error: null, requiresAuth: false };
+    }
+    if (data && isNoticiaVisible(data) && normalizeAudience(data.audience) !== 'general') {
+      return { data: null, error: null, requiresAuth: true };
+    }
+    return { data: null, error: null, requiresAuth: false };
+  }
+
+  return { data: null, error: null, requiresAuth: true };
 }
 
 export async function fetchPublicNoticiaById(id) {

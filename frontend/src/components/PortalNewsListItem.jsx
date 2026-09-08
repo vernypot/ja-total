@@ -35,6 +35,7 @@ export default function PortalNewsListItem({
         onClose={onToggleExpand}
         t={t}
         speech={speech}
+        showShareLink
         extraActions={expanded ? (
           <NoticiaLeidoButton
             noticiaId={item.id}

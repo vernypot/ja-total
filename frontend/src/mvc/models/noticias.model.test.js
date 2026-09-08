@@ -4,7 +4,7 @@ vi.mock('../../services/supabase', () => ({
   sb: {},
 }));
 
-import { isNoticiaExpired, isNoticiaVisible, isPublicNoticia, normalizeExpiraEn } from './noticias.model';
+import { isNoticiaExpired, isNoticiaVisible, isPublicNoticia, canAccessNoticia, normalizeExpiraEn } from './noticias.model';
 
 const activeNoticia = {
   estado: 'activo',
@@ -50,5 +50,18 @@ describe('noticias visibility', () => {
       audience: 'general',
       placements: ['newsletter'],
     })).toBe(false);
+  });
+
+  it('allows authenticated church scope for church-only news', () => {
+    const churchNews = {
+      ...activeNoticia,
+      iglesia_id: 'ig-1',
+      audience: 'church',
+      placements: ['dashboard'],
+    };
+
+    expect(canAccessNoticia(churchNews, { iglesiaId: 'ig-1' })).toBe(true);
+    expect(canAccessNoticia(churchNews, { iglesiaId: 'ig-2' })).toBe(false);
+    expect(isPublicNoticia(churchNews)).toBe(false);
   });
 });

@@ -15,7 +15,18 @@ export function getPortalProfileDefaultTab(isMobile = false) {
 }
 
 export function publicNoticiaPath(noticiaId) {
+  if (!noticiaId) return '';
   return `/noticias/${noticiaId}`;
+}
+
+export function buildNoticiaShareUrl(noticiaId, origin = '') {
+  const path = publicNoticiaPath(noticiaId);
+  if (!path) return '';
+  if (origin) return `${String(origin).replace(/\/$/, '')}${path}`;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${path}`;
+  }
+  return path;
 }
 
 export function isDashboardHomePath(pathname) {
