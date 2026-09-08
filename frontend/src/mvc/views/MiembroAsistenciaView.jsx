@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
+import EvalScoreDetailModal from '../../components/EvalScoreDetailModal';
+import { formatEvalScore } from '../../utils/unidadEvaluacion';
 import MiembroEventosView from './MiembroEventosView';
 import '../../styles/eventAttendance.css';
 
@@ -26,8 +29,16 @@ function StatCard({ label, value, tone = 'neutral' }) {
   );
 }
 
-function AttendanceStatsSection({ stats, t }) {
+function AttendanceStatsSection({ stats, evalScore, evalScoreDetail, t, language }) {
+  const [detailOpen, setDetailOpen] = useState(false);
+
   if (!stats) return null;
+
+  const evalScoreLabel = evalScore?.validationActive
+    ? formatEvalScore(evalScore.average)
+    : '—';
+
+  const showDetailCta = Boolean(evalScoreDetail);
 
   return (
     <>
@@ -43,7 +54,26 @@ function AttendanceStatsSection({ stats, t }) {
         <StatCard label={t('attendanceStatMisses')} value={stats.misses} tone="danger" />
         <StatCard label={t('attendanceStatLate')} value={stats.late} tone="warning" />
         <StatCard label={t('attendanceStatFailedConfirmations')} value={stats.failedConfirmations} tone="danger" />
+        <StatCard label={t('memberEvalAccumulatedScore')} value={evalScoreLabel} tone="info" />
       </div>
+
+      {showDetailCta && (
+        <div className="eval-score-detail-cta">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setDetailOpen(true)}
+          >
+            {t('evalScoreDetailCta')}
+          </button>
+        </div>
+      )}
+
+      {evalScore?.validationActive && evalScore.count > 0 && (
+        <p style={{ fontSize: '14px', color: '#4b5563', margin: '0 0 12px' }}>
+          {t('memberEvalFinishedEventsOnly').replace('{count}', String(evalScore.count))}
+        </p>
+      )}
 
       {stats.attendanceRate != null && (
         <p style={{ fontSize: '14px', color: '#4b5563', margin: '0 0 20px' }}>
@@ -52,13 +82,23 @@ function AttendanceStatsSection({ stats, t }) {
             .replace('{past}', String(stats.pastAssigned))}
         </p>
       )}
+
+      <EvalScoreDetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={t('evalScoreDetailMemberTitle')}
+        mode="member"
+        detail={evalScoreDetail}
+        t={t}
+        language={language}
+      />
     </>
   );
 }
 
 export default function MiembroAsistenciaView(props) {
-  const { stats, loading, error } = props;
-  const { t } = useLanguage();
+  const { stats, evalScore, evalScoreDetail, loading, error } = props;
+  const { t, language } = useLanguage();
 
   if (loading) {
     return <p>{t('loadingAttendance')}</p>;
@@ -72,7 +112,15 @@ export default function MiembroAsistenciaView(props) {
       <MiembroEventosView
         {...props}
         embedded
-        renderBeforeList={<AttendanceStatsSection stats={stats} t={t} />}
+        renderBeforeList={(
+          <AttendanceStatsSection
+            stats={stats}
+            evalScore={evalScore}
+            evalScoreDetail={evalScoreDetail}
+            t={t}
+            language={language}
+          />
+        )}
       />
     </div>
   );

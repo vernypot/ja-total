@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { ClubContext } from '../../context/ClubContext';
 import { getUserRole, canManageChurchData } from '../../utils/permissions';
 import { useListPagination } from '../../hooks/useListPagination';
+import {
+  computeMemberEvalAttendanceScore,
+  buildMemberEvalScoreDetail,
+  DEFAULT_UNIDAD_EVAL_CONFIG,
+} from '../../utils/unidadEvaluacion';
 import * as EventosModel from '../models/eventos.model';
+import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
 
 const attendanceHelpers = {
   getEventoFromRow: EventosModel.getEventoFromRow,
@@ -13,11 +21,18 @@ const attendanceHelpers = {
 
 export function useMiembroAsistenciaController(miembroId) {
   const { user, userData } = useContext(AuthContext);
+  const { activeClub } = useContext(ClubContext);
+  const [searchParams] = useSearchParams();
+  const preferredClubId = searchParams.get('club') || activeClub?.id || null;
   const canManage = canManageChurchData(getUserRole(user, userData));
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [attendanceFilter, setAttendanceFilter] = useState('attended');
+  const [evalContext, setEvalContext] = useState({
+    config: { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+    validationStartDate: null,
+  });
 
   async function load() {
     if (!miembroId) return;
@@ -32,7 +47,19 @@ export function useMiembroAsistenciaController(miembroId) {
       return;
     }
 
-    setRows(EventosModel.sortMemberEventRowsByEventDateDesc(data || []));
+    const nextRows = EventosModel.sortMemberEventRowsByEventDateDesc(data || []);
+    setRows(nextRows);
+
+    const { data: evalData } = await UnidadEvaluacionModel.fetchMemberEvalContext({
+      miembroId,
+      clubId: preferredClubId,
+      memberRows: nextRows,
+    });
+    setEvalContext({
+      config: evalData?.config || { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+      validationStartDate: evalData?.validationStartDate || null,
+    });
+
     setLoading(false);
   }
 
@@ -72,6 +99,26 @@ export function useMiembroAsistenciaController(miembroId) {
     [statsRows],
   );
 
+  const evalScore = useMemo(
+    () => computeMemberEvalAttendanceScore({
+      memberRows: rows,
+      helpers: mergedAttendanceHelpers,
+      config: evalContext.config,
+      validationStartDate: evalContext.validationStartDate,
+    }),
+    [rows, mergedAttendanceHelpers, evalContext],
+  );
+
+  const evalScoreDetail = useMemo(
+    () => buildMemberEvalScoreDetail({
+      memberRows: rows,
+      helpers: mergedAttendanceHelpers,
+      config: evalContext.config,
+      validationStartDate: evalContext.validationStartDate,
+    }),
+    [rows, mergedAttendanceHelpers, evalContext],
+  );
+
   async function updateAttendance(eventoMiembroId, estado) {
     if (!canManage) return;
     setError('');
@@ -98,7 +145,7 @@ export function useMiembroAsistenciaController(miembroId) {
 
   useEffect(() => {
     load();
-  }, [miembroId]);
+  }, [miembroId, preferredClubId]);
 
   return {
     rows: paginatedRows,
@@ -109,6 +156,8 @@ export function useMiembroAsistenciaController(miembroId) {
     setAttendanceFilter,
     listPagination,
     stats,
+    evalScore,
+    evalScoreDetail,
     error,
     loading,
     canManage,

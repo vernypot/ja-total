@@ -11,11 +11,13 @@ import * as UnidadesModel from '../models/unidades.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
 import * as ReglamentoModel from '../models/reglamento.model';
+import * as EventosModel from '../models/eventos.model';
 import {
   computeAllUnidadEvaluations,
   DEFAULT_UNIDAD_EVAL_CONFIG,
   formatEvalPoints,
   formatEvalPercent,
+  formatEvalScore,
   formatValidationStartDate,
 } from '../../utils/unidadEvaluacion';
 import { useUnidadWeeklyReportPrint } from '../../hooks/useUnidadWeeklyReportPrint';
@@ -112,6 +114,11 @@ export function useUnidadesController() {
       reglamentoNodos,
     }),
     [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades, reglamentoInfracciones, reglamentoNodos]
+  );
+
+  const evalAttendanceHelpers = useMemo(
+    () => EventosModel.createMemberMergedAttendanceHelpers(memberEventRows),
+    [memberEventRows]
   );
 
   async function loadEvalData(currentClubId, currentUnidades, currentMembers) {
@@ -696,6 +703,8 @@ export function useUnidadesController() {
     evalItems,
     evalCantidades,
     evalScoresByUnidadId,
+    memberEventRows,
+    evalAttendanceHelpers,
     evalSchemaAvailable,
     savingEval,
     savingItemId,
@@ -709,6 +718,7 @@ export function useUnidadesController() {
     startCreateUnidad,
     formatEvalPoints,
     formatEvalPercent,
+    formatEvalScore,
     formatValidationStartDate,
     reglamentoNodos,
     reglamentoInfracciones,

@@ -11,6 +11,12 @@ import * as ClasesModel from '../models/clases.model';
 import * as CarnetModel from '../models/carnet.model';
 import * as EventosModel from '../models/eventos.model';
 import * as DistincionesModel from '../models/distinciones.model';
+import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
+import {
+  computeMemberEvalAttendanceScore,
+  buildMemberEvalScoreDetail,
+  DEFAULT_UNIDAD_EVAL_CONFIG,
+} from '../../utils/unidadEvaluacion';
 import { compareEventsByLocalDateTime } from '../../utils/eventTimezone';
 import { calcularEdad } from './useDatosPersonalesController';
 
@@ -607,6 +613,10 @@ export function useMemberPortalAsistenciaController() {
   const [loading, setLoading] = useState(true);
   const [attendanceFilter, setAttendanceFilter] = useState('attended');
   const [savingConfirmationId, setSavingConfirmationId] = useState(null);
+  const [evalContext, setEvalContext] = useState({
+    config: { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+    validationStartDate: null,
+  });
 
   const attendanceHelpers = {
     getEventoFromRow: EventosModel.getEventoFromRow,
@@ -636,7 +646,19 @@ export function useMemberPortalAsistenciaController() {
       return;
     }
 
-    setRows(EventosModel.sortMemberEventRowsByEventDateDesc(data || []));
+    const nextRows = EventosModel.sortMemberEventRowsByEventDateDesc(data || []);
+    setRows(nextRows);
+
+    const { data: evalData } = await UnidadEvaluacionModel.fetchMemberEvalContext({
+      miembroId: session.miembroId,
+      clubId: null,
+      memberRows: nextRows,
+    });
+    setEvalContext({
+      config: evalData?.config || { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+      validationStartDate: evalData?.validationStartDate || null,
+    });
+
     if (!silent) setLoading(false);
   }
 
@@ -706,6 +728,26 @@ export function useMemberPortalAsistenciaController() {
     [statsRows],
   );
 
+  const evalScore = useMemo(
+    () => computeMemberEvalAttendanceScore({
+      memberRows: rows,
+      helpers: mergedAttendanceHelpers,
+      config: evalContext.config,
+      validationStartDate: evalContext.validationStartDate,
+    }),
+    [rows, mergedAttendanceHelpers, evalContext],
+  );
+
+  const evalScoreDetail = useMemo(
+    () => buildMemberEvalScoreDetail({
+      memberRows: rows,
+      helpers: mergedAttendanceHelpers,
+      config: evalContext.config,
+      validationStartDate: evalContext.validationStartDate,
+    }),
+    [rows, mergedAttendanceHelpers, evalContext],
+  );
+
   useEffect(() => {
     load();
   }, [session?.sessionToken]);
@@ -724,6 +766,8 @@ export function useMemberPortalAsistenciaController() {
     setAttendanceFilter,
     listPagination,
     stats,
+    evalScore,
+    evalScoreDetail,
     error,
     loading,
     canManage: false,

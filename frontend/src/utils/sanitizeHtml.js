@@ -4,13 +4,16 @@ const CONTENT_TAGS = [
   'p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'sub', 'sup',
   'ul', 'ol', 'li', 'a', 'blockquote',
   'h2', 'h3', 'h4', 'div', 'span', 'img',
+  'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col',
 ];
+
+const TABLE_ATTR = ['colspan', 'rowspan', 'scope', 'headers', 'abbr', 'align', 'valign', 'width', 'height', 'span'];
 
 const INLINE_TAGS = ['strong', 'em', 'b', 'i', 'u', 's', 'sub', 'sup', 'br', 'span', 'a'];
 
 const SUMMARY_TAGS = [...INLINE_TAGS, 'p'];
 
-const CONTENT_ATTR = ['href', 'target', 'rel', 'src', 'alt', 'title'];
+const CONTENT_ATTR = ['href', 'target', 'rel', 'src', 'alt', 'title', 'class', ...TABLE_ATTR];
 
 function sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR = ['href', 'target', 'rel'] }) {
   if (!html) return '';

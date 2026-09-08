@@ -428,6 +428,20 @@
   gap: 4px;
 }
 
+.unidades-eval-scheme-block {
+  margin-bottom: 14px;
+}
+
+.unidades-eval-scheme-title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.unidades-eval-scheme-table {
+  max-width: 640px;
+}
+
 .unidades-eval-weight-hint {
   margin: 0 0 0 28px;
   font-size: 12px;

@@ -59,6 +59,30 @@
   color: var(--color-text-secondary);
 }
 
+.noticia-html-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.95em;
+}
+
+.noticia-html-table th,
+.noticia-html-table td {
+  border: 1px solid var(--gray-300, #d1d5db);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.noticia-html-table th {
+  background: var(--gray-50, #f9fafb);
+  font-weight: 700;
+}
+
+.noticia-html-table tbody tr:nth-child(even) {
+  background: var(--listing-zebra-bg, rgba(0, 0, 0, 0.02));
+}
+
 .noticia-form-preview {
   margin-top: 6px;
   padding: 10px 12px;

@@ -30,6 +30,7 @@ const emptyForm = () => ({
   descripcion: '',
   tipo_evento_id: '',
   requiere_confirmacion: true,
+  afecta_puntuacion: true,
   memberAssignmentMode: 'all',
   selectedMemberIds: [],
   actividad_inicio_local: '',
@@ -81,6 +82,7 @@ export function useEventosController() {
   const [manualAddEventId, setManualAddEventId] = useState('');
   const [manualAddForm, setManualAddForm] = useState({ miembroId: '', justificacion: '' });
   const [manualAddFieldErrors, setManualAddFieldErrors] = useState({});
+  const [showAllClubMembersInAttendance, setShowAllClubMembersInAttendance] = useState(false);
   const [savingManualAdd, setSavingManualAdd] = useState(false);
   const [initializingEventId, setInitializingEventId] = useState('');
   const [mergeAnchorEventId, setMergeAnchorEventId] = useState('');
@@ -252,14 +254,57 @@ export function useEventosController() {
   async function toggleEventExpand(eventoId) {
     if (expandedEventId === eventoId) {
       setExpandedEventId('');
+      setShowAllClubMembersInAttendance(false);
       if (manualAddEventId === eventoId) closeManualAddMember();
       return;
     }
     if (editingEventId && editingEventId !== eventoId) closeEditForm();
     setExpandedEventId(eventoId);
+    setShowAllClubMembersInAttendance(false);
     if (!assignments[eventoId]) {
       await loadAssignments(eventoId);
     }
+  }
+
+  async function resolveEventoMiembroId(eventoId, eventoMiembroId, miembroId) {
+    if (eventoMiembroId) return eventoMiembroId;
+    if (!miembroId) return null;
+
+    const evento = events.find(e => e.id === eventoId);
+    const { data, error } = await EventosModel.ensureMiembroAssignedToEvento(
+      eventoId,
+      miembroId,
+      { requiereConfirmacion: EventosModel.eventRequiresConfirmation(evento) },
+    );
+
+    if (error) {
+      setError('Error assigning member: ' + error.message);
+      return null;
+    }
+
+    if (data?.id) return data.id;
+
+    const rows = await loadAssignments(eventoId);
+    return rows.find(row => row.miembro_id === miembroId)?.id || null;
+  }
+
+  async function ensureAllClubMembersAssigned(eventoId) {
+    const evento = events.find(e => e.id === eventoId);
+    let rows = assignments[eventoId] || await loadAssignments(eventoId);
+    const assignedIds = new Set((rows || []).map(row => row.miembro_id).filter(Boolean));
+    const toAssign = clubMembers.map(m => m.id).filter(id => !assignedIds.has(id));
+    if (!toAssign.length) return rows;
+
+    const { error } = await EventosModel.assignMiembrosToEvento(eventoId, toAssign, {
+      requiereConfirmacion: EventosModel.eventRequiresConfirmation(evento),
+    });
+    if (error) {
+      setError('Error assigning members: ' + error.message);
+      return rows;
+    }
+
+    rows = await loadAssignments(eventoId);
+    return rows;
   }
 
   function openEventForm() {
@@ -312,6 +357,7 @@ export function useEventosController() {
       descripcion: evento.descripcion || '',
       tipo_evento_id: evento.tipo_evento_id || '',
       requiere_confirmacion: EventosModel.eventRequiresConfirmation(evento),
+      afecta_puntuacion: EventosModel.isEventoAffectsEvalScore(evento),
       memberAssignmentMode: allAssigned || assignedIds.length === 0 ? 'all' : 'specific',
       selectedMemberIds: assignedIds.length ? assignedIds : allMemberIds,
       actividad_inicio_local: EventosModel.isoToDatetimeLocalValue(
@@ -353,7 +399,7 @@ export function useEventosController() {
         lugar: eventForm.lugar,
         descripcion: eventForm.descripcion,
         tipoEventoId: eventForm.tipo_evento_id || null,
-        requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
+        requiereConfirmacion: Boolean(eventForm.requiere_confirmacion) && Boolean(eventForm.afecta_puntuacion),
         actividadInicioAt: eventForm.actividad_inicio_local
           ? EventosModel.datetimeLocalValueToIso(
             eventForm.actividad_inicio_local,
@@ -363,6 +409,7 @@ export function useEventosController() {
         cuotaAplica: Boolean(eventForm.cuota_aplica),
         cuotaUseDefault: Boolean(eventForm.cuota_use_default),
         cuotaMontoOverride: eventForm.cuota_monto_override,
+        afectaPuntuacion: Boolean(eventForm.afecta_puntuacion),
       });
 
       if (saveError) {
@@ -386,7 +433,9 @@ export function useEventosController() {
         const { error: syncError } = await EventosModel.syncEventoAttendees(
           editingEventId,
           miembroIds,
-          { requiereConfirmacion: true }
+          {
+            requiereConfirmacion: Boolean(eventForm.requiere_confirmacion) && Boolean(eventForm.afecta_puntuacion),
+          }
         );
         if (syncError) {
           setSavingEvent(false);
@@ -436,10 +485,11 @@ export function useEventosController() {
       lugar: eventForm.lugar,
       descripcion: eventForm.descripcion,
       tipoEventoId: eventForm.tipo_evento_id || null,
-      requiereConfirmacion: Boolean(eventForm.requiere_confirmacion),
+      requiereConfirmacion: Boolean(eventForm.requiere_confirmacion) && Boolean(eventForm.afecta_puntuacion),
       cuotaAplica: Boolean(eventForm.cuota_aplica),
       cuotaUseDefault: Boolean(eventForm.cuota_use_default),
       cuotaMontoOverride: eventForm.cuota_monto_override,
+      afectaPuntuacion: Boolean(eventForm.afecta_puntuacion),
       miembroIds,
     });
     setSavingEvent(false);
@@ -546,11 +596,14 @@ export function useEventosController() {
     loadEvents();
   }
 
-  async function setConfirmation(eventoMiembroId, confirmacionEstado, eventoId) {
+  async function setConfirmation(eventoMiembroId, confirmacionEstado, eventoId, miembroId = null) {
     if (!canOperate) return;
     setError('');
 
-    const { error: saveError } = await EventosModel.setEventoConfirmacion(eventoMiembroId, confirmacionEstado);
+    const resolvedId = await resolveEventoMiembroId(eventoId, eventoMiembroId, miembroId);
+    if (!resolvedId) return;
+
+    const { error: saveError } = await EventosModel.setEventoConfirmacion(resolvedId, confirmacionEstado);
     if (saveError) {
       setError('Error saving confirmation: ' + saveError.message);
       return;
@@ -574,11 +627,14 @@ export function useEventosController() {
     if (events.length) await loadLinkedMemberEventRows(events);
   }
 
-  async function setAttendance(eventoMiembroId, estado, eventoId) {
+  async function setAttendance(eventoMiembroId, estado, eventoId, miembroId = null) {
     if (!canOperate) return;
     setError('');
 
-    const { error: saveError } = await EventosModel.setEventoAsistencia(eventoMiembroId, estado);
+    const resolvedId = await resolveEventoMiembroId(eventoId, eventoMiembroId, miembroId);
+    if (!resolvedId) return;
+
+    const { error: saveError } = await EventosModel.setEventoAsistencia(resolvedId, estado);
     if (saveError) {
       setError('Error saving attendance: ' + saveError.message);
       return;
@@ -878,10 +934,13 @@ export function useEventosController() {
     return true;
   }
 
-  async function confirmAllPending(eventoId) {
+  async function confirmAllPending(eventoId, { includeAllClubMembers = false } = {}) {
     if (!canManage) return;
 
-    const rows = assignments[eventoId] || await loadAssignments(eventoId);
+    let rows = assignments[eventoId] || await loadAssignments(eventoId);
+    if (includeAllClubMembers) {
+      rows = await ensureAllClubMembersAssigned(eventoId);
+    }
     const pending = rows.filter(row => EventosModel.getConfirmacionFromRow(row) === 'pendiente');
     if (!pending.length) return;
 
@@ -900,10 +959,13 @@ export function useEventosController() {
     await loadAssignments(eventoId);
   }
 
-  async function setAllAttendance(eventoId, estado) {
+  async function setAllAttendance(eventoId, estado, { includeAllClubMembers = false } = {}) {
     if (!canManage) return;
 
-    const rows = assignments[eventoId] || await loadAssignments(eventoId);
+    let rows = assignments[eventoId] || await loadAssignments(eventoId);
+    if (includeAllClubMembers) {
+      rows = await ensureAllClubMembersAssigned(eventoId);
+    }
     if (!rows.length) return;
 
     setBulkUpdatingEventId(eventoId);
@@ -1028,6 +1090,10 @@ export function useEventosController() {
     bulkUpdatingEventId,
     confirmAllPending,
     setAllAttendance,
+    showAllClubMembersInAttendance,
+    setShowAllClubMembersInAttendance,
+    buildExpandedAttendanceRows: EventosModel.buildExpandedAttendanceRows,
+    isUnassignedAttendanceRow: EventosModel.isUnassignedAttendanceRow,
     editingAttendeesEventId,
     attendeeEditIds,
     savingAttendees,
