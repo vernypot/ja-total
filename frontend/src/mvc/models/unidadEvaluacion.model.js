@@ -1,6 +1,7 @@
 import { sb } from '../../services/supabase';
 import { DEFAULT_UNIDAD_EVAL_CONFIG, normalizeEvalConfig } from '../../utils/unidadEvaluacion';
 import * as EventosModel from './eventos.model';
+import * as UnidadesModel from './unidades.model';
 
 function isMissingRelationError(error, relation) {
   const msg = error?.message || '';
@@ -68,14 +69,7 @@ export async function fetchClubUnidadEval(clubId) {
 async function fetchClubUnidadEvalDirect(clubId) {
   const configResult = await sb
     .from('club_unidad_eval_config')
-    .select(`
-      confirmacion_activa, confirmacion_puntos,
-      a_tiempo_activa, a_tiempo_puntos,
-      tarde_activa, tarde_puntos,
-      ausente_injustificada_activa, ausente_injustificada_puntos,
-      ausente_justificada_activa, ausente_justificada_puntos,
-      cuota_activa, cuota_puntos
-    `)
+    .select('*')
     .eq('club_id', clubId)
     .maybeSingle();
 
@@ -121,6 +115,40 @@ async function fetchClubUnidadEvalDirect(clubId) {
 
 export async function saveClubUnidadEvalConfig(clubId, config) {
   const normalized = normalizeEvalConfig(config);
+  const payload = {
+    club_id: clubId,
+    ...normalized,
+    updated_at: new Date().toISOString(),
+  };
+
+  const direct = await sb.from('club_unidad_eval_config').upsert(payload);
+  if (!direct.error) return { error: null };
+
+  const msg = direct.error?.message || '';
+  if (!msg.includes('does not exist') && !msg.includes('Could not find')) {
+    return { error: direct.error };
+  }
+
+  const legacyPayload = {
+    club_id: clubId,
+    confirmacion_activa: normalized.confirmacion_activa,
+    confirmacion_puntos: normalized.confirmacion_puntos,
+    a_tiempo_activa: normalized.a_tiempo_activa,
+    a_tiempo_puntos: normalized.a_tiempo_puntos,
+    tarde_activa: normalized.tarde_activa,
+    tarde_puntos: normalized.tarde_puntos,
+    ausente_injustificada_activa: normalized.ausente_injustificada_activa,
+    ausente_injustificada_puntos: normalized.ausente_injustificada_puntos,
+    ausente_justificada_activa: normalized.ausente_justificada_activa,
+    ausente_justificada_puntos: normalized.ausente_justificada_puntos,
+    cuota_activa: normalized.cuota_activa,
+    cuota_puntos: normalized.cuota_puntos,
+    updated_at: new Date().toISOString(),
+  };
+
+  const legacy = await sb.from('club_unidad_eval_config').upsert(legacyPayload);
+  if (!legacy.error) return { error: null };
+
   const { error } = await sb.rpc('admin_save_club_unidad_eval_config', {
     p_club_id: clubId,
     p_confirmacion_activa: normalized.confirmacion_activa,
@@ -143,11 +171,7 @@ export async function saveClubUnidadEvalConfig(clubId, config) {
     return { error };
   }
 
-  return sb.from('club_unidad_eval_config').upsert({
-    club_id: clubId,
-    ...normalized,
-    updated_at: new Date().toISOString(),
-  });
+  return legacy;
 }
 
 export async function upsertClubUnidadEvalItem({
@@ -236,14 +260,14 @@ export async function fetchClubMemberEventRowsForEval(clubId, memberIds) {
      evento_asistencia ( id, estado, justificada, checked_in_at ),
      eventos!inner (
        id, club_id, nombre, fecha, hora, estado, cuota_aplica,
-       excluir_registro_asistencia, asistencia_grupo_id, requiere_confirmacion,
+       excluir_registro_asistencia, afecta_puntuacion, asistencia_grupo_id, requiere_confirmacion,
        clubes ( iglesias ( timezone ) )
      )`,
     `id, evento_id, miembro_id, cuota_pagada, confirmacion_estado,
      evento_asistencia ( id, estado, checked_in_at ),
      eventos!inner (
        id, club_id, nombre, fecha, hora, estado, cuota_aplica,
-       excluir_registro_asistencia, asistencia_grupo_id, requiere_confirmacion,
+       excluir_registro_asistencia, afecta_puntuacion, asistencia_grupo_id, requiere_confirmacion,
        clubes ( iglesias ( timezone ) )
      )`,
     `id, evento_id, miembro_id,
@@ -260,7 +284,7 @@ export async function fetchClubMemberEventRowsForEval(clubId, memberIds) {
 
     if (!error) {
       return {
-        data: EventosModel.filterRowsForMemberAttendanceStats(data || []),
+        data: EventosModel.filterRowsForUnidadEvalStats(data || []),
         error: null,
       };
     }
@@ -274,4 +298,36 @@ export async function fetchClubMemberEventRowsForEval(clubId, memberIds) {
   }
 
   return { data: [], error: null };
+}
+
+export async function fetchMemberEvalContext({ miembroId, clubId, memberRows = [] }) {
+  const resolvedClubId = EventosModel.getDominantClubIdFromMemberRows(memberRows, clubId);
+  if (!resolvedClubId) {
+    return {
+      data: {
+        clubId: null,
+        config: { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+        validationStartDate: null,
+      },
+      error: null,
+    };
+  }
+
+  const [evalResult, unidadResult] = await Promise.all([
+    fetchClubUnidadEval(resolvedClubId),
+    miembroId
+      ? UnidadesModel.fetchMiembroUnidadEvalStart(miembroId, resolvedClubId)
+      : Promise.resolve({ data: { evaluacion_inicio_fecha: null }, error: null }),
+  ]);
+
+  const error = evalResult.error || unidadResult.error || null;
+
+  return {
+    data: {
+      clubId: resolvedClubId,
+      config: evalResult.data?.config || { ...DEFAULT_UNIDAD_EVAL_CONFIG },
+      validationStartDate: unidadResult.data?.evaluacion_inicio_fecha || null,
+    },
+    error,
+  };
 }

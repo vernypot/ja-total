@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard";
 
 import Miembros from "../pages/Miembros";
 import Unidades from "../pages/Unidades";
+import UnidadEvaluacion from "../pages/UnidadEvaluacion";
 import BloquesCompletados from "../pages/BloquesCompletados";
 import Iglesias from "../pages/Iglesias";
 import Clubes from "../pages/Clubes";
@@ -90,6 +91,10 @@ export default function AppRouter() {
 
           <Route path="noticias" element={<NoticiasRoute />} />
           <Route path="miembros" element={<StaffOnlyRoute element={<Miembros />} />} />
+          <Route
+            path="unidad-evaluacion"
+            element={<StaffOnlyRoute element={<AdminRoute element={<UnidadEvaluacion />} />} />}
+          />
           <Route
             path="unidades"
             element={<StaffOnlyRoute element={<AdminRoute element={<Unidades />} />} />}

@@ -35,10 +35,10 @@ function FormSection({ title, children, className = '' }) {
   );
 }
 
-function ChoiceOption({ type = 'checkbox', name, checked, onChange, label, hint, className = '' }) {
+function ChoiceOption({ type = 'checkbox', name, checked, onChange, label, hint, className = '', disabled = false }) {
   return (
-    <label className={`form-choice-option ${checked ? 'form-choice-option--selected' : ''} ${className}`.trim()}>
-      <input type={type} name={name} checked={checked} onChange={onChange} />
+    <label className={`form-choice-option ${checked ? 'form-choice-option--selected' : ''} ${disabled ? 'form-choice-option--disabled' : ''} ${className}`.trim()}>
+      <input type={type} name={name} checked={checked} disabled={disabled} onChange={onChange} />
       <span className="form-choice-option__text">
         <span className="form-choice-option__label">{label}</span>
         {hint && <span className="form-choice-option__hint">{hint}</span>}
@@ -284,6 +284,30 @@ function EventCuotaFields({
   );
 }
 
+function EventEvalFields({ eventForm, setEventForm, t }) {
+  return (
+    <FormSection title={t('eventEvalSection')}>
+      <div className="form-choice-group">
+        <ChoiceOption
+          checked={Boolean(eventForm.afecta_puntuacion)}
+          onChange={e => {
+            const afecta = e.target.checked;
+            setEventForm(prev => ({
+              ...prev,
+              afecta_puntuacion: afecta,
+              ...(afecta ? {} : { requiere_confirmacion: false }),
+            }));
+          }}
+          label={t('eventAfectaPuntuacion')}
+          hint={eventForm.afecta_puntuacion
+            ? t('eventAfectaPuntuacionHintOn')
+            : t('eventAfectaPuntuacionHintOff')}
+        />
+      </div>
+    </FormSection>
+  );
+}
+
 function EventConfirmationAndAttendeesFields({
   eventForm,
   setEventForm,
@@ -297,6 +321,7 @@ function EventConfirmationAndAttendeesFields({
 }) {
   const assignAll = eventForm.memberAssignmentMode === 'all';
   const needsMemberAssignment = eventForm.requiere_confirmacion || eventForm.cuota_aplica;
+  const confirmationDisabled = !eventForm.afecta_puntuacion;
 
   return (
     <>
@@ -304,11 +329,14 @@ function EventConfirmationAndAttendeesFields({
         <div className="form-choice-group">
           <ChoiceOption
             checked={eventForm.requiere_confirmacion}
+            disabled={confirmationDisabled}
             onChange={e => setEventForm({ ...eventForm, requiere_confirmacion: e.target.checked })}
             label={t('eventRequiresConfirmation')}
-            hint={eventForm.requiere_confirmacion
-              ? t('eventRequiresConfirmationHint')
-              : t('eventNoConfirmationHint')}
+            hint={confirmationDisabled
+              ? t('eventNoConfirmationBecauseNoEvalScore')
+              : eventForm.requiere_confirmacion
+                ? t('eventRequiresConfirmationHint')
+                : t('eventNoConfirmationHint')}
           />
         </div>
       </FormSection>
@@ -473,6 +501,10 @@ export default function EventosView({
   bulkUpdatingEventId,
   confirmAllPending,
   setAllAttendance,
+  showAllClubMembersInAttendance,
+  setShowAllClubMembersInAttendance,
+  buildExpandedAttendanceRows,
+  isUnassignedAttendanceRow,
   editingAttendeesEventId,
   attendeeEditIds,
   savingAttendees,
@@ -633,7 +665,9 @@ export default function EventosView({
       message: t('confirmAllPendingConfirm'),
       highlight: evento.nombre || t('eventUntitled'),
       confirmLabel: t('confirmAllPending'),
-      onConfirm: async () => { await confirmAllPending(evento.id); },
+      onConfirm: async () => {
+        await confirmAllPending(evento.id, { includeAllClubMembers: showAllClubMembersInAttendance });
+      },
     });
   }
 
@@ -644,7 +678,9 @@ export default function EventosView({
       message: t(isAbsent ? 'markAllAbsentConfirm' : 'markAllOnTimeConfirm'),
       highlight: evento.nombre || t('eventUntitled'),
       confirmLabel: isAbsent ? t('markAllAbsent') : t('markAllOnTime'),
-      onConfirm: async () => { await setAllAttendance(evento.id, estado); },
+      onConfirm: async () => {
+        await setAllAttendance(evento.id, estado, { includeAllClubMembers: showAllClubMembersInAttendance });
+      },
     });
   }
 
@@ -823,6 +859,12 @@ export default function EventosView({
                   language={language}
                 />
 
+                <EventEvalFields
+                  eventForm={eventForm}
+                  setEventForm={setEventForm}
+                  t={t}
+                />
+
                 <EventAsistenciaItemsEditor
                   items={eventForm.asistenciaItems || []}
                   onChange={items => setEventForm(prev => ({ ...prev, asistenciaItems: items }))}
@@ -876,6 +918,12 @@ export default function EventosView({
                 const isToday = isEventToday(evento);
                 const canOpenCheckin = isToday && isActive && !isExcluded;
                 const rows = sortEventAttendanceRows(assignments[evento.id] || []);
+                const displayRows = buildExpandedAttendanceRows({
+                  assignedRows: rows,
+                  clubMembers,
+                  includeAllClubMembers: expanded && showAllClubMembersInAttendance,
+                  memberDisplayNameFn: memberDisplayName,
+                });
                 const recordedCount = rows.filter(row => getAsistenciaFromRow(row)).length;
                 const confirmedCount = rows.filter(row => getConfirmacionFromRow(row) === 'confirmado').length;
                 const tipoNombre = getTipoEventoNombre(evento);
@@ -977,6 +1025,11 @@ export default function EventosView({
                           {isExcluded && (
                             <div className="event-excluded-badge">
                               {t('eventExcludedFromAttendanceBadge')}
+                            </div>
+                          )}
+                          {!isExcluded && !EventosModel.isEventoAffectsEvalScore(evento) && (
+                            <div className="event-no-eval-badge">
+                              {t('eventNoEvalScoreBadge')}
                             </div>
                           )}
                           {needsConfirmation && !isExcluded && (
@@ -1114,6 +1167,12 @@ export default function EventosView({
                             cuotaUseDefaultName="editEventCuotaUseDefault"
                           />
 
+                          <EventEvalFields
+                            eventForm={eventForm}
+                            setEventForm={setEventForm}
+                            t={t}
+                          />
+
                           <EventAsistenciaItemsEditor
                             items={eventForm.asistenciaItems || []}
                             onChange={items => setEventForm(prev => ({ ...prev, asistenciaItems: items }))}
@@ -1201,7 +1260,17 @@ export default function EventosView({
                             {needsConfirmation ? t('manageAttendanceHint') : t('manageAttendanceQrHint')}
                           </p>
                         )}
-                        {canManage && rows.length > 0 && (
+                        {canManage && clubMembers.length > 0 && (
+                          <label className="event-attendance-show-all" title={t('eventAttendanceShowAllMembersHint')}>
+                            <input
+                              type="checkbox"
+                              checked={showAllClubMembersInAttendance}
+                              onChange={event => setShowAllClubMembersInAttendance(event.target.checked)}
+                            />
+                            <span>{t('eventAttendanceShowAllMembers')}</span>
+                          </label>
+                        )}
+                        {canManage && (displayRows.length > 0 || showAllClubMembersInAttendance) && (
                           <HorizontalScrollRow className="event-list-bulk-actions" style={{ marginBottom: '12px' }}>
                             {needsConfirmation && (
                               <EventActionButton
@@ -1363,22 +1432,31 @@ export default function EventosView({
                             )}
                           </div>
                         )}
-                        {rows.length === 0 ? (
+                        {displayRows.length === 0 ? (
                           <p className="text-muted" style={{ margin: 0 }}>
                             {needsConfirmation ? t('noMembersAssignedToEvent') : t('eventQrAttendanceEmpty')}
                           </p>
                         ) : (
                           <div className={`event-attendance-list${canOperateEvents ? '' : ' event-attendance-list--no-offset'}`}>
-                            {rows.map(row => {
+                            {displayRows.map(row => {
                               const checkedInAt = getCheckedInAtFromRow(row);
                               const confirmacion = getConfirmacionFromRow(row);
                               const manualJustification = getManualAddJustificationFromRow(row);
                               const memberName = memberDisplayName(row.miembros);
                               const eventName = evento.nombre || t('eventUntitled');
+                              const unassigned = isUnassignedAttendanceRow(row);
                               return (
-                              <div key={row.id} className="event-attendance-list-item">
+                              <div
+                                key={row.id || `unassigned-${row.miembro_id}`}
+                                className={`event-attendance-list-item${unassigned ? ' event-attendance-list-item--unassigned' : ''}`}
+                              >
                                 <div>
                                   <span>{memberDisplayName(row.miembros)}</span>
+                                  {unassigned && (
+                                    <div className="event-attendance-unassigned-badge">
+                                      {t('eventAttendanceNotAssignedYet')}
+                                    </div>
+                                  )}
                                   {manualJustification && (
                                     <div style={{ fontSize: '11px', color: '#854d0e', marginTop: '4px' }}>
                                       {t('manualAddJustificationBadge')}: {manualJustification}
@@ -1398,6 +1476,7 @@ export default function EventosView({
                                       <ConfirmationControls
                                         eventoMiembroId={row.id}
                                         eventoId={evento.id}
+                                        miembroId={row.miembro_id}
                                         current={confirmacion}
                                         canManage={canOperateEvents}
                                         onSet={setConfirmation}
@@ -1411,6 +1490,7 @@ export default function EventosView({
                                     <AttendanceControls
                                       eventoMiembroId={row.id}
                                       eventoId={evento.id}
+                                      miembroId={row.miembro_id}
                                       current={getAsistenciaFromRow(row)}
                                       currentJustificada={EventosModel.getAsistenciaJustificadaFromRow(row)}
                                       canManage={canOperateEvents}

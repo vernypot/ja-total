@@ -20,6 +20,42 @@
   color: var(--color-text-muted);
 }
 
+.noticia-html-editor-field.is-html-mode .ql-container.ql-snow {
+  display: none;
+}
+
+.noticia-html-editor-field.is-html-mode .ql-toolbar.ql-snow button:not(.ql-html) {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.noticia-html-editor-source {
+  display: block;
+  width: 100%;
+  min-height: var(--noticia-editor-min-height, 120px);
+  margin: 0;
+  padding: 12px 15px;
+  resize: vertical;
+  border: 1px solid var(--gray-300, #d1d5db);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
+  background: var(--white, #fff);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gray-800, #1f2937);
+}
+
+.noticia-html-editor-source:focus {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.noticia-html-editor-source--title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .noticia-html-editor-quill .ql-toolbar.ql-snow {
   border: 1px solid var(--gray-300, #d1d5db);
   border-bottom: none;
@@ -89,4 +125,31 @@
 .noticia-html-editor-quill .ql-snow .ql-toolbar button:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 1px;
+}
+
+.noticia-html-editor-quill .ql-snow.ql-toolbar button.ql-html.ql-active {
+  color: var(--brand-primary-dark);
+}
+
+.noticia-html-editor-field.is-html-mode .ql-snow.ql-toolbar button.ql-html {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.noticia-html-editor-quill .noticia-quill-table-embed {
+  margin: 0.5em 0;
+}
+
+.noticia-html-editor-quill .noticia-quill-table-embed .noticia-html-table {
+  margin: 0;
+}
+
+.noticia-html-editor-quill .noticia-quill-table-embed .noticia-html-table th,
+.noticia-html-editor-quill .noticia-quill-table-embed .noticia-html-table td {
+  min-width: 72px;
+}
+
+.noticia-html-editor-quill .noticia-quill-table-embed .noticia-html-table th:empty::after,
+.noticia-html-editor-quill .noticia-quill-table-embed .noticia-html-table td:empty::after {
+  content: '\\00a0';
 }

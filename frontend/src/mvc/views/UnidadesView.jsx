@@ -1,14 +1,18 @@
+import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import BackLink from '../../components/BackLink';
 import ListSearchInput from '../../components/ListSearchInput';
 import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
-import UnidadEvalConfigPanel from '../../components/UnidadEvalConfigPanel';
+import UnidadValidationStartPanel from '../../components/UnidadValidationStartPanel';
 import UnidadReglamentoInfraccionesPanel from '../../components/UnidadReglamentoInfraccionesPanel';
 import UnidadFormModal from '../../components/UnidadFormModal';
 import UnidadWeeklyReportPrint from '../../components/UnidadWeeklyReportPrint';
+import EvalScoreDetailModal from '../../components/EvalScoreDetailModal';
 import { PageHelpLink } from '../../components/PageHelp';
 import { clubDisplayName } from '../../utils/club';
+import { buildUnidadEvalScoreDetail } from '../../utils/unidadEvaluacion';
 import '../../styles/form.css';
 import '../../styles/unidades.css';
 import '../../styles/unidadWeeklyReportPrint.css';
@@ -22,8 +26,10 @@ function UnidadesListTable({
   memberDisplayName,
   onEditUnidad,
   onPrintUnidadReport,
+  onViewScoreDetail,
   evalScoresByUnidadId,
   formatEvalPercent,
+  formatEvalScore,
   formatEvalPoints,
   formatValidationStartDate,
   language,
@@ -44,7 +50,7 @@ function UnidadesListTable({
               <th>{t('unidadMembersCount')}</th>
               <th>{t('unidadRole_capitan')}</th>
               <th>{t('unidadEvalValidationStartCol')}</th>
-              <th>{t('unidadEvalEfficiencyCol')}</th>
+              <th>{t('unidadEvalAttendanceScoreCol')}</th>
               <th>{t('unidadEvalExcellenceCol')}</th>
               <th>{t('reglamentoPenaltyCol')}</th>
               <th>{t('actions')}</th>
@@ -73,7 +79,7 @@ function UnidadesListTable({
                     <strong>
                       {scores.validationActive === false
                         ? t('unidadEvalValidationPending')
-                        : formatEvalPercent(scores.efficiencyPercent)}
+                        : formatEvalScore(scores.attendanceScoreAverage)}
                     </strong>
                   </td>
                   <td>
@@ -104,6 +110,13 @@ function UnidadesListTable({
                         title={t('printUnidadWeeklyReportHint')}
                       >
                         🖨 {t('printUnidadWeeklyReportShort')}
+                      </button>
+                      <button
+                        type="button"
+                        className="home-link-btn"
+                        onClick={() => onViewScoreDetail(unidad)}
+                      >
+                        {t('evalScoreDetailCta')}
                       </button>
                     </div>
                     {assignments.length > 0 && (
@@ -170,6 +183,8 @@ export default function UnidadesView({
   evalItems,
   evalCantidades,
   evalScoresByUnidadId,
+  memberEventRows,
+  evalAttendanceHelpers,
   evalSchemaAvailable,
   savingEval,
   savingItemId,
@@ -181,6 +196,7 @@ export default function UnidadesView({
   savingValidationStartId,
   saveUnidadValidationStart,
   formatEvalPercent,
+  formatEvalScore,
   formatEvalPoints,
   formatValidationStartDate,
   reglamentoNodos,
@@ -193,6 +209,26 @@ export default function UnidadesView({
   unidadReportPrintPayload,
 }) {
   const { t, language } = useLanguage();
+  const [scoreDetailUnidad, setScoreDetailUnidad] = useState(null);
+
+  const scoreDetail = useMemo(() => {
+    if (!scoreDetailUnidad) return null;
+    return buildUnidadEvalScoreDetail({
+      unidad: scoreDetailUnidad,
+      memberEventRows,
+      helpers: evalAttendanceHelpers,
+      config: evalConfig,
+      membersById,
+      memberDisplayNameFn: memberDisplayName,
+    });
+  }, [
+    scoreDetailUnidad,
+    memberEventRows,
+    evalAttendanceHelpers,
+    evalConfig,
+    membersById,
+    memberDisplayName,
+  ]);
 
   if (!canManage) {
     return (
@@ -216,6 +252,12 @@ export default function UnidadesView({
         </div>
         {clubId && (
           <div className="unidades-header-actions">
+            <Link
+              className="btn btn-secondary"
+              to={`/dashboard/unidad-evaluacion?club=${clubId}`}
+            >
+              {t('unidadEvalMaintenanceLink')}
+            </Link>
             <button
               type="button"
               className="btn btn-secondary"
@@ -294,29 +336,20 @@ export default function UnidadesView({
                 memberDisplayName={memberDisplayName}
                 onEditUnidad={startEditUnidad}
                 onPrintUnidadReport={printWeeklyReportTemplate}
+                onViewScoreDetail={setScoreDetailUnidad}
                 evalScoresByUnidadId={evalScoresByUnidadId}
                 formatEvalPercent={formatEvalPercent}
+                formatEvalScore={formatEvalScore}
                 formatEvalPoints={formatEvalPoints}
                 formatValidationStartDate={formatValidationStartDate}
                 language={language}
                 t={t}
               />
 
-              <UnidadEvalConfigPanel
-                canManage={canManage}
+              <UnidadValidationStartPanel
                 unidades={unidades}
-                evalConfig={evalConfig}
-                evalItems={evalItems}
-                evalCantidades={evalCantidades}
                 evalSchemaAvailable={evalSchemaAvailable}
-                savingEval={savingEval}
-                savingItemId={savingItemId}
-                savingCantidadKey={savingCantidadKey}
                 savingValidationStartId={savingValidationStartId}
-                onSaveConfig={saveEvalConfig}
-                onSaveItem={saveEvalItem}
-                onRemoveItem={removeEvalItem}
-                onSetCantidad={setEvalItemCantidad}
                 onSaveValidationStart={saveUnidadValidationStart}
                 formatValidationStartDate={formatValidationStartDate}
                 language={language}
@@ -373,6 +406,18 @@ export default function UnidadesView({
           />
         </div>
       )}
+
+      <EvalScoreDetailModal
+        open={Boolean(scoreDetailUnidad)}
+        onClose={() => setScoreDetailUnidad(null)}
+        title={scoreDetailUnidad
+          ? `${t('evalScoreDetailUnitTitle')}: ${scoreDetailUnidad.nombre}`
+          : t('evalScoreDetailUnitTitle')}
+        mode="unit"
+        detail={scoreDetail}
+        t={t}
+        language={language}
+      />
     </div>
   );
 }

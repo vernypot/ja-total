@@ -43,6 +43,7 @@ function invokeSet(confirmBeforeSet, estado, proceed) {
 export function ConfirmationControls({
   eventoMiembroId,
   eventoId,
+  miembroId = null,
   current,
   canManage,
   onSet,
@@ -65,7 +66,7 @@ export function ConfirmationControls({
           onClick={() => invokeSet(
             confirmBeforeSet,
             estado,
-            () => onSet(eventoMiembroId, estado, eventoId)
+            () => onSet(eventoMiembroId, estado, eventoId, miembroId)
           )}
         />
       ))}
@@ -139,6 +140,7 @@ export function MemberConfirmationControls({
 export function AttendanceControls({
   eventoMiembroId,
   eventoId,
+  miembroId = null,
   current,
   currentJustificada = false,
   canManage,
@@ -166,7 +168,7 @@ export function AttendanceControls({
           onClick={() => invokeSet(
             confirmBeforeSet,
             estado,
-            () => onSet(eventoMiembroId, estado, eventoId)
+            () => onSet(eventoMiembroId, estado, eventoId, miembroId)
           )}
         />
       ))}

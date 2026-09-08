@@ -19,11 +19,17 @@ import {
   getAsistenciaFromRow,
   getEventoIdFromRow,
   getEventoMiembroRowId,
+  isUnassignedAttendanceRow,
+  buildExpandedAttendanceRows,
   isEventoActive,
   isEventoEnded,
   isEventListingPast,
   isEventListingUpcoming,
   isEventoIncludedInMemberStats,
+  isEventoIncludedInUnidadEval,
+  isEventoAffectsEvalScore,
+  filterRowsForUnidadEvalStats,
+  getDominantClubIdFromMemberRows,
   isEventoExcludedFromAttendance,
   getMemberEventAsistencia,
   memberAttendedEvent,
@@ -103,6 +109,64 @@ describe('isEventoIncludedInMemberStats', () => {
   });
 });
 
+describe('isEventoIncludedInUnidadEval', () => {
+  it('includes only finished events flagged for scoring', () => {
+    expect(isEventoIncludedInUnidadEval({ estado: 'finalizado' })).toBe(true);
+    expect(isEventoIncludedInUnidadEval({ estado: 'finalizado', afecta_puntuacion: true })).toBe(true);
+    expect(isEventoIncludedInUnidadEval({ estado: 'activo' })).toBe(false);
+    expect(isEventoIncludedInUnidadEval({ estado: 'cancelado' })).toBe(false);
+    expect(isEventoIncludedInUnidadEval({ estado: 'inactivo' })).toBe(false);
+    expect(isEventoIncludedInUnidadEval({ estado: 'finalizado', afecta_puntuacion: false })).toBe(false);
+  });
+
+  it('excludes events removed from attendance registry', () => {
+    expect(isEventoIncludedInUnidadEval({
+      estado: 'finalizado',
+      excluir_registro_asistencia: true,
+    })).toBe(false);
+  });
+});
+
+describe('isEventoAffectsEvalScore', () => {
+  it('returns false when scoring is disabled or attendance is excluded', () => {
+    expect(isEventoAffectsEvalScore({ afecta_puntuacion: false })).toBe(false);
+    expect(isEventoAffectsEvalScore({ excluir_registro_asistencia: true })).toBe(false);
+    expect(isEventoAffectsEvalScore({ afecta_puntuacion: true })).toBe(true);
+    expect(isEventoAffectsEvalScore({})).toBe(true);
+  });
+});
+
+describe('eventRequiresConfirmation', () => {
+  it('requires eval-scoring events with confirmation enabled', () => {
+    expect(eventRequiresConfirmation({ afecta_puntuacion: true, requiere_confirmacion: true })).toBe(true);
+  });
+
+  it('does not require confirmation when eval scoring is disabled', () => {
+    expect(eventRequiresConfirmation({ afecta_puntuacion: false, requiere_confirmacion: true })).toBe(false);
+    expect(eventRequiresConfirmation({ excluir_registro_asistencia: true, requiere_confirmacion: true })).toBe(false);
+  });
+
+  it('respects explicit confirmation opt-out on scoring events', () => {
+    expect(eventRequiresConfirmation({ afecta_puntuacion: true, requiere_confirmacion: false })).toBe(false);
+  });
+});
+
+describe('getDominantClubIdFromMemberRows', () => {
+  it('prefers the provided club id when set', () => {
+    expect(getDominantClubIdFromMemberRows([
+      { eventos: { club_id: 'club-a' } },
+    ], 'club-b')).toBe('club-b');
+  });
+
+  it('returns the club with the most event rows', () => {
+    expect(getDominantClubIdFromMemberRows([
+      { eventos: { club_id: 'club-a' } },
+      { eventos: { club_id: 'club-b' } },
+      { eventos: { club_id: 'club-b' } },
+    ])).toBe('club-b');
+  });
+});
+
 describe('computeMemberAttendanceStats', () => {
   const helpers = {
     getEventoFromRow: row => row.eventos,
@@ -165,6 +229,7 @@ describe('canMemberConfirmEvent', () => {
     fecha: futureDate,
     hora: '19:00:00',
     estado: 'activo',
+    afecta_puntuacion: true,
     requiere_confirmacion: true,
     clubes: { iglesias: { timezone: 'America/Bogota' } },
   };
@@ -176,13 +241,20 @@ describe('canMemberConfirmEvent', () => {
     })).toBe(true);
   });
 
-  it('allows RSVP for general club events without an assignment row', () => {
+  it('does not offer confirmation when the event is excluded from eval scoring', () => {
+    expect(canMemberConfirmEvent({
+      id: 'em-no-eval',
+      eventos: { ...baseEvento, afecta_puntuacion: false },
+    })).toBe(false);
+  });
+
+  it('does not offer RSVP for events without confirmation', () => {
     expect(canMemberConfirmEvent({
       id: null,
       evento_id: 'evt-1',
       confirmacion_estado: 'pendiente',
       eventos: { ...baseEvento, requiere_confirmacion: false },
-    })).toBe(true);
+    })).toBe(false);
   });
 
   it('allows confirmation on the event date when no start time is set', () => {
@@ -246,6 +318,11 @@ describe('canMemberConfirmEvent', () => {
 
     expect(canMemberCancelEventConfirmation(respondedRow)).toBe(true);
     expect(canMemberConfirmEvent(respondedRow)).toBe(false);
+
+    expect(canMemberCancelEventConfirmation({
+      ...respondedRow,
+      eventos: { ...baseEvento, afecta_puntuacion: false },
+    })).toBe(false);
   });
 
   it('resolves ids from alternate row shapes', () => {
@@ -625,5 +702,57 @@ describe('computeCheckinAttendanceEstado', () => {
       withActivityStart,
       { timeZone: 'America/Bogota' }
     )).toBe('tarde');
+  });
+});
+
+describe('buildExpandedAttendanceRows', () => {
+  const clubMembers = [
+    { id: 'm1', nombre: 'Ana' },
+    { id: 'm2', nombre: 'Bruno' },
+    { id: 'm3', nombre: 'Carlos' },
+  ];
+
+  const assignedRows = [
+    { id: 'em1', miembro_id: 'm1', miembros: clubMembers[0], confirmacion_estado: 'confirmado' },
+    { id: 'em3', miembro_id: 'm3', miembros: clubMembers[2], confirmacion_estado: 'pendiente' },
+  ];
+
+  it('returns only assigned rows when includeAllClubMembers is false', () => {
+    const rows = buildExpandedAttendanceRows({ assignedRows, clubMembers });
+    expect(rows).toHaveLength(2);
+    expect(rows.map(r => r.miembro_id)).toEqual(['m1', 'm3']);
+  });
+
+  it('includes unassigned club members when includeAllClubMembers is true', () => {
+    const rows = buildExpandedAttendanceRows({
+      assignedRows,
+      clubMembers,
+      includeAllClubMembers: true,
+    });
+    expect(rows).toHaveLength(3);
+    expect(rows.map(r => r.miembro_id)).toEqual(['m1', 'm2', 'm3']);
+
+    const unassigned = rows.find(r => r.miembro_id === 'm2');
+    expect(unassigned.id).toBeNull();
+    expect(unassigned._unassigned).toBe(true);
+    expect(unassigned.confirmacion_estado).toBe('pendiente');
+  });
+
+  it('reuses existing assignment rows instead of creating placeholders', () => {
+    const rows = buildExpandedAttendanceRows({
+      assignedRows,
+      clubMembers,
+      includeAllClubMembers: true,
+    });
+    const assigned = rows.find(r => r.miembro_id === 'm1');
+    expect(assigned.id).toBe('em1');
+    expect(assigned._unassigned).toBeUndefined();
+  });
+});
+
+describe('isUnassignedAttendanceRow', () => {
+  it('detects placeholder rows without assignment id', () => {
+    expect(isUnassignedAttendanceRow({ id: null, miembro_id: 'm1', _unassigned: true })).toBe(true);
+    expect(isUnassignedAttendanceRow({ id: 'em1', miembro_id: 'm1' })).toBe(false);
   });
 });

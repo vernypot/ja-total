@@ -1,16 +1,15 @@
 import {
   createMemberMergedAttendanceHelpers,
   eventRequiresConfirmation,
-  filterRowsForMemberAttendanceStats,
+  filterRowsForUnidadEvalStats,
   getAsistenciaFromRow,
   getAsistenciaJustificadaFromRow,
   getConfirmacionFromRow,
   getCuotaPagadaFromRow,
   getEventoFromRow,
-  isEventInFuture,
-  isEventoIncludedInMemberStats,
+  isEventoIncludedInUnidadEval,
 } from '../mvc/models/eventos.model';
-import { normalizeEventDate } from './eventTimezone';
+import { normalizeEventDate, compareEventsByLocalDateTime } from './eventTimezone';
 import {
   computePenaltyPointsForUnidad,
   filterInfraccionesForValidationPeriod,
@@ -24,22 +23,79 @@ export const ATTENDANCE_EVAL_KEYS = [
   'ausente_justificada',
 ];
 
-export const DEFAULT_UNIDAD_EVAL_CONFIG = {
-  confirmacion_activa: true,
-  confirmacion_puntos: 1,
-  a_tiempo_activa: true,
-  a_tiempo_puntos: 1,
-  tarde_activa: true,
-  tarde_puntos: 1,
-  ausente_injustificada_activa: true,
-  ausente_injustificada_puntos: 0,
-  ausente_justificada_activa: true,
-  ausente_justificada_puntos: 0,
-  cuota_activa: true,
-  cuota_puntos: 1,
+export const ATTENDANCE_SCORE_KEYS = [
+  'a_tiempo',
+  'tarde',
+  'ausente_justificada',
+  'ausente_injustificada',
+  'confirmado_a_tiempo',
+  'confirmado_tarde',
+  'no_confirmado_a_tiempo',
+  'no_confirmado_tarde',
+  'confirmado_ausente',
+  'no_confirmado_ausente',
+];
+
+export const ATTENDANCE_SCORE_FIELD_GROUPS = [
+  {
+    titleKey: 'unidadEvalAttendanceSchemeWithoutConfirmation',
+    fields: [
+      { key: 'a_tiempo', labelKey: 'unidadEvalOnTimeLabel' },
+      { key: 'tarde', labelKey: 'unidadEvalLateLabel' },
+      { key: 'ausente_justificada', labelKey: 'unidadEvalAbsentJustifiedLabel' },
+      { key: 'ausente_injustificada', labelKey: 'unidadEvalAbsentUnjustifiedLabel' },
+    ],
+  },
+  {
+    titleKey: 'unidadEvalAttendanceSchemeWithConfirmation',
+    fields: [
+      { key: 'confirmado_a_tiempo', labelKey: 'unidadEvalScoreConfirmedOnTime' },
+      { key: 'confirmado_tarde', labelKey: 'unidadEvalScoreConfirmedLate' },
+      { key: 'no_confirmado_a_tiempo', labelKey: 'unidadEvalScoreUnconfirmedOnTime' },
+      { key: 'no_confirmado_tarde', labelKey: 'unidadEvalScoreUnconfirmedLate' },
+      { key: 'confirmado_ausente', labelKey: 'unidadEvalScoreConfirmedAbsent' },
+      { key: 'no_confirmado_ausente', labelKey: 'unidadEvalScoreUnconfirmedAbsent' },
+    ],
+    sharedNoteKey: 'unidadEvalScoreJustifiedSharedNote',
+  },
+];
+
+/** Default per-meeting scores when confirmation is NOT required (0–10, negatives allowed). */
+export const ATTENDANCE_SCORE_WITHOUT_CONFIRMATION = {
+  a_tiempo: 10,
+  tarde: 7,
+  ausente_justificada: 0,
+  ausente_injustificada: -5,
 };
 
-const ATTENDANCE_CONFIG_FIELDS = [
+/** Default per-meeting scores when confirmation IS required. */
+export const ATTENDANCE_SCORE_WITH_CONFIRMATION = {
+  confirmado_a_tiempo: 10,
+  confirmado_tarde: 7,
+  no_confirmado_a_tiempo: 8,
+  no_confirmado_tarde: 5,
+  ausente_justificada: 0,
+  no_confirmado_ausente: -5,
+  confirmado_ausente: -8,
+};
+
+const DEFAULT_SCORE_VALUES = {
+  ...ATTENDANCE_SCORE_WITHOUT_CONFIRMATION,
+  ...ATTENDANCE_SCORE_WITH_CONFIRMATION,
+};
+
+export const DEFAULT_UNIDAD_EVAL_CONFIG = Object.fromEntries([
+  ...ATTENDANCE_SCORE_KEYS.flatMap(key => ([
+    [`${key}_activa`, true],
+    [`${key}_puntos`, DEFAULT_SCORE_VALUES[key] ?? 0],
+  ])),
+  ['cuota_activa', true],
+  ['cuota_puntos', 1],
+  ['confirmacion_activa', true],
+  ['confirmacion_puntos', 10],
+]);
+
+const LEGACY_ATTENDANCE_CONFIG_FIELDS = [
   ['confirmacion_activa', 'confirmacion_puntos'],
   ['a_tiempo_activa', 'a_tiempo_puntos'],
   ['tarde_activa', 'tarde_puntos'],
@@ -50,6 +106,12 @@ const ATTENDANCE_CONFIG_FIELDS = [
 export function parsePoints(value, fallback = 0) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return parsed;
+}
+
+export function parseScorePoints(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
   return parsed;
 }
 
@@ -98,19 +160,27 @@ export function normalizeEvalConfig(config) {
   const normalized = {
     cuota_activa: config?.cuota_activa !== false,
     cuota_puntos: parsePoints(config?.cuota_puntos, 1),
+    confirmacion_activa: config?.confirmacion_activa !== false,
+    confirmacion_puntos: parseScorePoints(config?.confirmacion_puntos, 10),
   };
 
-  for (const [activaKey, puntosKey] of ATTENDANCE_CONFIG_FIELDS) {
-    const category = activaKey.replace('_activa', '');
-    const legacyPoints = config?.asistencia_puntos;
-    normalized[activaKey] = config?.[activaKey] !== false && config?.asistencia_activa !== false;
-    normalized[puntosKey] = parsePoints(
-      config?.[puntosKey] ?? (category === 'a_tiempo' ? legacyPoints : undefined),
-      category === 'ausente_injustificada' || category === 'ausente_justificada' ? 0 : 1,
+  for (const key of ATTENDANCE_SCORE_KEYS) {
+    const activaKey = `${key}_activa`;
+    const puntosKey = `${key}_puntos`;
+    normalized[activaKey] = config?.[activaKey] !== false;
+    normalized[puntosKey] = parseScorePoints(
+      config?.[puntosKey],
+      DEFAULT_SCORE_VALUES[key] ?? 0,
     );
   }
 
   return normalized;
+}
+
+export function getConfigScore(config, key) {
+  const normalized = normalizeEvalConfig(config);
+  if (!normalized[`${key}_activa`]) return 0;
+  return normalized[`${key}_puntos`];
 }
 
 export function createEmptyAttendanceBreakdown() {
@@ -139,8 +209,7 @@ export function countMemberAttendanceBreakdown(memberRows, helpers) {
 
   for (const row of memberRows || []) {
     const evento = getEventoFromRow(row);
-    if (!isEventoIncludedInMemberStats(evento)) continue;
-    if (isEventInFuture(evento)) continue;
+    if (!isEventoIncludedInUnidadEval(evento)) continue;
 
     const eventoId = evento?.id;
     if (!eventoId || seenEventIds.has(eventoId)) continue;
@@ -168,6 +237,305 @@ export function countMemberAttendanceBreakdown(memberRows, helpers) {
   return counts;
 }
 
+export function computeEventAttendanceScore(row, helpers, config = DEFAULT_UNIDAD_EVAL_CONFIG) {
+  const evento = getEventoFromRow(row);
+  if (!isEventoIncludedInUnidadEval(evento)) return null;
+
+  const asistencia = helpers.getAsistenciaFromRow(row);
+  const justificada = getAsistenciaJustificadaFromRow(row);
+  const confirmacion = getConfirmacionFromRow(row);
+  const requiresConfirmation = eventRequiresConfirmation(evento);
+  const confirmed = confirmacion === 'confirmado';
+
+  const isAbsent = !asistencia || asistencia === 'ausente';
+
+  if (isAbsent && justificada) {
+    return getConfigScore(config, 'ausente_justificada');
+  }
+
+  if (!requiresConfirmation) {
+    if (asistencia === 'a_tiempo') return getConfigScore(config, 'a_tiempo');
+    if (asistencia === 'tarde') return getConfigScore(config, 'tarde');
+    return getConfigScore(config, 'ausente_injustificada');
+  }
+
+  if (asistencia === 'a_tiempo') {
+    return confirmed
+      ? getConfigScore(config, 'confirmado_a_tiempo')
+      : getConfigScore(config, 'no_confirmado_a_tiempo');
+  }
+
+  if (asistencia === 'tarde') {
+    return confirmed
+      ? getConfigScore(config, 'confirmado_tarde')
+      : getConfigScore(config, 'no_confirmado_tarde');
+  }
+
+  return confirmed
+    ? getConfigScore(config, 'confirmado_ausente')
+    : getConfigScore(config, 'no_confirmado_ausente');
+}
+
+export function computeMemberAttendanceScoreStats(memberRows, helpers, config = DEFAULT_UNIDAD_EVAL_CONFIG) {
+  const normalizedConfig = normalizeEvalConfig(config);
+  const seenEventIds = new Set();
+  let total = 0;
+  let count = 0;
+
+  for (const row of memberRows || []) {
+    const evento = getEventoFromRow(row);
+    if (!isEventoIncludedInUnidadEval(evento)) continue;
+
+    const eventoId = evento?.id;
+    if (!eventoId || seenEventIds.has(eventoId)) continue;
+    seenEventIds.add(eventoId);
+
+    let score = computeEventAttendanceScore(row, helpers, normalizedConfig);
+    if (score == null) continue;
+
+    if (
+      normalizedConfig.cuota_activa
+      && evento?.cuota_aplica
+      && helpers.memberAttendedEvent(row)
+      && getCuotaPagadaFromRow(row)
+    ) {
+      score += normalizedConfig.cuota_puntos;
+    }
+
+    total += score;
+    count += 1;
+  }
+
+  return {
+    total,
+    count,
+    average: count > 0 ? total / count : null,
+  };
+}
+
+export function computeMemberEvalAttendanceScore({
+  memberRows,
+  helpers,
+  config = DEFAULT_UNIDAD_EVAL_CONFIG,
+  validationStartDate = null,
+}) {
+  const validationActive = isUnidadValidationActive(validationStartDate);
+  if (!validationActive) {
+    return {
+      average: null,
+      total: 0,
+      count: 0,
+      validationActive: false,
+    };
+  }
+
+  const evalRows = filterRowsForUnidadValidationPeriod(
+    filterRowsForUnidadEvalStats(memberRows),
+    validationStartDate,
+  );
+  const stats = computeMemberAttendanceScoreStats(evalRows, helpers, config);
+
+  return {
+    average: roundAttendanceScore(stats.average),
+    total: stats.total,
+    count: stats.count,
+    validationActive: true,
+  };
+}
+
+export function resolveEventScoreSituationKey(row, helpers) {
+  const evento = getEventoFromRow(row);
+  const asistencia = helpers.getAsistenciaFromRow(row);
+  const justificada = getAsistenciaJustificadaFromRow(row);
+  const confirmacion = getConfirmacionFromRow(row);
+  const requiresConfirmation = eventRequiresConfirmation(evento);
+  const confirmed = confirmacion === 'confirmado';
+  const isAbsent = !asistencia || asistencia === 'ausente';
+
+  if (isAbsent && justificada) return 'ausente_justificada';
+
+  if (!requiresConfirmation) {
+    if (asistencia === 'a_tiempo') return 'a_tiempo';
+    if (asistencia === 'tarde') return 'tarde';
+    return 'ausente_injustificada';
+  }
+
+  if (asistencia === 'a_tiempo') {
+    return confirmed ? 'confirmado_a_tiempo' : 'no_confirmado_a_tiempo';
+  }
+
+  if (asistencia === 'tarde') {
+    return confirmed ? 'confirmado_tarde' : 'no_confirmado_tarde';
+  }
+
+  return confirmed ? 'confirmado_ausente' : 'no_confirmado_ausente';
+}
+
+export function getScoreSituationLabelKey(situationKey) {
+  for (const group of ATTENDANCE_SCORE_FIELD_GROUPS) {
+    const field = group.fields.find(item => item.key === situationKey);
+    if (field) return field.labelKey;
+  }
+  return situationKey;
+}
+
+function collectMemberEvalEventDetails(memberRows, helpers, config) {
+  const normalizedConfig = normalizeEvalConfig(config);
+  const breakdown = countMemberAttendanceBreakdown(memberRows, helpers);
+  const events = [];
+  const seenEventIds = new Set();
+
+  for (const row of memberRows || []) {
+    const evento = getEventoFromRow(row);
+    const eventoId = evento?.id;
+    if (!eventoId || seenEventIds.has(eventoId)) continue;
+    seenEventIds.add(eventoId);
+
+    const situationKey = resolveEventScoreSituationKey(row, helpers);
+    let baseScore = computeEventAttendanceScore(row, helpers, normalizedConfig);
+    if (baseScore == null) continue;
+
+    let cuotaBonus = 0;
+    if (
+      normalizedConfig.cuota_activa
+      && evento?.cuota_aplica
+      && helpers.memberAttendedEvent(row)
+      && getCuotaPagadaFromRow(row)
+    ) {
+      cuotaBonus = normalizedConfig.cuota_puntos;
+    }
+
+    events.push({
+      eventId: eventoId,
+      eventName: evento?.nombre || '',
+      eventDate: evento?.fecha || '',
+      eventTime: evento?.hora || '',
+      situationKey,
+      score: baseScore,
+      cuotaBonus,
+      totalScore: baseScore + cuotaBonus,
+      evento,
+      row,
+    });
+  }
+
+  events.sort((a, b) => compareEventsByLocalDateTime(b.evento, a.evento));
+
+  const stats = computeMemberAttendanceScoreStats(memberRows, helpers, normalizedConfig);
+
+  return {
+    breakdown,
+    events,
+    total: stats.total,
+    count: stats.count,
+    average: stats.average,
+  };
+}
+
+export function buildMemberEvalScoreDetail({
+  memberRows,
+  helpers,
+  config = DEFAULT_UNIDAD_EVAL_CONFIG,
+  validationStartDate = null,
+  skipValidationFilter = false,
+}) {
+  if (!skipValidationFilter && !isUnidadValidationActive(validationStartDate)) {
+    return {
+      validationActive: false,
+      breakdown: createEmptyAttendanceBreakdown(),
+      events: [],
+      average: null,
+      total: 0,
+      count: 0,
+    };
+  }
+
+  const evalRows = skipValidationFilter
+    ? (memberRows || [])
+    : filterRowsForUnidadValidationPeriod(
+      filterRowsForUnidadEvalStats(memberRows),
+      validationStartDate,
+    );
+  const detail = collectMemberEvalEventDetails(evalRows, helpers, config);
+
+  return {
+    validationActive: true,
+    breakdown: detail.breakdown,
+    events: detail.events,
+    average: roundAttendanceScore(detail.average),
+    total: detail.total,
+    count: detail.count,
+  };
+}
+
+export function buildUnidadEvalScoreDetail({
+  unidad,
+  memberEventRows,
+  helpers,
+  config = DEFAULT_UNIDAD_EVAL_CONFIG,
+  membersById = {},
+  memberDisplayNameFn = null,
+}) {
+  const memberIds = [...new Set(
+    (unidad?.miembro_unidad || []).map(row => row.miembro_id).filter(Boolean)
+  )];
+  const validationStartDate = unidad?.evaluacion_inicio_fecha || null;
+  const validationActive = isUnidadValidationActive(validationStartDate);
+
+  if (!validationActive || !memberIds.length) {
+    return {
+      validationActive: false,
+      unidadName: unidad?.nombre || '',
+      breakdown: createEmptyAttendanceBreakdown(),
+      attendanceByCategory: computeAttendancePoints(createEmptyAttendanceBreakdown(), config),
+      members: [],
+      evaluacionInicioFecha: validationStartDate,
+    };
+  }
+
+  const baseRows = filterRowsForUnidadEvalStats(
+    (memberEventRows || []).filter(row => memberIds.includes(row.miembro_id))
+  );
+  const relevantRows = filterRowsForUnidadValidationPeriod(baseRows, validationStartDate);
+  const breakdown = createEmptyAttendanceBreakdown();
+  const members = [];
+
+  for (const memberId of memberIds) {
+    const memberRows = relevantRows.filter(row => row.miembro_id === memberId);
+    const memberDetail = collectMemberEvalEventDetails(memberRows, helpers, config);
+    const assignment = (unidad?.miembro_unidad || []).find(row => row.miembro_id === memberId);
+    const member = assignment?.miembros || membersById[memberId] || null;
+    const memberName = memberDisplayNameFn && member
+      ? memberDisplayNameFn(member)
+      : (member?.nombre || memberId);
+
+    for (const key of ATTENDANCE_EVAL_KEYS) {
+      breakdown[key] += memberDetail.breakdown[key] || 0;
+    }
+
+    members.push({
+      memberId,
+      memberName,
+      breakdown: memberDetail.breakdown,
+      events: memberDetail.events,
+      average: roundAttendanceScore(memberDetail.average),
+      total: memberDetail.total,
+      count: memberDetail.count,
+    });
+  }
+
+  members.sort((a, b) => String(a.memberName).localeCompare(String(b.memberName), undefined, { sensitivity: 'base' }));
+
+  return {
+    validationActive: true,
+    unidadName: unidad?.nombre || '',
+    breakdown,
+    attendanceByCategory: computeAttendancePoints(breakdown, config),
+    members,
+    evaluacionInicioFecha: validationStartDate,
+  };
+}
+
 export function countMemberOpportunities(memberRows, helpers) {
   const opportunities = {
     pastSlots: 0,
@@ -178,8 +546,7 @@ export function countMemberOpportunities(memberRows, helpers) {
 
   for (const row of memberRows || []) {
     const evento = getEventoFromRow(row);
-    if (!isEventoIncludedInMemberStats(evento)) continue;
-    if (isEventInFuture(evento)) continue;
+    if (!isEventoIncludedInUnidadEval(evento)) continue;
 
     const eventoId = evento?.id;
     if (!eventoId || seenEventIds.has(eventoId)) continue;
@@ -282,51 +649,61 @@ export function computeUnidadPercentages({
   if (!memberCount) {
     return {
       memberCount: 0,
-      efficiencyPercent: null,
+      attendanceScoreAverage: null,
       excellencePercent: null,
     };
   }
 
-  let efficiencyTotal = 0;
-  let efficiencyMembers = 0;
+  let attendanceScoreTotal = 0;
+  let attendanceMembers = 0;
   let excellenceTotal = 0;
   let excellenceMembers = 0;
 
   for (const memberId of ids) {
     const memberRows = relevantRows.filter(row => row.miembro_id === memberId);
-    const breakdown = countMemberAttendanceBreakdown(memberRows, helpers);
+    const scoreStats = computeMemberAttendanceScoreStats(memberRows, helpers, config);
     const opportunities = countMemberOpportunities(memberRows, helpers);
-    const cuotaCount = countMemberPaidCuotas(memberRows, helpers);
 
-    const efficiencyEarned = Math.max(
-      0,
-      computeMemberEfficiencyEarned(breakdown, cuotaCount, config) - penaltyPerMember,
-    );
-    const efficiencyMax = computeMemberEfficiencyMax(opportunities, config);
-    const efficiencyPercent = toEvalPercent(efficiencyEarned, efficiencyMax);
-    if (efficiencyPercent != null) {
-      efficiencyTotal += efficiencyPercent;
-      efficiencyMembers += 1;
+    if (scoreStats.average != null) {
+      const netAverage = scoreStats.average - penaltyPerMember;
+      attendanceScoreTotal += netAverage;
+      attendanceMembers += 1;
     }
 
-    const excellenceEarned = computeMemberExcellenceEarned(breakdown, otherPerMember, config);
-    const excellenceMax = computeMemberExcellenceMax(opportunities, otherPerMember, config);
+    const excellenceEarned = otherPerMember;
+    const excellenceMax = otherPerMember > 0 ? otherPerMember : 0;
     const excellencePercent = toEvalPercent(excellenceEarned, excellenceMax);
-    if (excellencePercent != null) {
-      excellenceTotal += excellencePercent;
-      excellenceMembers += 1;
+    if (excellencePercent != null && opportunities.pastSlots >= 0) {
+      if (excellenceMax > 0) {
+        excellenceTotal += excellencePercent;
+        excellenceMembers += 1;
+      }
     }
   }
 
   return {
     memberCount,
-    efficiencyPercent: efficiencyMembers > 0
-      ? Math.round(efficiencyTotal / efficiencyMembers)
+    attendanceScoreAverage: attendanceMembers > 0
+      ? roundAttendanceScore(attendanceScoreTotal / attendanceMembers)
       : null,
     excellencePercent: excellenceMembers > 0
       ? Math.round(excellenceTotal / excellenceMembers)
       : null,
   };
+}
+
+export function computeAttendanceScoreTotals(memberIds, relevantRows, helpers, config) {
+  let total = 0;
+  let count = 0;
+
+  for (const memberId of memberIds || []) {
+    const memberRows = (relevantRows || []).filter(row => row.miembro_id === memberId);
+    const stats = computeMemberAttendanceScoreStats(memberRows, helpers, config);
+    total += stats.total;
+    count += stats.count;
+  }
+
+  return { total, count };
 }
 
 export function computeAttendancePoints(breakdown, config) {
@@ -358,7 +735,7 @@ export function countMemberPaidCuotas(memberRows, helpers) {
   for (const row of memberRows || []) {
     const evento = getEventoFromRow(row);
     if (!evento?.cuota_aplica) continue;
-    if (!isEventoIncludedInMemberStats(evento)) continue;
+    if (!isEventoIncludedInUnidadEval(evento)) continue;
     if (!helpers.memberAttendedEvent(row)) continue;
     if (!getCuotaPagadaFromRow(row)) continue;
     count += 1;
@@ -398,7 +775,7 @@ export function computeUnidadEvaluation({
   const validationStartDate = unidad?.evaluacion_inicio_fecha || null;
   const validationActive = isUnidadValidationActive(validationStartDate);
 
-  const baseRows = filterRowsForMemberAttendanceStats(
+  const baseRows = filterRowsForUnidadEvalStats(
     (memberEventRows || []).filter(row => memberIds.has(row.miembro_id))
   );
   const relevantRows = validationActive
@@ -418,6 +795,12 @@ export function computeUnidadEvaluation({
     cuotaCount += countMemberPaidCuotas(memberRows, helpers);
   }
 
+  const attendanceScoreTotals = computeAttendanceScoreTotals(
+    memberIds,
+    relevantRows,
+    helpers,
+    normalizedConfig,
+  );
   const attendanceByCategory = computeAttendancePoints(breakdown, normalizedConfig);
   const cuotaPoints = normalizedConfig.cuota_activa
     ? cuotaCount * normalizedConfig.cuota_puntos
@@ -431,7 +814,6 @@ export function computeUnidadEvaluation({
   const penaltyPoints = validationActive
     ? computePenaltyPointsForUnidad(unidad?.id, relevantInfracciones, reglamentoNodosById)
     : 0;
-  const total = Math.max(0, attendanceByCategory.total + cuotaPoints + otherPoints - penaltyPoints);
   const percentages = computeUnidadPercentages({
     memberIds,
     relevantRows,
@@ -440,6 +822,11 @@ export function computeUnidadEvaluation({
     otherPoints,
     penaltyPoints,
   });
+  const attendancePoints = attendanceScoreTotals.total;
+  const total = Math.max(
+    0,
+    attendancePoints + cuotaPoints + otherPoints - penaltyPoints,
+  );
 
   return {
     unidadId: unidad?.id,
@@ -447,12 +834,14 @@ export function computeUnidadEvaluation({
     breakdown,
     cuotaCount,
     attendanceByCategory,
-    attendancePoints: attendanceByCategory.total,
+    attendancePoints,
+    attendanceEventCount: attendanceScoreTotals.count,
+    attendanceScoreAverage: validationActive ? percentages.attendanceScoreAverage : null,
     cuotaPoints,
     otherPoints,
     penaltyPoints,
     total,
-    efficiencyPercent: validationActive ? percentages.efficiencyPercent : null,
+    efficiencyPercent: validationActive ? percentages.attendanceScoreAverage : null,
     excellencePercent: validationActive ? percentages.excellencePercent : null,
     evaluacionInicioFecha: validationStartDate,
     validationActive,
@@ -494,6 +883,17 @@ export function computeAllUnidadEvaluations({
 export function formatEvalPercent(value) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
   return `${Math.round(Number(value))}%`;
+}
+
+export function roundAttendanceScore(value) {
+  if (value == null || !Number.isFinite(Number(value))) return null;
+  return Math.round(Number(value) * 10) / 10;
+}
+
+export function formatEvalScore(value, { scale = 10 } = {}) {
+  const rounded = roundAttendanceScore(value);
+  if (rounded == null) return '—';
+  return `${formatEvalPoints(rounded)}/${scale}`;
 }
 
 export function formatEvalPoints(value) {

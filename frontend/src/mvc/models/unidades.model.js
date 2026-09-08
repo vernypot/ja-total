@@ -228,6 +228,48 @@ function groupAssignmentsByUnidad(assignments) {
   return grouped;
 }
 
+export async function fetchMiembroUnidadEvalStart(miembroId, clubId) {
+  if (!miembroId || !clubId) {
+    return { data: { evaluacion_inicio_fecha: null }, error: null };
+  }
+
+  const selects = [
+    'unidad_id, unidades!inner ( id, club_id, evaluacion_inicio_fecha )',
+    'unidad_id, unidades ( id, club_id, evaluacion_inicio_fecha )',
+  ];
+
+  for (const select of selects) {
+    const { data, error } = await sb
+      .from('miembro_unidad')
+      .select(select)
+      .eq('miembro_id', miembroId)
+      .eq('unidades.club_id', clubId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!error) {
+      const unidad = data?.unidades || null;
+      return {
+        data: { evaluacion_inicio_fecha: unidad?.evaluacion_inicio_fecha || null },
+        error: null,
+      };
+    }
+
+    if (isMissingRelationError(error, 'miembro_unidad') || isMissingRelationError(error, 'unidades')) {
+      return { data: { evaluacion_inicio_fecha: null }, error: null };
+    }
+
+    const msg = error?.message || '';
+    if (msg.includes('does not exist') || msg.includes('Could not find')) {
+      continue;
+    }
+
+    return { data: { evaluacion_inicio_fecha: null }, error };
+  }
+
+  return { data: { evaluacion_inicio_fecha: null }, error: null };
+}
+
 export async function fetchUnidadesByClub(clubId, { showInactive = false } = {}) {
   if (!clubId) return { data: [], error: null };
 
