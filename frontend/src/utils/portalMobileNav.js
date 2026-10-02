@@ -12,6 +12,16 @@ export const PORTAL_BOTTOM_NAV = [
     mobileOnly: false,
   },
   {
+    id: 'mensajes',
+    path: '/dashboard/mensajes',
+    labelKey: 'portalNavInbox',
+    shortLabelKey: 'portalNavInboxShort',
+    icon: '✉️',
+    blixIcon: 'inbox',
+    isActive: pathname => pathname.startsWith('/dashboard/mensajes'),
+    mobileOnly: false,
+  },
+  {
     id: 'profile',
     path: PORTAL_PROFILE_PATH,
     labelKey: 'portalNavProfile',
@@ -49,16 +59,6 @@ export const PORTAL_BOTTOM_NAV = [
     icon: '🗓️',
     blixIcon: 'calendar',
     isActive: pathname => pathname.startsWith('/dashboard/calendario'),
-    mobileOnly: false,
-  },
-  {
-    id: 'mensajes',
-    path: '/dashboard/mensajes',
-    labelKey: 'mensajesTitle',
-    shortLabelKey: 'mensajesTitleShort',
-    icon: '✉️',
-    blixIcon: 'inbox',
-    isActive: pathname => pathname.startsWith('/dashboard/mensajes'),
     mobileOnly: false,
   },
 ];

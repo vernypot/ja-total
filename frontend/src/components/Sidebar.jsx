@@ -68,6 +68,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to={DASHBOARD_HOME_PATH} icon="home" active={isDashboardHomePath(location.pathname)}>
               {t('home')}
             </NavLinkItem>
+            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={location.pathname.startsWith('/dashboard/mensajes')} badge={unreadCount}>
+              {t('portalNavInbox')}
+            </NavLinkItem>
             <NavLinkItem to="/dashboard/profile" icon="user" active={location.pathname.startsWith('/dashboard/profile')}>
               {t('portalNavProfile')}
             </NavLinkItem>
@@ -80,9 +83,6 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('portalNavCalendar')}
             </NavLinkItem>
-            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={isActive('/dashboard/mensajes')} badge={unreadCount}>
-              {t('mensajesTitle')}
-            </NavLinkItem>
             <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
               {t('portalNavReglamento')}
             </NavLinkItem>
@@ -91,6 +91,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
           <>
             <NavLinkItem to={DASHBOARD_HOME_PATH} icon="home" active={isDashboardHomePath(location.pathname)}>
               {t('home')}
+            </NavLinkItem>
+            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={location.pathname.startsWith('/dashboard/mensajes')} badge={unreadCount}>
+              {t('portalNavInbox')}
             </NavLinkItem>
             {adminOrAbove && (
               <NavLinkItem to="/dashboard/noticias" icon="blog" active={isActive('/dashboard/noticias')}>
@@ -102,9 +105,6 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             </NavLinkItem>
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('clubCalendar')}
-            </NavLinkItem>
-            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={isActive('/dashboard/mensajes')} badge={unreadCount}>
-              {t('mensajesTitle')}
             </NavLinkItem>
             <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
               {t('reglamentoNav')}

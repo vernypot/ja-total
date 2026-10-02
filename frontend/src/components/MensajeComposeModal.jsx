@@ -8,6 +8,7 @@ import '../styles/mensajes.css';
 
 const EMPTY = {
   destinatarioMiembroId: '',
+  destinatarioUsuarioId: '',
   tipo: 'general',
   asunto: '',
   cuerpo: '',
@@ -62,6 +63,7 @@ export default function MensajeComposeModal({
     setActiveClubId(preset?.clubId || clubId || '');
     setForm({
       destinatarioMiembroId: preset?.miembroId || '',
+      destinatarioUsuarioId: preset?.usuarioId || '',
       tipo: preset?.tipo || 'general',
       asunto: preset?.asunto || '',
       cuerpo: preset?.cuerpo || '',
@@ -118,9 +120,13 @@ export default function MensajeComposeModal({
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  const lockedRecipientLabel = form.destinatarioUsuarioId
+    ? (preset?.recipientLabel || t('mensajeUnknownParty'))
+    : '';
+
   const canSend = Boolean(
     activeClubId
-    && form.destinatarioMiembroId
+    && (form.destinatarioMiembroId || form.destinatarioUsuarioId)
     && (MensajesModel.mensajeHasBody(form.cuerpo) || attachments.length > 0)
   );
 
@@ -142,7 +148,8 @@ export default function MensajeComposeModal({
 
     const { data, error: sendError } = await MensajesModel.sendMensaje({
       clubId: activeClubId,
-      destinatarioMiembroId: form.destinatarioMiembroId,
+      destinatarioMiembroId: form.destinatarioMiembroId || null,
+      destinatarioUsuarioId: form.destinatarioUsuarioId || null,
       tipo: form.tipo,
       asunto: form.asunto,
       cuerpo: initialBody,
@@ -218,17 +225,21 @@ export default function MensajeComposeModal({
 
         <label className="mensaje-compose-field">
           <span>{t('mensajeTo')}</span>
-          <select
-            className="form-input"
-            value={form.destinatarioMiembroId}
-            onChange={e => setForm(prev => ({ ...prev, destinatarioMiembroId: e.target.value }))}
-            required
-          >
-            <option value="">{t('mensajeSelectMember')}</option>
-            {directory.map(member => (
-              <option key={member.id} value={member.id}>{memberDisplayName(member)}</option>
-            ))}
-          </select>
+          {form.destinatarioUsuarioId ? (
+            <input className="form-input" value={lockedRecipientLabel} readOnly />
+          ) : (
+            <select
+              className="form-input"
+              value={form.destinatarioMiembroId}
+              onChange={e => setForm(prev => ({ ...prev, destinatarioMiembroId: e.target.value }))}
+              required
+            >
+              <option value="">{t('mensajeSelectMember')}</option>
+              {directory.map(member => (
+                <option key={member.id} value={member.id}>{memberDisplayName(member)}</option>
+              ))}
+            </select>
+          )}
         </label>
 
         <label className="mensaje-compose-field">
