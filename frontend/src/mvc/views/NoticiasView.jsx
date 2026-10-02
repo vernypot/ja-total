@@ -8,6 +8,7 @@ import ListPagination from '../../components/ListPagination';
 import NoticiaHtmlEditor from '../../components/NoticiaHtmlEditor';
 import NoticiaListReadSection from '../../components/NoticiaListReadSection';
 import NoticiaShareLink from '../../components/NoticiaShareLink';
+import NoticiaReadersPanel from '../../components/NoticiaReadersPanel';
 import NoticiaPlacementsField, { NoticiaPlacementBadges } from '../../components/NoticiaPlacementsField';
 import NoticiaAudienceField, { NoticiaAudienceBadge } from '../../components/NoticiaAudienceField';
 import NoticiaFeaturedImagesField from '../../components/NoticiaFeaturedImagesField';
@@ -49,6 +50,12 @@ export default function NoticiasView({
   pendingFeaturedImageFiles,
   handleFeaturedImageUpload,
   handleFeaturedImageRemove,
+  readersNoticiaId,
+  readers,
+  readersLoading,
+  readersError,
+  toggleReadersPanel,
+  formatReaderDate,
 }) {
   const { t, language } = useLanguage();
   const speech = useNoticiaSpeech(language);
@@ -222,11 +229,21 @@ export default function NoticiasView({
               </label>
             </div>
             {editingId && (
-              <NoticiaShareLink
-                noticiaId={editingId}
-                publicAccess={isPublicNoticia(form)}
-                t={t}
-              />
+              <>
+                <NoticiaShareLink
+                  noticiaId={editingId}
+                  publicAccess={isPublicNoticia(form)}
+                  t={t}
+                />
+                <NoticiaReadersPanel
+                  open
+                  loading={readersLoading && readersNoticiaId === editingId}
+                  error={readersNoticiaId === editingId ? readersError : ''}
+                  readers={readersNoticiaId === editingId ? readers : []}
+                  t={t}
+                  formatReaderDate={formatReaderDate}
+                />
+              </>
             )}
             <div className="noticia-form-actions">
               <button
@@ -295,6 +312,9 @@ export default function NoticiasView({
                       summaryClassName="noticia-html--summary"
                       contentClassName="noticia-html--content"
                       showShareLink
+                      showReadersAction
+                      readersActive={readersNoticiaId === item.id}
+                      onToggleReaders={() => toggleReadersPanel(item)}
                     />
                     <NoticiaShareLink
                       noticiaId={item.id}
@@ -315,6 +335,14 @@ export default function NoticiasView({
                       />
                       <NoticiaPlacementBadges placements={item.placements} t={t} />
                     </div>
+                    <NoticiaReadersPanel
+                      open={readersNoticiaId === item.id}
+                      loading={readersLoading && readersNoticiaId === item.id}
+                      error={readersNoticiaId === item.id ? readersError : ''}
+                      readers={readersNoticiaId === item.id ? readers : []}
+                      t={t}
+                      formatReaderDate={formatReaderDate}
+                    />
                   </div>
                   <div className="noticia-item-actions">
                     <button type="button" className="btn btn-sm btn-edit" onClick={() => startEdit(item)}>

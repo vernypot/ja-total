@@ -11,6 +11,8 @@ import {
 } from '../../utils/unidadEvaluacion';
 import * as EventosModel from '../models/eventos.model';
 import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
+import * as MiembroEvalAjustesModel from '../models/miembroEvalAjustes.model';
+import { computeMemberManualPoints } from '../../utils/unidadEvaluacion';
 
 const attendanceHelpers = {
   getEventoFromRow: EventosModel.getEventoFromRow,
@@ -33,6 +35,10 @@ export function useMiembroAsistenciaController(miembroId) {
     config: { ...DEFAULT_UNIDAD_EVAL_CONFIG },
     validationStartDate: null,
   });
+  const [miembroEvalAjustes, setMiembroEvalAjustes] = useState([]);
+  const [miembroEvalAjustesSchemaAvailable, setMiembroEvalAjustesSchemaAvailable] = useState(true);
+  const [savingEvalAjusteId, setSavingEvalAjusteId] = useState('');
+  const [evalAjusteMessage, setEvalAjusteMessage] = useState('');
 
   async function load() {
     if (!miembroId) return;
@@ -50,17 +56,67 @@ export function useMiembroAsistenciaController(miembroId) {
     const nextRows = EventosModel.sortMemberEventRowsByEventDateDesc(data || []);
     setRows(nextRows);
 
-    const { data: evalData } = await UnidadEvaluacionModel.fetchMemberEvalContext({
-      miembroId,
-      clubId: preferredClubId,
-      memberRows: nextRows,
-    });
+    const [{ data: evalData }, ajustesResult] = await Promise.all([
+      UnidadEvaluacionModel.fetchMemberEvalContext({
+        miembroId,
+        clubId: preferredClubId,
+        memberRows: nextRows,
+      }),
+      preferredClubId
+        ? MiembroEvalAjustesModel.fetchClubMiembroEvalAjustes(preferredClubId)
+        : Promise.resolve({ data: [], schemaAvailable: true }),
+    ]);
     setEvalContext({
       config: evalData?.config || { ...DEFAULT_UNIDAD_EVAL_CONFIG },
       validationStartDate: evalData?.validationStartDate || null,
     });
+    if (!ajustesResult.error) {
+      setMiembroEvalAjustesSchemaAvailable(ajustesResult.schemaAvailable !== false);
+      setMiembroEvalAjustes(ajustesResult.data || []);
+    }
 
     setLoading(false);
+  }
+
+  async function saveMiembroEvalAjuste({ memberIds, puntos, fecha, motivo }) {
+    if (!canManage || !preferredClubId || !memberIds?.length) return;
+    setError('');
+    setEvalAjusteMessage('');
+    setSavingEvalAjusteId('new');
+
+    const { error: saveError } = await MiembroEvalAjustesModel.addMiembroEvalAjuste({
+      clubId: preferredClubId,
+      miembroId: memberIds[0],
+      puntos,
+      fecha,
+      motivo,
+    });
+
+    setSavingEvalAjusteId('');
+
+    if (saveError) {
+      setError(saveError.message || 'Error saving evaluation adjustment');
+      return;
+    }
+
+    setEvalAjusteMessage('saved');
+    await load();
+  }
+
+  async function removeMiembroEvalAjuste(ajusteId) {
+    if (!canManage || !ajusteId) return;
+    setError('');
+    setSavingEvalAjusteId(ajusteId);
+
+    const { error: deleteError } = await MiembroEvalAjustesModel.removeMiembroEvalAjuste(ajusteId);
+    setSavingEvalAjusteId('');
+
+    if (deleteError) {
+      setError(deleteError.message || 'Error removing evaluation adjustment');
+      return;
+    }
+
+    await load();
   }
 
   const statsRows = useMemo(
@@ -100,13 +156,21 @@ export function useMiembroAsistenciaController(miembroId) {
   );
 
   const evalScore = useMemo(
-    () => computeMemberEvalAttendanceScore({
-      memberRows: rows,
-      helpers: mergedAttendanceHelpers,
-      config: evalContext.config,
-      validationStartDate: evalContext.validationStartDate,
-    }),
-    [rows, mergedAttendanceHelpers, evalContext],
+    () => {
+      const base = computeMemberEvalAttendanceScore({
+        memberRows: rows,
+        helpers: mergedAttendanceHelpers,
+        config: evalContext.config,
+        validationStartDate: evalContext.validationStartDate,
+      });
+      const manualPointsTotal = computeMemberManualPoints(
+        miembroId,
+        miembroEvalAjustes,
+        evalContext.validationStartDate,
+      );
+      return { ...base, manualPointsTotal };
+    },
+    [rows, mergedAttendanceHelpers, evalContext, miembroId, miembroEvalAjustes],
   );
 
   const evalScoreDetail = useMemo(
@@ -115,8 +179,10 @@ export function useMiembroAsistenciaController(miembroId) {
       helpers: mergedAttendanceHelpers,
       config: evalContext.config,
       validationStartDate: evalContext.validationStartDate,
+      miembroId,
+      manualAdjustments: miembroEvalAjustes,
     }),
-    [rows, mergedAttendanceHelpers, evalContext],
+    [rows, mergedAttendanceHelpers, evalContext, miembroId, miembroEvalAjustes],
   );
 
   async function updateAttendance(eventoMiembroId, estado) {
@@ -158,6 +224,14 @@ export function useMiembroAsistenciaController(miembroId) {
     stats,
     evalScore,
     evalScoreDetail,
+    miembroEvalAjustes,
+    miembroEvalAjustesSchemaAvailable,
+    savingEvalAjusteId,
+    saveMiembroEvalAjuste,
+    removeMiembroEvalAjuste,
+    evalAjusteMessage,
+    preferredClubId,
+    miembroId,
     error,
     loading,
     canManage,

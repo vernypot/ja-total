@@ -28,6 +28,7 @@ import LabelSettings from "../pages/LabelSettings";
 import AdvancedSettings from "../pages/AdvancedSettings";
 import PlanificacionPeriodo from "../pages/PlanificacionPeriodo";
 import CalendarioClub from "../pages/CalendarioClub";
+import Mensajes from "../pages/Mensajes";
 import LandingCms from "../pages/LandingCms";
 import SystemModules from "../pages/SystemModules";
 import EstructuraOrganizacional from "../pages/EstructuraOrganizacional";
@@ -116,6 +117,10 @@ export default function AppRouter() {
           <Route
             path="calendario"
             element={<PortalOrStaffPage portal={MemberPortalCalendario} staff={CalendarioClub} />}
+          />
+          <Route
+            path="mensajes"
+            element={<PortalOrStaffPage portal={Mensajes} staff={Mensajes} />}
           />
           <Route path="reglamento" element={<Reglamento />} />
           <Route path="planificacion" element={<StaffOnlyRoute element={<AdminRoute element={<PlanificacionPeriodo />} />} />} />

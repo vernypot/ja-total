@@ -378,3 +378,51 @@
 .noticia-read-share-btn {
   text-decoration: none;
 }
+
+.noticia-readers-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+}
+
+.noticia-readers-panel__head h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.noticia-readers-panel__head p {
+  margin: 0 0 10px;
+}
+
+.noticia-readers-panel__status {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.noticia-readers-table-wrap {
+  overflow-x: auto;
+}
+
+.noticia-readers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.noticia-readers-table th,
+.noticia-readers-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--gray-200);
+  text-align: left;
+  vertical-align: top;
+}
+
+.noticia-readers-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}

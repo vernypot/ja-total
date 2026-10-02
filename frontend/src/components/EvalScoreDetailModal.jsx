@@ -102,6 +102,47 @@ function EventScoreTable({ events, t, language }) {
   );
 }
 
+function ManualAdjustmentsSection({ adjustments, total, t }) {
+  if (!adjustments?.length) return null;
+
+  return (
+    <div className="eval-score-detail-manual">
+      <h3>{t('memberEvalAjustesTitle')}</h3>
+      <div className="eval-score-detail-table-wrap">
+        <table className="eval-score-detail-table">
+          <thead>
+            <tr>
+              <th>{t('memberEvalAjusteDate')}</th>
+              <th>{t('memberEvalAjusteReason')}</th>
+              <th>{t('memberEvalAjustePoints')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {adjustments.map(row => {
+              const puntos = Number(row.puntos);
+              const label = puntos > 0
+                ? `+${formatEvalPoints(puntos)}`
+                : formatEvalPoints(puntos);
+              return (
+                <tr key={row.id}>
+                  <td>{row.fecha || '—'}</td>
+                  <td>{row.motivo || '—'}</td>
+                  <td>{label}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {total != null && total !== 0 && (
+        <p className="eval-score-detail-manual-total">
+          {t('memberEvalAjusteTotal')}: <strong>{total > 0 ? `+${formatEvalPoints(total)}` : formatEvalPoints(total)}</strong>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function UnitMembersSection({ members, t, language }) {
   const [expandedMemberId, setExpandedMemberId] = useState(null);
 
@@ -122,6 +163,7 @@ function UnitMembersSection({ members, t, language }) {
               <th>{t('unidadEvalLateLabel')}</th>
               <th>{t('unidadEvalAbsentJustifiedLabel')}</th>
               <th>{t('unidadEvalAbsentUnjustifiedLabel')}</th>
+              <th>{t('memberEvalAjustePoints')}</th>
               <th>{t('actions')}</th>
             </tr>
           </thead>
@@ -138,6 +180,13 @@ function UnitMembersSection({ members, t, language }) {
                     <td>{member.breakdown?.ausente_justificada || 0}</td>
                     <td>{member.breakdown?.ausente_injustificada || 0}</td>
                     <td>
+                      {member.manualPointsTotal
+                        ? (member.manualPointsTotal > 0
+                          ? `+${formatEvalPoints(member.manualPointsTotal)}`
+                          : formatEvalPoints(member.manualPointsTotal))
+                        : '—'}
+                    </td>
+                    <td>
                       {member.events?.length > 0 && (
                         <button
                           type="button"
@@ -151,7 +200,7 @@ function UnitMembersSection({ members, t, language }) {
                   </tr>
                   {expanded && member.events?.length > 0 && (
                     <tr className="eval-score-detail-member-events-row">
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <EventScoreTable events={member.events} t={t} language={language} />
                       </td>
                     </tr>
@@ -207,11 +256,25 @@ export default function EvalScoreDetailModal({
           />
 
           {mode === 'member' && (
-            <EventScoreTable events={detail.events} t={t} language={language} />
+            <>
+              <EventScoreTable events={detail.events} t={t} language={language} />
+              <ManualAdjustmentsSection
+                adjustments={detail.manualAdjustments}
+                total={detail.manualPointsTotal}
+                t={t}
+              />
+            </>
           )}
 
           {mode === 'unit' && (
-            <UnitMembersSection members={detail.members} t={t} language={language} />
+            <>
+              <UnitMembersSection members={detail.members} t={t} language={language} />
+              {detail.manualPointsTotal != null && detail.manualPointsTotal !== 0 && (
+                <p className="eval-score-detail-manual-total">
+                  {t('memberEvalAjusteUnitTotal')}: <strong>{formatEvalPoints(detail.manualPointsTotal)}</strong>
+                </p>
+              )}
+            </>
           )}
         </>
       )}

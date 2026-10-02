@@ -15,6 +15,7 @@ import {
   visibleRangeForView,
 } from '../../utils/calendar';
 import { clubDisplayName } from '../../utils/club';
+import { useClubBirthdayCalendar } from '../../hooks/useClubBirthdayCalendar';
 import { normalizeChurchTimezone } from '../../utils/churchTimezones';
 import { EVENT_TIMEZONE, getLocalTodayIso, normalizeEventDate } from '../../utils/eventTimezone';
 
@@ -76,7 +77,25 @@ export function useMemberPortalCalendarioController() {
     [viewMode, focusDate, todayKey]
   );
 
-  const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+  const {
+    birthdayCalendarEnabled,
+    showBirthdays,
+    setShowBirthdays,
+    birthdayEvents,
+  } = useClubBirthdayCalendar({
+    clubId,
+    club: activeClubData,
+    startDate: visibleRange.startDate,
+    endDate: visibleRange.endDate,
+    sessionToken: session?.sessionToken,
+  });
+
+  const calendarEvents = useMemo(
+    () => (showBirthdays ? [...events, ...birthdayEvents] : events),
+    [events, birthdayEvents, showBirthdays],
+  );
+
+  const eventsByDate = useMemo(() => groupEventsByDate(calendarEvents), [calendarEvents]);
   const calendarCells = useMemo(() => buildCalendarCells(year, monthIndex), [year, monthIndex]);
   const weekDays = useMemo(() => buildWeekDays(focusDate), [focusDate]);
 
@@ -89,8 +108,8 @@ export function useMemberPortalCalendarioController() {
   }, [activeSelectedDateKey, eventsByDate]);
 
   const selectedEvent = useMemo(
-    () => events.find(event => event.id === selectedEventId) || null,
-    [events, selectedEventId]
+    () => calendarEvents.find(event => event.id === selectedEventId) || null,
+    [calendarEvents, selectedEventId]
   );
 
   const setSafeFocusDateKey = useCallback((nextKey) => {
@@ -116,6 +135,7 @@ export function useMemberPortalCalendarioController() {
       iglesia_id: club.iglesia_id,
       iglesia_nombre: club.iglesia_nombre,
       timezone: club.timezone,
+      calendario_cumpleanos_activo: club.calendario_cumpleanos_activo === true,
       tipos_club: club.tipos_club || (club.tipo_nombre ? { nombre: club.tipo_nombre } : null),
     }));
 
@@ -363,5 +383,10 @@ export function useMemberPortalCalendarioController() {
     getConfirmacionFromRow: EventosModel.getConfirmacionFromRow,
     memberDisplayName: EventosModel.memberDisplayName,
     readOnly: true,
+    sessionToken: session?.sessionToken || null,
+    currentMiembroId: session?.miembroId || null,
+    birthdayCalendarEnabled,
+    showBirthdays,
+    setShowBirthdays,
   };
 }

@@ -1,4 +1,5 @@
 import { useLanguage } from '../../hooks/useLanguage';
+import { useState } from 'react';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { attendanceLabel, confirmationLabel } from '../../i18n/helpers';
 import { formatCalendarPeriodLabel, formatEventTime } from '../../utils/calendar';
@@ -10,6 +11,9 @@ import EventDescriptionToggle from '../../components/EventDescriptionToggle';
 import LinkedMemberEventConfirmSection from '../../components/LinkedMemberEventConfirmSection';
 import PrintRemainingYearEventsButton from '../../components/PrintRemainingYearEventsButton';
 import ClubRemainingYearEventsPrint from '../../components/ClubRemainingYearEventsPrint';
+import MensajeComposeModal from '../../components/MensajeComposeModal';
+import { isBirthdayEvent } from '../../utils/birthdayCalendar';
+import '../../styles/mensajes.css';
 import * as EventosModel from '../../mvc/models/eventos.model';
 import { getAttendanceDisplayEstado } from '../../utils/unidadEvaluacion';
 import {
@@ -29,16 +33,17 @@ const VIEW_MODES = [
 ];
 
 function EventPill({ event, t, language, selected, onClick }) {
-  const time = formatEventTime(event.hora, language);
+  const birthday = isBirthdayEvent(event);
+  const time = birthday ? '' : formatEventTime(event.hora, language);
   return (
     <button
       type="button"
-      className={`calendario-event-pill${selected ? ' calendario-event-pill--selected' : ''}`}
-      title={[event.nombre, time, event.lugar, event.tipos_evento?.nombre].filter(Boolean).join(' · ')}
+      className={`calendario-event-pill${selected ? ' calendario-event-pill--selected' : ''}${birthday ? ' calendario-event-pill--birthday' : ''}`}
+      title={[birthday ? `🎂 ${event.nombre}` : event.nombre, time, event.lugar, event.tipos_evento?.nombre].filter(Boolean).join(' · ')}
       onClick={onClick}
     >
-      {time && <strong>{time} </strong>}
-      {event.nombre || t('events')}
+      {birthday ? '🎂 ' : (time ? <strong>{time} </strong> : null)}
+      {birthday ? event.nombre : (event.nombre || t('events'))}
     </button>
   );
 }
@@ -180,15 +185,19 @@ function DayActivitiesPanel({
                 <li key={event.id}>
                   <button
                     type="button"
-                    className={`calendario-day-event-item${isSelected ? ' calendario-day-event-item--selected' : ''}`}
+                    className={`calendario-day-event-item${isSelected ? ' calendario-day-event-item--selected' : ''}${isBirthdayEvent(event) ? ' calendario-day-event-item--birthday' : ''}`}
                     onClick={() => onSelectEvent(event.id, selectedDateKey)}
                   >
                     <div style={{ textAlign: 'left' }}>
-                      <strong>{event.nombre || t('eventUntitled')}</strong>
+                      <strong>{isBirthdayEvent(event) ? `🎂 ${event.nombre || t('eventUntitled')}` : (event.nombre || t('eventUntitled'))}</strong>
                       <div className="calendario-day-event-meta">
-                        {formatEventTime(event.hora, language) && `${formatEventTime(event.hora, language)} · `}
-                        {event.lugar}
-                        {tipoNombre && ` · ${tipoNombre}`}
+                        {isBirthdayEvent(event)
+                          ? t('calendarBirthdayLabel')
+                          : [
+                            formatEventTime(event.hora, language),
+                            event.lugar,
+                            tipoNombre,
+                          ].filter(Boolean).join(' · ')}
                       </div>
                     </div>
                     <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, flexShrink: 0 }}>
@@ -232,6 +241,8 @@ function EventDetailModal({
   updateConfirmation,
   savingConfirmationId = null,
   canMemberConfirmEvent,
+  onSendBirthdayMessage,
+  currentMiembroId = null,
 }) {
   const { askConfirm, confirmDialog } = useConfirmDialog({
     cancelLabel: t('cancel'),
@@ -239,6 +250,54 @@ function EventDetailModal({
   });
 
   if (!event) return null;
+
+  if (isBirthdayEvent(event)) {
+    const isSelf = currentMiembroId && event.miembro_id === currentMiembroId;
+    const dateLabel = event.fecha
+      ? formatEventLocalDate(event.fecha, language, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+      : '';
+
+    return (
+      <div className="calendario-event-detail-overlay" onClick={onClose} role="presentation">
+        <div
+          className="calendario-event-detail-modal"
+          onClick={e => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="calendario-event-detail-header calendario-event-detail-header--birthday">
+            <h2>🎂 {event.nombre}</h2>
+            <button type="button" onClick={onClose} aria-label={t('close')} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+          </div>
+          <div className="calendario-event-detail-body">
+            <p>{t('calendarBirthdayDetail').replace('{name}', event.nombre).replace('{date}', dateLabel)}</p>
+            {!isSelf && (
+              <div className="calendario-event-detail-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => onSendBirthdayMessage?.(event)}
+                >
+                  {t('calendarSendBirthdayMessage')}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={onClose}>{t('close')}</button>
+              </div>
+            )}
+            {isSelf && (
+              <div className="calendario-event-detail-actions">
+                <button type="button" className="btn btn-secondary" onClick={onClose}>{t('close')}</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const tipoNombre = getTipoEventoNombre(event);
   const needsConfirmation = eventRequiresConfirmation(event);
@@ -594,8 +653,15 @@ export default function CalendarioClubView({
   printingRemainingYearEvents = false,
   printRemainingYearEvents = () => {},
   remainingYearPrintPayload = null,
+  birthdayCalendarEnabled = false,
+  showBirthdays = false,
+  setShowBirthdays = () => {},
+  sessionToken = null,
+  currentMiembroId = null,
 }) {
   const { t, language } = useLanguage();
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composePreset, setComposePreset] = useState(null);
 
   if (!iglesiaScopeReady) {
     return <p>{t('loading')}</p>;
@@ -647,6 +713,16 @@ export default function CalendarioClubView({
           <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
             {activeClubData.tipos_club?.nombre || activeClubData.club_tipo || ''}
           </span>
+        )}
+        {birthdayCalendarEnabled && (
+          <label className="calendario-birthday-toggle">
+            <input
+              type="checkbox"
+              checked={showBirthdays}
+              onChange={e => setShowBirthdays(e.target.checked)}
+            />
+            {t('calendarShowBirthdays')}
+          </label>
         )}
       </div>
 
@@ -788,8 +864,32 @@ export default function CalendarioClubView({
           updateConfirmation={updateConfirmation}
           savingConfirmationId={savingConfirmationId}
           canMemberConfirmEvent={canMemberConfirmEvent}
+          currentMiembroId={currentMiembroId}
+          onSendBirthdayMessage={(event) => {
+            setComposePreset({
+              clubId,
+              miembroId: event.miembro_id,
+              tipo: 'cumpleanos',
+              asunto: t('mensajeBirthdaySubject').replace('{name}', event.nombre || ''),
+            });
+            setComposeOpen(true);
+          }}
         />
       )}
+      <MensajeComposeModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        clubId={clubId}
+        clubs={clubs}
+        sessionToken={sessionToken}
+        preset={composePreset}
+        t={t}
+        language={language}
+        onSent={() => {
+          setComposeOpen(false);
+          closeEventDetail();
+        }}
+      />
       {remainingYearPrintPayload && (
         <div className="club-events-year-print-source" aria-hidden="true">
           <ClubRemainingYearEventsPrint

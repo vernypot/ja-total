@@ -6,6 +6,8 @@ import { useDashboardAuth } from "../hooks/useDashboardAuth";
 import { getUserRole, isSuperAdmin, isAdminOrAbove, canOperateEvents } from "../utils/permissions";
 import { DASHBOARD_HOME_PATH, isDashboardHomePath } from "../utils/dashboardRoutes";
 import NavLinkItem from "./NavLinkItem";
+import { useInboxUnreadCount } from "../hooks/useInboxUnreadCount";
+import "../styles/mensajes.css";
 
 import { BRAND_MARK } from '../constants/brand';
 
@@ -13,6 +15,7 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
   const { user, userData } = useContext(AuthContext);
   const { t } = useLanguage();
   const { isMemberView } = useDashboardAuth();
+  const unreadCount = useInboxUnreadCount();
   const userRole = getUserRole(user, userData);
   const superadmin = isSuperAdmin(userRole);
   const adminOrAbove = isAdminOrAbove(userRole);
@@ -77,6 +80,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('portalNavCalendar')}
             </NavLinkItem>
+            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={isActive('/dashboard/mensajes')} badge={unreadCount}>
+              {t('mensajesTitle')}
+            </NavLinkItem>
             <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
               {t('portalNavReglamento')}
             </NavLinkItem>
@@ -96,6 +102,9 @@ export default function Sidebar({ drawerOpen = false, isMobile = false, inert = 
             </NavLinkItem>
             <NavLinkItem to="/dashboard/calendario" icon="calendar" active={isActive('/dashboard/calendario')}>
               {t('clubCalendar')}
+            </NavLinkItem>
+            <NavLinkItem to="/dashboard/mensajes" icon="inbox" active={isActive('/dashboard/mensajes')} badge={unreadCount}>
+              {t('mensajesTitle')}
             </NavLinkItem>
             <NavLinkItem to="/dashboard/reglamento" icon="book" active={isActive('/dashboard/reglamento')}>
               {t('reglamentoNav')}

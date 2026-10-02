@@ -59,6 +59,10 @@ export function useNoticiasController() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [featuredImageUploading, setFeaturedImageUploading] = useState('');
   const [pendingFeaturedImageFiles, setPendingFeaturedImageFiles] = useState(emptyPendingFeaturedImages);
+  const [readersNoticiaId, setReadersNoticiaId] = useState('');
+  const [readers, setReaders] = useState([]);
+  const [readersLoading, setReadersLoading] = useState(false);
+  const [readersError, setReadersError] = useState('');
 
   const filteredItems = useMemo(
     () => filterBySearch(items, searchQuery, n => [
@@ -131,6 +135,9 @@ export function useNoticiasController() {
     setForm(emptyForm());
     setFormClubs([]);
     setPendingFeaturedImageFiles(emptyPendingFeaturedImages());
+    setReadersNoticiaId('');
+    setReaders([]);
+    setReadersError('');
   }
 
   function startEdit(item) {
@@ -152,6 +159,25 @@ export function useNoticiasController() {
       imagen_destacada_mobile_url: item.imagen_destacada_mobile_url || '',
     });
     setShowForm(true);
+    loadReadersForNoticia(item.id);
+  }
+
+  async function loadReadersForNoticia(noticiaId) {
+    if (!noticiaId) return;
+    setReadersNoticiaId(noticiaId);
+    setReadersLoading(true);
+    setReadersError('');
+    setReaders([]);
+
+    const { data, error: loadError } = await NoticiasModel.fetchNoticiaReaders(noticiaId);
+    setReadersLoading(false);
+
+    if (loadError) {
+      setReadersError(loadError.message);
+      return;
+    }
+
+    setReaders(data || []);
   }
 
   async function handleFeaturedImageUpload(variant, file) {
@@ -284,6 +310,30 @@ export function useNoticiasController() {
     return NoticiasModel.formatNoticiaDate(dateStr, language);
   }
 
+  function formatReaderDate(dateStr) {
+    return NoticiasModel.formatNoticiaDateTime(dateStr, language);
+  }
+
+  async function toggleReadersPanel(item) {
+    if (readersNoticiaId === item.id) {
+      setReadersNoticiaId('');
+      setReaders([]);
+      setReadersError('');
+      return;
+    }
+
+    await loadReadersForNoticia(item.id);
+  }
+
+  useEffect(() => {
+    if (!readersNoticiaId) return;
+    if (!paginatedItems.some(item => item.id === readersNoticiaId)) {
+      setReadersNoticiaId('');
+      setReaders([]);
+      setReadersError('');
+    }
+  }, [paginatedItems, readersNoticiaId]);
+
   useEffect(() => {
     load();
   }, [effectiveIglesiaId, showInactive, isSuperAdmin]);
@@ -342,5 +392,11 @@ export function useNoticiasController() {
     pendingFeaturedImageFiles,
     handleFeaturedImageUpload,
     handleFeaturedImageRemove,
+    readersNoticiaId,
+    readers,
+    readersLoading,
+    readersError,
+    toggleReadersPanel,
+    formatReaderDate,
   };
 }

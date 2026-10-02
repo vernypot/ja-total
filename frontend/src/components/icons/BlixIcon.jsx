@@ -132,6 +132,12 @@ const ICONS = {
       <path d="M4 8l8 5 8-5" fill="none" stroke="currentColor" strokeWidth="2" />
     </>
   ),
+  inbox: (
+    <>
+      <path d="M4 8h16v10H4V8z" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M4 8l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="2" />
+    </>
+  ),
 };
 
 export default function BlixIcon({ name, className = '', size = 20 }) {

@@ -115,6 +115,47 @@ export function parseScorePoints(value, fallback = 0) {
   return parsed;
 }
 
+export function parseAdjustmentPoints(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return parsed;
+}
+
+export function filterAjustesForValidationPeriod(ajustes, validationStartDate) {
+  const startDate = normalizeValidationStartDate(validationStartDate);
+  if (!startDate) return ajustes || [];
+  return (ajustes || []).filter(row => {
+    const fecha = normalizeValidationStartDate(row?.fecha);
+    return fecha && fecha >= startDate;
+  });
+}
+
+export function computeMemberManualPoints(miembroId, ajustes, validationStartDate = null) {
+  const relevant = filterAjustesForValidationPeriod(
+    (ajustes || []).filter(row => row?.miembro_id === miembroId),
+    validationStartDate,
+  );
+  return relevant.reduce(
+    (sum, row) => sum + parseAdjustmentPoints(row?.puntos, 0),
+    0,
+  );
+}
+
+export function computeManualPointsForMembers(memberIds, ajustes, validationStartDate = null) {
+  let total = 0;
+  for (const memberId of memberIds || []) {
+    total += computeMemberManualPoints(memberId, ajustes, validationStartDate);
+  }
+  return total;
+}
+
+export function getMemberManualAdjustments(miembroId, ajustes, validationStartDate = null) {
+  return filterAjustesForValidationPeriod(
+    (ajustes || []).filter(row => row?.miembro_id === miembroId),
+    validationStartDate,
+  );
+}
+
 export function normalizeValidationStartDate(value) {
   if (!value) return null;
   const normalized = normalizeEventDate(value);
@@ -438,6 +479,8 @@ export function buildMemberEvalScoreDetail({
   config = DEFAULT_UNIDAD_EVAL_CONFIG,
   validationStartDate = null,
   skipValidationFilter = false,
+  miembroId = null,
+  manualAdjustments = [],
 }) {
   if (!skipValidationFilter && !isUnidadValidationActive(validationStartDate)) {
     return {
@@ -447,6 +490,8 @@ export function buildMemberEvalScoreDetail({
       average: null,
       total: 0,
       count: 0,
+      manualAdjustments: [],
+      manualPointsTotal: 0,
     };
   }
 
@@ -457,6 +502,14 @@ export function buildMemberEvalScoreDetail({
       validationStartDate,
     );
   const detail = collectMemberEvalEventDetails(evalRows, helpers, config);
+  const resolvedMemberId = miembroId || memberRows?.[0]?.miembro_id || null;
+  const relevantManualAdjustments = resolvedMemberId
+    ? getMemberManualAdjustments(resolvedMemberId, manualAdjustments, validationStartDate)
+    : [];
+  const manualPointsTotal = relevantManualAdjustments.reduce(
+    (sum, row) => sum + parseAdjustmentPoints(row?.puntos, 0),
+    0,
+  );
 
   return {
     validationActive: true,
@@ -465,6 +518,8 @@ export function buildMemberEvalScoreDetail({
     average: roundAttendanceScore(detail.average),
     total: detail.total,
     count: detail.count,
+    manualAdjustments: relevantManualAdjustments,
+    manualPointsTotal,
   };
 }
 
@@ -475,6 +530,7 @@ export function buildUnidadEvalScoreDetail({
   config = DEFAULT_UNIDAD_EVAL_CONFIG,
   membersById = {},
   memberDisplayNameFn = null,
+  manualAdjustments = [],
 }) {
   const memberIds = [...new Set(
     (unidad?.miembro_unidad || []).map(row => row.miembro_id).filter(Boolean)
@@ -513,6 +569,16 @@ export function buildUnidadEvalScoreDetail({
       breakdown[key] += memberDetail.breakdown[key] || 0;
     }
 
+    const memberManualAdjustments = getMemberManualAdjustments(
+      memberId,
+      manualAdjustments,
+      validationStartDate,
+    );
+    const manualPointsTotal = memberManualAdjustments.reduce(
+      (sum, row) => sum + parseAdjustmentPoints(row?.puntos, 0),
+      0,
+    );
+
     members.push({
       memberId,
       memberName,
@@ -521,10 +587,18 @@ export function buildUnidadEvalScoreDetail({
       average: roundAttendanceScore(memberDetail.average),
       total: memberDetail.total,
       count: memberDetail.count,
+      manualAdjustments: memberManualAdjustments,
+      manualPointsTotal,
     });
   }
 
   members.sort((a, b) => String(a.memberName).localeCompare(String(b.memberName), undefined, { sensitivity: 'base' }));
+
+  const manualPointsTotal = computeManualPointsForMembers(
+    memberIds,
+    manualAdjustments,
+    validationStartDate,
+  );
 
   return {
     validationActive: true,
@@ -532,6 +606,7 @@ export function buildUnidadEvalScoreDetail({
     breakdown,
     attendanceByCategory: computeAttendancePoints(breakdown, config),
     members,
+    manualPointsTotal,
     evaluacionInicioFecha: validationStartDate,
   };
 }
@@ -766,6 +841,7 @@ export function computeUnidadEvaluation({
   cantidadMap,
   reglamentoInfracciones = [],
   reglamentoNodosById = {},
+  manualAdjustments = [],
 }) {
   const normalizedConfig = normalizeEvalConfig(config);
   const memberIds = new Set(
@@ -822,10 +898,13 @@ export function computeUnidadEvaluation({
     otherPoints,
     penaltyPoints,
   });
+  const memberManualPoints = validationActive
+    ? computeManualPointsForMembers([...memberIds], manualAdjustments, validationStartDate)
+    : 0;
   const attendancePoints = attendanceScoreTotals.total;
   const total = Math.max(
     0,
-    attendancePoints + cuotaPoints + otherPoints - penaltyPoints,
+    attendancePoints + cuotaPoints + otherPoints + memberManualPoints - penaltyPoints,
   );
 
   return {
@@ -839,6 +918,7 @@ export function computeUnidadEvaluation({
     attendanceScoreAverage: validationActive ? percentages.attendanceScoreAverage : null,
     cuotaPoints,
     otherPoints,
+    memberManualPoints,
     penaltyPoints,
     total,
     efficiencyPercent: validationActive ? percentages.attendanceScoreAverage : null,
@@ -856,6 +936,7 @@ export function computeAllUnidadEvaluations({
   cantidades,
   reglamentoInfracciones = [],
   reglamentoNodos = [],
+  manualAdjustments = [],
 }) {
   const cantidadMap = buildCantidadMap(cantidades);
   const reglamentoNodosById = {};
@@ -874,6 +955,7 @@ export function computeAllUnidadEvaluations({
       cantidadMap,
       reglamentoInfracciones,
       reglamentoNodosById,
+      manualAdjustments,
     });
   }
 

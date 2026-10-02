@@ -16,6 +16,9 @@ import {
   resolveEventScoreSituationKey,
   computeUnidadEvaluation,
   computeUnidadPercentages,
+  computeMemberManualPoints,
+  computeManualPointsForMembers,
+  filterAjustesForValidationPeriod,
   countMemberAttendanceBreakdown,
   filterRowsForUnidadValidationPeriod,
   isEventOnOrAfterValidationStart,
@@ -497,5 +500,42 @@ describe('toEvalPercent', () => {
   it('clamps between 0 and 100', () => {
     expect(toEvalPercent(150, 100)).toBe(100);
     expect(toEvalPercent(-5, 100)).toBe(0);
+  });
+});
+
+describe('manual member evaluation adjustments', () => {
+  const ajustes = [
+    { id: 'a1', miembro_id: 'm1', puntos: 5, fecha: '2024-06-01', motivo: 'Bonus' },
+    { id: 'a2', miembro_id: 'm1', puntos: -2, fecha: '2024-01-01', motivo: 'Penalty' },
+    { id: 'a3', miembro_id: 'm2', puntos: 3, fecha: '2024-06-15', motivo: 'Extra' },
+  ];
+
+  it('filters adjustments by validation start date', () => {
+    expect(filterAjustesForValidationPeriod(ajustes, '2024-03-01')).toHaveLength(2);
+    expect(filterAjustesForValidationPeriod(ajustes, null)).toHaveLength(3);
+  });
+
+  it('sums manual points per member', () => {
+    expect(computeMemberManualPoints('m1', ajustes, '2024-03-01')).toBe(5);
+    expect(computeMemberManualPoints('m1', ajustes, null)).toBe(3);
+    expect(computeManualPointsForMembers(['m1', 'm2'], ajustes, null)).toBe(6);
+  });
+
+  it('includes manual points in unit evaluation total', () => {
+    const result = computeUnidadEvaluation({
+      unidad: {
+        id: 'u1',
+        evaluacion_inicio_fecha: '2020-01-01',
+        miembro_unidad: [{ miembro_id: 'm1' }, { miembro_id: 'm2' }],
+      },
+      memberEventRows: [],
+      config: baseConfig,
+      evalItems: [],
+      cantidadMap: {},
+      manualAdjustments: ajustes,
+    });
+
+    expect(result.memberManualPoints).toBe(6);
+    expect(result.total).toBe(6);
   });
 });

@@ -56,6 +56,10 @@ export default function ClubDetalleView({
   savingCuota,
   saveClubCuota,
   cuotaFrequencyOptions = [],
+  birthdayCalendarEnabled = false,
+  setBirthdayCalendarEnabled,
+  savingBirthdayCalendar,
+  saveBirthdayCalendar,
 }) {
   const { t, language } = useLanguage();
   const tipoNombre = club?.tipos_club?.nombre;
@@ -287,6 +291,40 @@ export default function ClubDetalleView({
                     disabled={savingCuota}
                   >
                     {savingCuota ? t('saving') : t('save')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="card club-detalle-section">
+            <h2>{t('clubBirthdayCalendarTitle')}</h2>
+            <p className="text-muted club-detalle-cuota-intro">{t('clubBirthdayCalendarHint')}</p>
+            {!canManage ? (
+              <dl className="club-detalle-info">
+                <div>
+                  <dt>{t('clubBirthdayCalendarEnabled')}</dt>
+                  <dd>{club.calendario_cumpleanos_activo ? t('yes') : t('no')}</dd>
+                </div>
+              </dl>
+            ) : (
+              <div className="club-detalle-cuota-form">
+                <label className="club-detalle-cuota-toggle">
+                  <input
+                    type="checkbox"
+                    checked={birthdayCalendarEnabled}
+                    onChange={e => setBirthdayCalendarEnabled(e.target.checked)}
+                  />
+                  {t('clubBirthdayCalendarEnabled')}
+                </label>
+                <div className="club-detalle-cuota-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={saveBirthdayCalendar}
+                    disabled={savingBirthdayCalendar}
+                  >
+                    {savingBirthdayCalendar ? t('saving') : t('save')}
                   </button>
                 </div>
               </div>

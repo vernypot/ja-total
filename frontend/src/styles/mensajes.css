@@ -1,0 +1,241 @@
+.mensaje-compose {
+  display: grid;
+  gap: 12px;
+}
+
+.mensaje-compose-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mensaje-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mensaje-html-editor .noticia-html-editor-title {
+  font-weight: 600;
+}
+
+.mensaje-privacy-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--warning, #f59e0b);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--warning-light, #fef3c7);
+  color: var(--color-badge-warning, #854d0e);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.12);
+}
+
+.mensaje-privacy-notice-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: #d97706;
+  margin-top: 1px;
+}
+
+.mensaje-privacy-notice-text {
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.page-header .mensaje-privacy-notice {
+  margin-top: 10px;
+  max-width: 52rem;
+}
+
+.mensaje-detail .mensaje-privacy-notice {
+  margin: 12px 0 0;
+}
+
+.mensaje-html-editor .ql-editor img {
+  max-width: 100%;
+  height: auto;
+}
+
+.mensaje-attach-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.mensaje-attach-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.mensaje-attach-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.mensaje-attach-list em {
+  font-style: normal;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.mensaje-detail-attachments {
+  margin: 12px 0 16px;
+  font-size: 13px;
+}
+
+.mensaje-detail-attachments ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.mensaje-detail-attachments em {
+  font-style: normal;
+  color: #6b7280;
+}
+
+.mensaje-folder-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mensaje-folder-tabs button {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.mensaje-folder-tabs button.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.mensaje-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .mensaje-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mensaje-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 70vh;
+  background: #fff;
+}
+
+.mensaje-list-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: transparent;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.mensaje-list-item.is-unread strong {
+  font-weight: 800;
+}
+
+.mensaje-list-item.is-selected {
+  background: #eff6ff;
+}
+
+.mensaje-list-subject,
+.mensaje-list-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mensaje-detail {
+  padding: 16px;
+  min-height: 240px;
+}
+
+.mensaje-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mensaje-detail-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.mensaje-type-chip {
+  font-size: 11px;
+  font-weight: 700;
+  background: #eef2ff;
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.mensaje-detail-meta {
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.mensaje-detail-body {
+  line-height: 1.5;
+  margin: 16px 0;
+}
+
+.nav-link-badge {
+  margin-left: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendario-birthday-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
