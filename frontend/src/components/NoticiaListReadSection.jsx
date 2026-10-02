@@ -12,6 +12,9 @@ function NoticiaReadActions({
   speech,
   showCollapseButton,
   showShareLink = false,
+  showReadersAction = false,
+  readersActive = false,
+  onToggleReaders = null,
   extraActions = null,
 }) {
   const listenProps = speech ? {
@@ -51,6 +54,16 @@ function NoticiaReadActions({
           {t('noticiasOpenSharePage')}
         </Link>
       )}
+      {showReadersAction && item?.id && onToggleReaders && (
+        <button
+          type="button"
+          className={`btn btn-sm noticia-read-readers-btn${readersActive ? ' btn-primary' : ' btn-secondary'}`}
+          onClick={onToggleReaders}
+          aria-pressed={readersActive}
+        >
+          {t('noticiasReadersAction')}
+        </button>
+      )}
       {expanded && extraActions}
     </div>
   );
@@ -65,6 +78,9 @@ export default function NoticiaListReadSection({
   speech = null,
   showCollapseButton = true,
   showShareLink = false,
+  showReadersAction = false,
+  readersActive = false,
+  onToggleReaders = null,
   extraActions = null,
   titleAs = 'span',
   titleClassName = 'noticia-html--title',
@@ -85,6 +101,9 @@ export default function NoticiaListReadSection({
       speech={speech}
       showCollapseButton={showCollapseButton}
       showShareLink={showShareLink}
+      showReadersAction={showReadersAction}
+      readersActive={readersActive}
+      onToggleReaders={onToggleReaders}
       extraActions={extraActions}
     />
   );

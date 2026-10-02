@@ -38,6 +38,7 @@ export function useMemberPortalLoginController() {
   const goToDashboard = useCallback(() => {
     setStoredLoginEntry(LOGIN_ENTRIES.PORTAL);
     setStoredViewMode(VIEW_MODES.MEMBER);
+    try { sessionStorage.removeItem('inbox-unread-prompt-shown'); } catch { /* ignore */ }
     navigate(PORTAL_PROFILE_PATH, { replace: true });
   }, [navigate]);
 

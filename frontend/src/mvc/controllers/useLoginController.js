@@ -56,6 +56,7 @@ export function useLoginController() {
       setUser(data.user);
       setStoredLoginEntry(LOGIN_ENTRIES.STAFF);
       setStoredViewMode(VIEW_MODES.ADMIN);
+      try { sessionStorage.removeItem('inbox-unread-prompt-shown'); } catch { /* ignore */ }
       navigate(DASHBOARD_HOME_PATH);
     } catch {
       setError('An unexpected error occurred. Please try again.');

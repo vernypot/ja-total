@@ -11,6 +11,7 @@ import * as UnidadesModel from '../models/unidades.model';
 import * as ClubesModel from '../models/clubes.model';
 import * as UnidadEvaluacionModel from '../models/unidadEvaluacion.model';
 import * as ReglamentoModel from '../models/reglamento.model';
+import * as MiembroEvalAjustesModel from '../models/miembroEvalAjustes.model';
 import * as EventosModel from '../models/eventos.model';
 import {
   computeAllUnidadEvaluations,
@@ -71,6 +72,9 @@ export function useUnidadesController() {
   const [reglamentoInfracciones, setReglamentoInfracciones] = useState([]);
   const [reglamentoSchemaAvailable, setReglamentoSchemaAvailable] = useState(true);
   const [savingInfraccionId, setSavingInfraccionId] = useState('');
+  const [miembroEvalAjustes, setMiembroEvalAjustes] = useState([]);
+  const [miembroEvalAjustesSchemaAvailable, setMiembroEvalAjustesSchemaAvailable] = useState(true);
+  const [savingEvalAjusteId, setSavingEvalAjusteId] = useState('');
 
   const loadedClubIdRef = useRef('');
   const urlSyncedRef = useRef(false);
@@ -112,8 +116,9 @@ export function useUnidadesController() {
       cantidades: evalCantidades,
       reglamentoInfracciones,
       reglamentoNodos,
+      manualAdjustments: miembroEvalAjustes,
     }),
-    [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades, reglamentoInfracciones, reglamentoNodos]
+    [displayUnidades, memberEventRows, evalConfig, evalItems, evalCantidades, reglamentoInfracciones, reglamentoNodos, miembroEvalAjustes]
   );
 
   const evalAttendanceHelpers = useMemo(
@@ -129,20 +134,23 @@ export function useUnidadesController() {
       setMemberEventRows([]);
       setReglamentoNodos([]);
       setReglamentoInfracciones([]);
+      setMiembroEvalAjustes([]);
       setEvalSchemaAvailable(true);
       setReglamentoSchemaAvailable(true);
+      setMiembroEvalAjustesSchemaAvailable(true);
       return;
     }
 
     const memberIds = UnidadesModel.getAssignedMemberIds(currentUnidades);
     const ids = [...memberIds];
 
-    const [evalResult, eventRowsResult, reglamentoResult] = await Promise.all([
+    const [evalResult, eventRowsResult, reglamentoResult, ajustesResult] = await Promise.all([
       UnidadEvaluacionModel.fetchClubUnidadEval(currentClubId),
       ids.length
         ? UnidadEvaluacionModel.fetchClubMemberEventRowsForEval(currentClubId, ids)
         : Promise.resolve({ data: [], error: null }),
       ReglamentoModel.fetchClubReglamento(currentClubId),
+      MiembroEvalAjustesModel.fetchClubMiembroEvalAjustes(currentClubId),
     ]);
 
     if (evalResult.error) {
@@ -170,6 +178,16 @@ export function useUnidadesController() {
       setReglamentoSchemaAvailable(reglamentoResult.schemaAvailable !== false);
       setReglamentoNodos(reglamentoResult.data?.nodos || []);
       setReglamentoInfracciones(reglamentoResult.data?.infracciones || []);
+    }
+
+    if (ajustesResult.error) {
+      const msg = ajustesResult.error.message || '';
+      if (msg.includes('does not exist') || msg.includes('Could not find')) {
+        setMiembroEvalAjustesSchemaAvailable(false);
+      }
+    } else {
+      setMiembroEvalAjustesSchemaAvailable(ajustesResult.schemaAvailable !== false);
+      setMiembroEvalAjustes(ajustesResult.data || []);
     }
   }
 
@@ -634,6 +652,61 @@ export function useUnidadesController() {
     await loadEvalData(clubId, unidades, members);
   }
 
+  async function saveMiembroEvalAjuste({ memberIds, puntos, fecha, motivo }) {
+    if (!canManage || !clubId || !memberIds?.length) return;
+    setError('');
+    setSavingEvalAjusteId('new');
+
+    const uniqueIds = [...new Set(memberIds.filter(Boolean))];
+    const result = uniqueIds.length === 1
+      ? await MiembroEvalAjustesModel.addMiembroEvalAjuste({
+        clubId,
+        miembroId: uniqueIds[0],
+        puntos,
+        fecha,
+        motivo,
+      })
+      : await MiembroEvalAjustesModel.addMiembroEvalAjustesBulk({
+        clubId,
+        miembroIds: uniqueIds,
+        puntos,
+        fecha,
+        motivo,
+      });
+
+    setSavingEvalAjusteId('');
+
+    if (result.error) {
+      setError(result.error.message || t('memberEvalAjusteSaveError'));
+      return;
+    }
+
+    setMessage(
+      uniqueIds.length === 1
+        ? t('memberEvalAjusteSaved')
+        : t('memberEvalAjusteBulkSaved').replace('{count}', String(uniqueIds.length)),
+    );
+    await loadEvalData(clubId, unidades, members);
+  }
+
+  async function removeMiembroEvalAjuste(ajusteId) {
+    if (!canManage || !ajusteId) return;
+
+    setError('');
+    setSavingEvalAjusteId(ajusteId);
+
+    const { error: deleteError } = await MiembroEvalAjustesModel.removeMiembroEvalAjuste(ajusteId);
+    setSavingEvalAjusteId('');
+
+    if (deleteError) {
+      setError(deleteError.message || t('memberEvalAjusteDeleteError'));
+      return;
+    }
+
+    setMessage(t('memberEvalAjusteDeleted'));
+    await loadEvalData(clubId, unidades, members);
+  }
+
   async function removeReglamentoInfraccion(infraccionId) {
     if (!canManage || !infraccionId) return;
     if (!window.confirm(t('reglamentoInfractionDeleteConfirm'))) return;
@@ -726,6 +799,11 @@ export function useUnidadesController() {
     savingInfraccionId,
     saveReglamentoInfraccion,
     removeReglamentoInfraccion,
+    miembroEvalAjustes,
+    miembroEvalAjustesSchemaAvailable,
+    savingEvalAjusteId,
+    saveMiembroEvalAjuste,
+    removeMiembroEvalAjuste,
     printWeeklyReportTemplate,
     unidadReportPrintPayload,
   };

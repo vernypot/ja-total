@@ -1167,13 +1167,15 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
 
 .eval-score-detail-summary,
 .eval-score-detail-events,
-.eval-score-detail-members {
+.eval-score-detail-members,
+.eval-score-detail-manual {
   margin-bottom: 20px;
 }
 
 .eval-score-detail-summary h3,
 .eval-score-detail-events h3,
-.eval-score-detail-members h3 {
+.eval-score-detail-members h3,
+.eval-score-detail-manual h3 {
   margin: 0 0 10px;
   font-size: 15px;
 }
@@ -1194,6 +1196,12 @@ button.event-action-btn--muted { background: var(--color-btn-neutral); }
   border-bottom: 1px solid var(--gray-200, #e5e7eb);
   text-align: left;
   vertical-align: top;
+}
+
+.eval-score-detail-manual-total {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: #374151;
 }
 
 .eval-score-detail-table th {

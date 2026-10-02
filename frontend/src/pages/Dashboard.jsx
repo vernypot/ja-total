@@ -6,6 +6,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import DashboardNoticiaBanner from '../components/DashboardNoticiaBanner';
 import RouteErrorBoundary from '../components/RouteErrorBoundary';
 import PortalBottomNav from '../components/portal/PortalBottomNav';
+import UnreadInboxPrompt from '../components/UnreadInboxPrompt';
 import HorizontalScrollEnhancer from '../components/HorizontalScrollEnhancer';
 import { useDashboardAuth } from '../hooks/useDashboardAuth';
 import { useAppUsageTracking } from '../hooks/useAppUsageTracking';
@@ -93,6 +94,7 @@ export default function Dashboard() {
           <RouteErrorBoundary>
             <Outlet />
           </RouteErrorBoundary>
+          <UnreadInboxPrompt />
         </div>
         {showPortalBottomNav && <PortalBottomNav />}
       </div>

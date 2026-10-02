@@ -7,6 +7,7 @@ import ListPagination from '../../components/ListPagination';
 import UnidadesBoard from '../../components/UnidadesBoard';
 import UnidadValidationStartPanel from '../../components/UnidadValidationStartPanel';
 import UnidadReglamentoInfraccionesPanel from '../../components/UnidadReglamentoInfraccionesPanel';
+import MiembroEvalAjustesPanel from '../../components/MiembroEvalAjustesPanel';
 import UnidadFormModal from '../../components/UnidadFormModal';
 import UnidadWeeklyReportPrint from '../../components/UnidadWeeklyReportPrint';
 import EvalScoreDetailModal from '../../components/EvalScoreDetailModal';
@@ -205,6 +206,11 @@ export default function UnidadesView({
   savingInfraccionId,
   saveReglamentoInfraccion,
   removeReglamentoInfraccion,
+  miembroEvalAjustes,
+  miembroEvalAjustesSchemaAvailable,
+  savingEvalAjusteId,
+  saveMiembroEvalAjuste,
+  removeMiembroEvalAjuste,
   printWeeklyReportTemplate,
   unidadReportPrintPayload,
 }) {
@@ -220,6 +226,7 @@ export default function UnidadesView({
       config: evalConfig,
       membersById,
       memberDisplayNameFn: memberDisplayName,
+      manualAdjustments: miembroEvalAjustes,
     });
   }, [
     scoreDetailUnidad,
@@ -228,6 +235,7 @@ export default function UnidadesView({
     evalConfig,
     membersById,
     memberDisplayName,
+    miembroEvalAjustes,
   ]);
 
   if (!canManage) {
@@ -365,6 +373,21 @@ export default function UnidadesView({
                 savingInfraccionId={savingInfraccionId}
                 onSaveInfraccion={saveReglamentoInfraccion}
                 onRemoveInfraccion={removeReglamentoInfraccion}
+                t={t}
+              />
+
+              <MiembroEvalAjustesPanel
+                canManage={canManage}
+                clubId={clubId}
+                unidades={unidades}
+                members={Object.values(membersById)}
+                membersById={membersById}
+                ajustes={miembroEvalAjustes}
+                schemaAvailable={miembroEvalAjustesSchemaAvailable}
+                savingAjusteId={savingEvalAjusteId}
+                onSaveAjuste={saveMiembroEvalAjuste}
+                onRemoveAjuste={removeMiembroEvalAjuste}
+                memberDisplayName={memberDisplayName}
                 t={t}
               />
 

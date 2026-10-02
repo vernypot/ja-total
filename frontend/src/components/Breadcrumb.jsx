@@ -15,6 +15,7 @@ const PORTAL_PAGE_LABELS = {
   '/dashboard/noticias': 'portalNavNews',
   '/dashboard/eventos': 'portalNavEvents',
   '/dashboard/calendario': 'portalNavCalendar',
+  '/dashboard/mensajes': 'mensajesTitle',
 };
 
 const PORTAL_PROFILE_TAB_LABELS = {

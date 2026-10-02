@@ -540,6 +540,46 @@ export async function removeNoticiaFeaturedImage(noticiaId, currentImageUrl, var
   return setNoticiaFeaturedImageUrl(noticiaId, variant, null);
 }
 
+export function normalizeNoticiaReaderRow(row) {
+  if (!row) return row;
+  return {
+    miembro_id: row.miembro_id,
+    leido_at: row.leido_at,
+    estado: row.estado || 'activo',
+    miembros: {
+      id: row.miembro_id,
+      nombre: row.nombre,
+      apellido1: row.apellido1,
+      apellido2: row.apellido2,
+      nombre_opcional: row.nombre_opcional,
+      apellido_opcional: row.apellido_opcional,
+      estado: row.estado,
+    },
+  };
+}
+
+export async function fetchNoticiaReaders(noticiaId) {
+  if (!noticiaId) return { data: [], error: null };
+
+  const rpc = await sb.rpc('admin_list_noticia_readers', { p_noticia_id: noticiaId });
+  if (!rpc.error) {
+    const rows = Array.isArray(rpc.data) ? rpc.data : [];
+    return { data: rows.map(normalizeNoticiaReaderRow), error: null };
+  }
+
+  const msg = rpc.error?.message || '';
+  if (msg.includes('admin_list_noticia_readers') || msg.includes('Could not find the function')) {
+    return {
+      data: [],
+      error: {
+        message: 'Run NOTICIAS_READERS_ADMIN.sql in Supabase to enable read confirmations list.',
+      },
+    };
+  }
+
+  return { data: [], error: rpc.error };
+}
+
 export function formatNoticiaDate(dateStr, language = 'es') {
   if (!dateStr) return '';
   const locale = language === 'en' ? 'en-US' : 'es-CO';
@@ -547,5 +587,17 @@ export function formatNoticiaDate(dateStr, language = 'es') {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+  });
+}
+
+export function formatNoticiaDateTime(dateStr, language = 'es') {
+  if (!dateStr) return '';
+  const locale = language === 'en' ? 'en-US' : 'es-CO';
+  return new Date(dateStr).toLocaleString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }

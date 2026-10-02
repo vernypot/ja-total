@@ -28,6 +28,8 @@ export function useClubDetalleController() {
   const [cuotaForm, setCuotaForm] = useState(emptyClubCuotaForm());
   const [cuotaFieldErrors, setCuotaFieldErrors] = useState({});
   const [savingCuota, setSavingCuota] = useState(false);
+  const [savingBirthdayCalendar, setSavingBirthdayCalendar] = useState(false);
+  const [birthdayCalendarEnabled, setBirthdayCalendarEnabled] = useState(false);
 
   const iglesiaQuery = params.get('iglesia') || club?.iglesia_id || '';
 
@@ -52,6 +54,7 @@ export function useClubDetalleController() {
 
     setClub(clubData);
     setCuotaForm(emptyClubCuotaForm(clubData));
+    setBirthdayCalendarEnabled(clubData.calendario_cumpleanos_activo === true);
     updateActiveClub({
       id: clubData.id,
       nombre: clubData.nombre,
@@ -180,6 +183,22 @@ export function useClubDetalleController() {
     await load();
   }
 
+  async function saveBirthdayCalendar() {
+    if (!canManage || !clubId) return;
+    setError('');
+    setSavingBirthdayCalendar(true);
+    const { error: saveError } = await ClubesModel.updateClubCalendarioCumpleanos(
+      clubId,
+      birthdayCalendarEnabled,
+    );
+    setSavingBirthdayCalendar(false);
+    if (saveError) {
+      setError(`${t('errorSavingBirthdayCalendar')}: ${saveError.message}`);
+      return;
+    }
+    await load();
+  }
+
   useEffect(() => {
     load();
   }, [clubId]);
@@ -207,6 +226,10 @@ export function useClubDetalleController() {
     cuotaFieldErrors,
     savingCuota,
     saveClubCuota,
+    birthdayCalendarEnabled,
+    setBirthdayCalendarEnabled,
+    savingBirthdayCalendar,
+    saveBirthdayCalendar,
     cuotaFrequencyOptions: CUOTA_FRECUENCIA_VALUES,
   };
 }

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { PageHelpLink } from '../../components/PageHelp';
 import EvalScoreDetailModal from '../../components/EvalScoreDetailModal';
-import { formatEvalScore } from '../../utils/unidadEvaluacion';
+import { formatEvalPoints, formatEvalScore } from '../../utils/unidadEvaluacion';
+import MiembroEvalAjustesPanel from '../../components/MiembroEvalAjustesPanel';
 import MiembroEventosView from './MiembroEventosView';
 import '../../styles/eventAttendance.css';
+import '../../styles/reglamento.css';
 
 function StatCard({ label, value, tone = 'neutral' }) {
   const tones = {
@@ -55,6 +57,15 @@ function AttendanceStatsSection({ stats, evalScore, evalScoreDetail, t, language
         <StatCard label={t('attendanceStatLate')} value={stats.late} tone="warning" />
         <StatCard label={t('attendanceStatFailedConfirmations')} value={stats.failedConfirmations} tone="danger" />
         <StatCard label={t('memberEvalAccumulatedScore')} value={evalScoreLabel} tone="info" />
+        {evalScore?.manualPointsTotal != null && evalScore.manualPointsTotal !== 0 && (
+          <StatCard
+            label={t('memberEvalManualPointsCol')}
+            value={evalScore.manualPointsTotal > 0
+              ? `+${formatEvalPoints(evalScore.manualPointsTotal)}`
+              : formatEvalPoints(evalScore.manualPointsTotal)}
+            tone={evalScore.manualPointsTotal > 0 ? 'success' : 'danger'}
+          />
+        )}
       </div>
 
       {showDetailCta && (
@@ -97,7 +108,21 @@ function AttendanceStatsSection({ stats, evalScore, evalScoreDetail, t, language
 }
 
 export default function MiembroAsistenciaView(props) {
-  const { stats, evalScore, evalScoreDetail, loading, error } = props;
+  const {
+    stats,
+    evalScore,
+    evalScoreDetail,
+    loading,
+    error,
+    canManage,
+    preferredClubId,
+    miembroId,
+    miembroEvalAjustes,
+    miembroEvalAjustesSchemaAvailable,
+    savingEvalAjusteId,
+    saveMiembroEvalAjuste,
+    removeMiembroEvalAjuste,
+  } = props;
   const { t, language } = useLanguage();
 
   if (loading) {
@@ -108,6 +133,26 @@ export default function MiembroAsistenciaView(props) {
     <div>
       <h3>{t('tabAttendance')} <PageHelpLink pageId="memberAttendance" compact /></h3>
       {error && <div className="alert alert-error">{error}</div>}
+
+      {canManage && preferredClubId && miembroId && (
+        <div style={{ marginBottom: '20px' }}>
+          <MiembroEvalAjustesPanel
+            canManage={canManage}
+            clubId={preferredClubId}
+            unidades={[]}
+            members={[]}
+            membersById={{}}
+            ajustes={miembroEvalAjustes || []}
+            schemaAvailable={miembroEvalAjustesSchemaAvailable !== false}
+            savingAjusteId={savingEvalAjusteId}
+            onSaveAjuste={saveMiembroEvalAjuste}
+            onRemoveAjuste={removeMiembroEvalAjuste}
+            memberDisplayName={member => member?.nombre || member?.id || '—'}
+            fixedMemberId={miembroId}
+            t={t}
+          />
+        </div>
+      )}
 
       <MiembroEventosView
         {...props}

@@ -4,7 +4,14 @@ vi.mock('../../services/supabase', () => ({
   sb: {},
 }));
 
-import { isNoticiaExpired, isNoticiaVisible, isPublicNoticia, canAccessNoticia, normalizeExpiraEn } from './noticias.model';
+import {
+  isNoticiaExpired,
+  isNoticiaVisible,
+  isPublicNoticia,
+  canAccessNoticia,
+  normalizeExpiraEn,
+  normalizeNoticiaReaderRow,
+} from './noticias.model';
 
 const activeNoticia = {
   estado: 'activo',
@@ -63,5 +70,21 @@ describe('noticias visibility', () => {
     expect(canAccessNoticia(churchNews, { iglesiaId: 'ig-1' })).toBe(true);
     expect(canAccessNoticia(churchNews, { iglesiaId: 'ig-2' })).toBe(false);
     expect(isPublicNoticia(churchNews)).toBe(false);
+  });
+});
+
+describe('normalizeNoticiaReaderRow', () => {
+  it('maps RPC rows into member display shape', () => {
+    expect(normalizeNoticiaReaderRow({
+      miembro_id: 'm1',
+      nombre: 'Ana',
+      apellido1: 'López',
+      leido_at: '2026-06-01T15:00:00Z',
+      estado: 'activo',
+    })).toMatchObject({
+      miembro_id: 'm1',
+      leido_at: '2026-06-01T15:00:00Z',
+      miembros: { id: 'm1', nombre: 'Ana', apellido1: 'López' },
+    });
   });
 });

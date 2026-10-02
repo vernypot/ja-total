@@ -19,6 +19,8 @@ import { useChurchTimezone } from '../../hooks/useChurchTimezone';
 import { useLinkedMemberEventConfirmation } from '../../hooks/useLinkedMemberEventConfirmation';
 import { useClubRemainingYearEventsPrint } from '../../hooks/useClubRemainingYearEventsPrint';
 import { clubDisplayName } from '../../utils/club';
+import { isBirthdayEvent } from '../../utils/birthdayCalendar';
+import { useClubBirthdayCalendar } from '../../hooks/useClubBirthdayCalendar';
 
 export function useCalendarioClubController() {
   const { user, userData } = useContext(AuthContext);
@@ -80,7 +82,24 @@ export function useCalendarioClubController() {
     [viewMode, focusDate]
   );
 
-  const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+  const {
+    birthdayCalendarEnabled,
+    showBirthdays,
+    setShowBirthdays,
+    birthdayEvents,
+  } = useClubBirthdayCalendar({
+    clubId,
+    club: activeClubData,
+    startDate: visibleRange.startDate,
+    endDate: visibleRange.endDate,
+  });
+
+  const calendarEvents = useMemo(
+    () => (showBirthdays ? [...events, ...birthdayEvents] : events),
+    [events, birthdayEvents, showBirthdays],
+  );
+
+  const eventsByDate = useMemo(() => groupEventsByDate(calendarEvents), [calendarEvents]);
   const calendarCells = useMemo(() => buildCalendarCells(year, monthIndex), [year, monthIndex]);
   const weekDays = useMemo(() => buildWeekDays(focusDate), [focusDate]);
 
@@ -91,8 +110,8 @@ export function useCalendarioClubController() {
   }, [viewMode, focusDateKey, selectedDateKey, eventsByDate]);
 
   const selectedEvent = useMemo(
-    () => events.find(event => event.id === selectedEventId) || null,
-    [events, selectedEventId]
+    () => calendarEvents.find(event => event.id === selectedEventId) || null,
+    [calendarEvents, selectedEventId]
   );
 
   const activeSelectedDateKey = viewMode === 'day' ? focusDateKey : selectedDateKey;
@@ -152,6 +171,13 @@ export function useCalendarioClubController() {
   async function selectEvent(eventId, dateKey) {
     if (dateKey) setSelectedDateKey(dateKey);
     setSelectedEventId(eventId);
+
+    if (isBirthdayEvent({ id: eventId, isBirthday: String(eventId).startsWith('birthday:') })) {
+      setSelectedEventAssignments([]);
+      setLoadingEventDetail(false);
+      return;
+    }
+
     setLoadingEventDetail(true);
     setSelectedEventAssignments([]);
 
@@ -365,5 +391,9 @@ export function useCalendarioClubController() {
     printingRemainingYearEvents,
     printRemainingYearEvents,
     remainingYearPrintPayload,
+    birthdayCalendarEnabled,
+    showBirthdays,
+    setShowBirthdays,
+    currentMiembroId: linkedMiembroId || null,
   };
 }

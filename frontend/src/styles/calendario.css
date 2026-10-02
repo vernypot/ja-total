@@ -152,6 +152,19 @@
   color: #fff;
 }
 
+.calendario-event-pill.calendario-event-pill--birthday {
+  background-color: #fce7f3;
+  color: #9d174d;
+  border-left: 3px solid #db2777;
+}
+
+.calendario-event-pill.calendario-event-pill--birthday:hover,
+.calendario-event-pill.calendario-event-pill--birthday.calendario-event-pill--selected {
+  background-color: #db2777;
+  color: #fff;
+  border-left-color: #9d174d;
+}
+
 .calendario-day-panel {
   margin-top: 20px;
   border: 1px solid #e5e7eb;
@@ -202,6 +215,17 @@
   background-color: #f0f9ff;
 }
 
+.calendario-day-event-item--birthday {
+  background-color: #fdf2f8;
+  border-color: #f9a8d4;
+}
+
+.calendario-day-event-item--birthday:hover,
+.calendario-day-event-item--birthday.calendario-day-event-item--selected {
+  background-color: #fce7f3;
+  border-color: #db2777;
+}
+
 .calendario-day-event-meta {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -240,6 +264,15 @@
 .calendario-event-detail-header h2 {
   margin: 0;
   font-size: 20px;
+}
+
+.calendario-event-detail-header--birthday {
+  padding-bottom: 12px;
+  border-bottom: 3px solid #f9a8d4;
+}
+
+.calendario-event-detail-header--birthday h2 {
+  color: #9d174d;
 }
 
 .calendario-event-detail-body {

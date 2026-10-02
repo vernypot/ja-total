@@ -243,6 +243,7 @@ const PAGE_HELP = {
         { name: 'Type', description: 'Club category (Adventurer, Pathfinder, etc.) used to filter progressive classes.' },
         { name: 'Logo', description: 'Optional image for reports and club header. PNG or JPG recommended.' },
         { name: 'Church', description: 'The church this club belongs to.' },
+        { name: 'Birthday calendar', description: 'When enabled, member birthdays appear on this club’s calendar by default. Each person can still hide them.' },
       ],
       tips: [
         'Members must be assigned to a club before they appear in club-scoped events and planning.',
@@ -265,6 +266,7 @@ const PAGE_HELP = {
         { name: 'Tipo', description: 'Categoría del club (Aventureros, Conquistadores, etc.) usada para filtrar clases progresivas.' },
         { name: 'Logo', description: 'Imagen opcional para informes y encabezado. Se recomienda PNG o JPG.' },
         { name: 'Iglesia', description: 'Iglesia a la que pertenece el club.' },
+        { name: 'Calendario de cumpleaños', description: 'Si está activo, los cumpleaños de los miembros aparecen por defecto en el calendario de este club. Cada persona puede ocultarlos.' },
       ],
       tips: [
         'Los miembros deben estar asignados a un club para aparecer en eventos y planificación del club.',
@@ -367,6 +369,10 @@ const PAGE_HELP = {
         'Select the club in the top bar if not already active.',
         'Browse months with the navigation controls.',
         'Click an event to see details or jump to the Events page to edit.',
+        'If the club enabled the birthday calendar, use the checkbox to show or hide birthdays and send a birthday message from a birthday entry.',
+      ],
+      fields: [
+        { name: 'Show birthdays', description: 'Personal toggle. Birthdays appear only when the club administrator enables them for the club.' },
       ],
       tips: [
         'Only dated events appear on the calendar.',
@@ -380,10 +386,49 @@ const PAGE_HELP = {
         'Seleccione el club en la barra superior si no está activo.',
         'Navegue entre meses con los controles.',
         'Haga clic en un evento para ver detalles o ir a Eventos para editar.',
+        'Si el club activó el calendario de cumpleaños, use la casilla para mostrarlos u ocultarlos y envíe un mensaje desde la entrada de cumpleaños.',
+      ],
+      fields: [
+        { name: 'Mostrar cumpleaños', description: 'Control personal. Los cumpleaños aparecen solo si el administrador del club los habilitó.' },
       ],
       tips: [
         'Solo aparecen eventos con fecha.',
         'Las reuniones del plan con fecha y hora se sincronizan como eventos al guardar.',
+      ],
+    },
+  },
+
+  mensajes: {
+    en: {
+      title: 'Inbox',
+      overview: 'Send and receive messages with other members of your clubs. General notes, requests, and birthday greetings all land in the same inbox.',
+      steps: [
+        'Open Inbox from the sidebar.',
+        'Choose New message, pick a club member, and send a general note or a request.',
+        'Use the rich-text toolbar to format the message and insert images, and attach files under 1 GB.',
+        'Unread messages are highlighted. Opening a message marks it as read.',
+        'From the club calendar, open a birthday to send a greeting to that member.',
+      ],
+      tips: [
+        'You can only message members who share a club with you.',
+        'Messages may be monitored by club administrators and are not entirely private.',
+        'After login you will be prompted if you have unread messages.',
+      ],
+    },
+    es: {
+      title: 'Bandeja de entrada',
+      overview: 'Envíe y reciba mensajes con otros miembros de sus clubes. Notas generales, solicitudes y saludos de cumpleaños llegan a la misma bandeja.',
+      steps: [
+        'Abra Bandeja de entrada en el menú.',
+        'Elija Nuevo mensaje, seleccione un miembro y envíe una nota general o una solicitud.',
+        'Use el editor de texto enriquecido para dar formato e insertar imágenes, y adjunte archivos de menos de 1 GB.',
+        'Los mensajes no leídos se destacan. Al abrirlos se marcan como leídos.',
+        'Desde el calendario del club, abra un cumpleaños para enviar un saludo.',
+      ],
+      tips: [
+        'Solo puede escribir a miembros que compartan un club con usted.',
+        'Los mensajes pueden ser monitoreados por los administradores del club y no son completamente privados.',
+        'Al iniciar sesión se le avisará si hay mensajes sin leer.',
       ],
     },
   },

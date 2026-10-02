@@ -10,7 +10,7 @@ import { fetchEventosByClub } from './eventos.model';
 
 const CLUB_LOGOS_BUCKET = 'club-logos';
 
-const CLUB_SELECT = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
+const CLUB_SELECT = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,calendario_cumpleanos_activo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
 
 async function uploadLogoToStorage(path, file) {
   let { error } = await sb.storage
@@ -136,7 +136,7 @@ export async function fetchClubes({ iglesiaId, showInactive = false } = {}) {
   const result = await query;
   if (!result.error) return result;
 
-  if (/logo_url|column|Could not find/i.test(result.error.message || '')) {
+  if (/logo_url|calendario_cumpleanos|column|Could not find/i.test(result.error.message || '')) {
     let fallback = sb
       .from('clubes')
       .select('id,nombre,iglesia_id,tipo_id,estado,created_at,iglesias(id,nombre),tipos_club(id,nombre)')
@@ -159,11 +159,11 @@ export async function fetchClubesByIglesia(iglesiaId) {
 }
 
 export async function fetchClubById(clubId) {
-  const select = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
+  const select = 'id,nombre,iglesia_id,tipo_id,estado,logo_url,created_at,cuota_activa,cuota_monto,cuota_frecuencia,cuota_frecuencia_otro,cuota_moneda_nombre,cuota_moneda_simbolo,calendario_cumpleanos_activo,iglesias(id,nombre),tipos_club(id,nombre,logo_url)';
   const result = await sb.from('clubes').select(select).eq('id', clubId).single();
   if (!result.error) return result;
 
-  if (/cuota_|estado|created_at|Could not find/i.test(result.error.message || '')) {
+  if (/cuota_|calendario_cumpleanos|estado|created_at|Could not find/i.test(result.error.message || '')) {
     return sb
       .from('clubes')
       .select('id,nombre,iglesia_id,tipo_id,logo_url,tipos_club(id,nombre,logo_url)')
@@ -239,6 +239,22 @@ export async function updateClubCuota(clubId, payload) {
     cuota_moneda_simbolo: monedaSimbolo,
   };
   const direct = await sb.from('clubes').update(body).eq('id', clubId);
+  if (!direct.error) return direct;
+  if (!isRlsError(direct.error)) return direct;
+  return rpc;
+}
+
+export async function updateClubCalendarioCumpleanos(clubId, activo) {
+  const rpc = await sb.rpc('admin_update_club_calendario_cumpleanos', {
+    p_club_id: clubId,
+    p_activo: Boolean(activo),
+  });
+  if (!rpc.error) return rpc;
+
+  const direct = await sb
+    .from('clubes')
+    .update({ calendario_cumpleanos_activo: Boolean(activo) })
+    .eq('id', clubId);
   if (!direct.error) return direct;
   if (!isRlsError(direct.error)) return direct;
   return rpc;

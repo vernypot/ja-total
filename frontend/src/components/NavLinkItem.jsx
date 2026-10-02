@@ -24,9 +24,10 @@ const EMOJI_BY_ICON = {
   web: '🌐',
   settings: '⚙️',
   chart: '📊',
+  inbox: '✉️',
 };
 
-export default function NavLinkItem({ to, active, icon, className = '', onClick, children, reloadOnActive = true }) {
+export default function NavLinkItem({ to, active, icon, className = '', onClick, children, reloadOnActive = true, badge = 0 }) {
   const { theme } = useTheme();
   const useBlixIcons = isBlixLayoutTheme(theme);
   const emoji = EMOJI_BY_ICON[icon] || '•';
@@ -53,11 +54,13 @@ export default function NavLinkItem({ to, active, icon, className = '', onClick,
             <BlixIcon name={icon} size={18} />
           </span>
           <span className="nav-link-label">{children}</span>
+          {badge > 0 && <span className="nav-link-badge">{badge > 99 ? '99+' : badge}</span>}
         </>
       ) : (
         <>
           <span className="nav-link-emoji" aria-hidden="true">{emoji}</span>
           <span className="nav-link-label">{children}</span>
+          {badge > 0 && <span className="nav-link-badge">{badge > 99 ? '99+' : badge}</span>}
         </>
       )}
     </Link>

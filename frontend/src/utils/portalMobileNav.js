@@ -51,6 +51,16 @@ export const PORTAL_BOTTOM_NAV = [
     isActive: pathname => pathname.startsWith('/dashboard/calendario'),
     mobileOnly: false,
   },
+  {
+    id: 'mensajes',
+    path: '/dashboard/mensajes',
+    labelKey: 'mensajesTitle',
+    shortLabelKey: 'mensajesTitleShort',
+    icon: '✉️',
+    blixIcon: 'inbox',
+    isActive: pathname => pathname.startsWith('/dashboard/mensajes'),
+    mobileOnly: false,
+  },
 ];
 
 export function getPortalBottomNav(isMobile = false) {
