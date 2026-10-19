@@ -1087,7 +1087,8 @@ const PAGE_HELP = {
       overview: 'Assign honors from the catalog and track requirement completion for this member. Bulk honor assignment is available on Acciones masivas.',
       steps: [
         'Assign an honor from the available list for the member’s clubs.',
-        'Open each requirement to mark complete and record who validated it.',
+        'Approve the honor as a complete item (default), or expand requirements and mark them one by one.',
+        'Review pending approval requests from the member portal — approve to mark the honor or a requirement complete.',
         'Add comments when a requirement needs clarification.',
       ],
       fields: [
@@ -1104,7 +1105,8 @@ const PAGE_HELP = {
       overview: 'Asigne especialidades del catálogo y registre el cumplimiento de requisitos para este miembro. La asignación masiva de especialidades está en Acciones masivas.',
       steps: [
         'Asigne una especialidad de la lista disponible según los clubes del miembro.',
-        'Abra cada requisito para marcarlo completo y registrar quién lo validó.',
+        'Apruebe la especialidad completa (opción predeterminada) o expanda los requisitos y márquelos uno a uno.',
+        'Revise las solicitudes de aprobación del portal — al aprobar se marca la especialidad o el requisito como completado.',
         'Agregue comentarios cuando un requisito necesite aclaración.',
       ],
       fields: [

@@ -422,7 +422,6 @@ CREATE OR REPLACE FUNCTION public.member_portal_list_club_birthdays(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -460,7 +459,6 @@ CREATE OR REPLACE FUNCTION public.member_portal_list_club_directory(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -502,7 +500,6 @@ $$;
 CREATE OR REPLACE FUNCTION public.member_portal_list_mensajes(p_session_token TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -526,7 +523,6 @@ $$;
 CREATE OR REPLACE FUNCTION public.member_portal_unread_mensaje_count(p_session_token TEXT)
 RETURNS INTEGER
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -661,7 +657,6 @@ GRANT EXECUTE ON FUNCTION public.member_portal_mark_mensaje_leido(TEXT, UUID) TO
 CREATE OR REPLACE FUNCTION public.member_portal_get_profile(p_session_token TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
-STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$

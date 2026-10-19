@@ -8,6 +8,7 @@ import * as MiembrosModel from '../models/miembros.model';
 import * as DatosMedicosModel from '../models/datosMedicos.model';
 import * as CargosModel from '../models/cargos.model';
 import * as ClasesModel from '../models/clases.model';
+import * as EspecialidadesModel from '../models/especialidades.model';
 import * as CarnetModel from '../models/carnet.model';
 import * as EventosModel from '../models/eventos.model';
 import * as DistincionesModel from '../models/distinciones.model';
@@ -264,9 +265,12 @@ export function useMemberPortalEspecialidadesController() {
   const { session } = useMemberPortal();
   const [assigned, setAssigned] = useState([]);
   const [requisitosByEsp, setRequisitosByEsp] = useState({});
+  const [completionsByAssignment, setCompletionsByAssignment] = useState({});
+  const [solicitudesByAssignment, setSolicitudesByAssignment] = useState({});
   const [memberTipos, setMemberTipos] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [requestingKey, setRequestingKey] = useState(null);
 
   async function load() {
     if (!session?.sessionToken) {
@@ -282,15 +286,86 @@ export function useMemberPortalEspecialidadesController() {
       setError(tabError.message);
       setAssigned([]);
       setRequisitosByEsp({});
+      setCompletionsByAssignment({});
+      setSolicitudesByAssignment({});
       setMemberTipos([]);
       setLoading(false);
       return;
     }
 
-    setAssigned(payload?.assigned || []);
+    let completions = payload?.completions || [];
+    let solicitudes = payload?.solicitudes || [];
+    let assignmentProgress = payload?.assignmentProgress || payload?.assignments || [];
+    if (!payload?.completions || !payload?.solicitudes) {
+      const { data: progress, error: progressError } = await MemberPortalModel.fetchPortalEspecialidadProgress(
+        session.sessionToken
+      );
+      if (progressError) {
+        setError(progressError.message);
+      } else {
+        completions = progress?.completions || completions;
+        solicitudes = progress?.solicitudes || solicitudes;
+        assignmentProgress = progress?.assignments || assignmentProgress;
+      }
+    }
+
+    const progressById = Object.fromEntries(
+      (assignmentProgress || []).filter(row => row?.id).map(row => [row.id, row])
+    );
+    setAssigned((payload?.assigned || []).map(row => ({
+      ...row,
+      ...(progressById[row.id] || {}),
+    })));
     setRequisitosByEsp(buildRequisitosMap(payload?.requisitos, 'especialidad_id'));
+    setCompletionsByAssignment(EspecialidadesModel.mapCompletionsByAssignment(completions));
+    setSolicitudesByAssignment(EspecialidadesModel.mapSolicitudesByAssignment(solicitudes));
     setMemberTipos(payload?.memberTipos || []);
     setLoading(false);
+  }
+
+  async function requestRequisitoApproval(assignmentId, especialidadRequisitoId, comentario) {
+    if (!session?.sessionToken || !assignmentId || !especialidadRequisitoId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:${especialidadRequisitoId}`);
+
+    const { error: requestError } = await MemberPortalModel.requestPortalEspecialidadRequisitoApproval(
+      session.sessionToken,
+      assignmentId,
+      especialidadRequisitoId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError(requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
+  }
+
+  async function requestEspecialidadApproval(assignmentId, comentario) {
+    if (!session?.sessionToken || !assignmentId) return false;
+    setError('');
+    setRequestingKey(`${assignmentId}:especialidad`);
+
+    const { error: requestError } = await MemberPortalModel.requestPortalEspecialidadApproval(
+      session.sessionToken,
+      assignmentId,
+      comentario
+    );
+
+    setRequestingKey(null);
+
+    if (requestError) {
+      setError(requestError.message);
+      return false;
+    }
+
+    await load();
+    return true;
   }
 
   useEffect(() => {
@@ -308,6 +383,8 @@ export function useMemberPortalEspecialidadesController() {
     unassigned: [],
     unassignedGrouped: null,
     requisitosByEsp,
+    completionsByAssignment,
+    solicitudesByAssignment,
     memberTipos,
     error,
     loading,
@@ -315,7 +392,16 @@ export function useMemberPortalEspecialidadesController() {
     setSelectedEspecialidadId: () => {},
     assignEspecialidad: () => {},
     unassignEspecialidad: () => {},
+    saveRequisitoCompletion: async () => false,
+    saveAssignmentProgress: async () => false,
+    requestRequisitoApproval,
+    requestEspecialidadApproval,
+    requestingKey,
+    savingRequisitoKey: null,
+    savingAssignmentId: null,
     canManage: false,
+    canRequestApproval: true,
+    defaultValidatorName: '',
     getEspecialidadFromLink: row => row.especialidades || null,
     getLinkEspecialidadId: row => row.especialidad_id || row.especialidades?.id,
   };

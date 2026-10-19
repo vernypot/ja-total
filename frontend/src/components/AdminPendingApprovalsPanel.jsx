@@ -11,6 +11,7 @@ export default function AdminPendingApprovalsPanel({
   memberName,
   formatRequestedDate,
   goToMemberClasses,
+  goToMemberSpecialties,
   t,
 }) {
   const [activeRow, setActiveRow] = useState(null);
@@ -49,10 +50,14 @@ export default function AdminPendingApprovalsPanel({
             <div className="home-item-main">
               <strong>{memberName(row.miembros)}</strong>
               <span className="admin-approval-type">
-                {row.tipo === 'clase' ? t('approvalRequestTypeClase') : t('approvalRequestTypeRequisito')}
+                {row.tipo === 'clase'
+                  ? t('approvalRequestTypeClase')
+                  : row.tipo === 'especialidad'
+                    ? t('approvalRequestTypeEspecialidad')
+                    : t('approvalRequestTypeRequisito')}
               </span>
-              {row.clases_progresivas?.nombre && (
-                <span>{row.clases_progresivas.nombre}</span>
+              {(row.clases_progresivas?.nombre || row.especialidades?.nombre) && (
+                <span>{row.clases_progresivas?.nombre || row.especialidades?.nombre}</span>
               )}
               <span>{formatSolicitudTarget(row, t)}</span>
               {row.solicitado_at && (
@@ -77,9 +82,13 @@ export default function AdminPendingApprovalsPanel({
                 type="button"
                 className="portal-home-section-link"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                onClick={() => goToMemberClasses(row.miembro_id)}
+                onClick={() => (
+                  row.origen === 'especialidad'
+                    ? goToMemberSpecialties?.(row.miembro_id)
+                    : goToMemberClasses(row.miembro_id)
+                )}
               >
-                {t('homeViewMemberClasses')}
+                {row.origen === 'especialidad' ? t('homeViewMemberSpecialties') : t('homeViewMemberClasses')}
               </button>
             </div>
           </article>

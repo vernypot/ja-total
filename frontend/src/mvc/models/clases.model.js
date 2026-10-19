@@ -307,7 +307,10 @@ export function formatSolicitudTarget(row, t) {
   if (row.tipo === 'clase') {
     return row.clases_progresivas?.nombre || t('classProgress');
   }
-  const req = row.clase_requisitos;
+  if (row.tipo === 'especialidad') {
+    return row.especialidades?.nombre || t('tabSpecialties');
+  }
+  const req = row.clase_requisitos || row.especialidad_requisitos;
   if (!req) return t('approvalRequestTypeRequisito');
   const text = getRequisitoDisplayText(req, null);
   return req.numero != null ? `${req.numero}. ${text}` : text;

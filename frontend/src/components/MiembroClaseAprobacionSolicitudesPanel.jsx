@@ -60,7 +60,7 @@ export default function MiembroClaseAprobacionSolicitudesPanel({
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: '#111827' }}>
-                  {row.clases_progresivas?.nombre || t('notAvailable')}
+                  {row.clases_progresivas?.nombre || row.especialidades?.nombre || t('notAvailable')}
                 </div>
                 <div style={{ color: '#4b5563', marginTop: '2px' }}>{formatSolicitudTarget(row, t)}</div>
                 {row.comentario_miembro && (

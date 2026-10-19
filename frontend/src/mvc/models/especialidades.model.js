@@ -356,6 +356,7 @@ export async function deleteEspecialidadRequisito(id) {
 
 export async function fetchMiembroEspecialidades(miembroId) {
   const attempts = [
+    'id, miembro_id, especialidad_id, completado, fecha_completado, validado_por_usuario_id, validado_por_nombre, comentarios, especialidades(id, nombre, club_tipo)',
     'id, miembro_id, especialidad_id, especialidades(id, nombre, club_tipo)',
     'id, miembro_id, especialidad_id, especialidades(id, nombre)',
     'id, miembro_id, especialidades(id, nombre, club_tipo)',
@@ -488,6 +489,163 @@ export async function fetchEspecialidadesCatalogSorted({ showInactive = false, t
 
 export async function fetchEspecialidadesByMiembro(miembroId) {
   return fetchMiembroEspecialidades(miembroId);
+}
+
+function isMissingRpcError(error, name) {
+  const msg = error?.message || '';
+  return msg.includes(name) || msg.includes('does not exist') || msg.includes('Could not find the function');
+}
+
+export async function fetchMiembroEspecialidadRequisitos(assignmentIds) {
+  if (!assignmentIds.length) return { data: [], error: null };
+
+  const { data, error } = await sb
+    .from('miembro_especialidad_requisito')
+    .select('id, miembro_especialidad_id, especialidad_requisito_id, completado, fecha_completado, validado_por_usuario_id, validado_por_nombre, comentarios')
+    .in('miembro_especialidad_id', assignmentIds);
+
+  if (error) {
+    if (isMissingRelationError(error, 'miembro_especialidad_requisito')) {
+      return { data: [], error: null };
+    }
+    return { data: [], error };
+  }
+  return { data: data || [], error: null };
+}
+
+function isMissingRelationError(error, relation) {
+  const msg = error?.message || '';
+  return msg.includes(relation) && (msg.includes('does not exist') || msg.includes('Could not find'));
+}
+
+export function mapCompletionsByAssignment(rows = []) {
+  const map = {};
+  for (const row of rows) {
+    const assignmentId = row.miembro_especialidad_id;
+    if (!map[assignmentId]) map[assignmentId] = {};
+    map[assignmentId][row.especialidad_requisito_id] = row;
+  }
+  return map;
+}
+
+export function mapSolicitudesByAssignment(rows = []) {
+  const map = {};
+  for (const row of rows) {
+    const assignmentId = row.miembro_especialidad_id;
+    if (!assignmentId) continue;
+    if (!map[assignmentId]) map[assignmentId] = { requisitos: {}, especialidad: null };
+    if (row.tipo === 'especialidad') {
+      map[assignmentId].especialidad = row;
+    } else if (row.especialidad_requisito_id) {
+      map[assignmentId].requisitos[row.especialidad_requisito_id] = row;
+    }
+  }
+  return map;
+}
+
+export async function initMiembroEspecialidadRequisitos(assignmentId) {
+  if (!assignmentId) return { data: null, error: null };
+  const { data, error } = await sb.rpc('init_miembro_especialidad_requisitos', {
+    p_assignment_id: assignmentId,
+  });
+  if (error && isMissingRpcError(error, 'init_miembro_especialidad_requisitos')) {
+    return { data: null, error: null };
+  }
+  return { data, error };
+}
+
+export async function upsertMiembroEspecialidadRequisito({
+  assignmentId,
+  especialidadRequisitoId,
+  completado,
+  fechaCompletado = null,
+  validadoPorUsuarioId = null,
+  validadoPorNombre = null,
+  comentarios = null,
+}) {
+  return sb.rpc('upsert_miembro_especialidad_requisito', {
+    p_assignment_id: assignmentId,
+    p_especialidad_requisito_id: especialidadRequisitoId,
+    p_completado: completado,
+    p_fecha_completado: fechaCompletado,
+    p_validado_por_usuario_id: validadoPorUsuarioId,
+    p_validado_por_nombre: validadoPorNombre,
+    p_comentarios: comentarios,
+  });
+}
+
+export async function fetchMiembroEspecialidadAprobacionSolicitudes(miembroId) {
+  const { data, error } = await sb.rpc('fetch_miembro_especialidad_aprobacion_solicitudes', {
+    p_miembro_id: miembroId,
+  });
+  if (error) {
+    if (isMissingRpcError(error, 'fetch_miembro_especialidad_aprobacion_solicitudes')) {
+      return { data: [], error: null };
+    }
+    return { data: [], error };
+  }
+  const rows = typeof data === 'string' ? JSON.parse(data) : data;
+  return { data: rows || [], error: null };
+}
+
+export async function reviewMiembroEspecialidadAprobacionSolicitud({
+  solicitudId,
+  aprobar,
+  comentarioLider = null,
+  revisorUsuarioId = null,
+  revisorNombre = null,
+}) {
+  return sb.rpc('review_miembro_especialidad_aprobacion_solicitud', {
+    p_solicitud_id: solicitudId,
+    p_aprobar: aprobar,
+    p_comentario_lider: comentarioLider,
+    p_revisor_usuario_id: revisorUsuarioId,
+    p_revisor_nombre: revisorNombre,
+  });
+}
+
+export async function upsertMiembroEspecialidadProgress({
+  assignmentId,
+  completado,
+  fechaCompletado = null,
+  validadoPorUsuarioId = null,
+  validadoPorNombre = null,
+  comentarios = null,
+}) {
+  return sb.rpc('upsert_miembro_especialidad_progress', {
+    p_assignment_id: assignmentId,
+    p_completado: completado,
+    p_fecha_completado: fechaCompletado,
+    p_validado_por_usuario_id: validadoPorUsuarioId,
+    p_validado_por_nombre: validadoPorNombre,
+    p_comentarios: comentarios,
+  });
+}
+
+export async function staffRequestEspecialidadRequisitoApproval(
+  miembroId,
+  assignmentId,
+  especialidadRequisitoId,
+  comentario = null
+) {
+  return sb.rpc('staff_request_especialidad_requisito_approval', {
+    p_miembro_id: miembroId,
+    p_assignment_id: assignmentId,
+    p_especialidad_requisito_id: especialidadRequisitoId,
+    p_comentario: comentario,
+  });
+}
+
+export async function staffRequestEspecialidadApproval(
+  miembroId,
+  assignmentId,
+  comentario = null
+) {
+  return sb.rpc('staff_request_especialidad_approval', {
+    p_miembro_id: miembroId,
+    p_assignment_id: assignmentId,
+    p_comentario: comentario,
+  });
 }
 
 export { fetchTiposClub };

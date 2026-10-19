@@ -116,6 +116,7 @@ function RequisitoCompletionModal({
   defaultValidatorName,
   solicitud = null,
   onRequestApproval,
+  allowTextCustomization = true,
   t,
   onClose,
   onSave,
@@ -296,6 +297,7 @@ function RequisitoCompletionModal({
             </>
           )}
 
+          {allowTextCustomization && (
           <RequisitoTextSection
             req={req}
             draft={draft}
@@ -304,6 +306,7 @@ function RequisitoCompletionModal({
             saving={saving}
             t={t}
           />
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
@@ -478,6 +481,7 @@ export default function MiembroClaseRequisitosList({
   onSaveRequisito,
   onRequestRequisitoApproval,
   defaultValidatorName = '',
+  allowTextCustomization = true,
   t,
   compact = true,
 }) {
@@ -578,6 +582,7 @@ export default function MiembroClaseRequisitosList({
               ? comentario => onRequestRequisitoApproval(modalReq.id, comentario)
               : null
           }
+          allowTextCustomization={allowTextCustomization}
           t={t}
           onClose={() => setModalReq(null)}
           onSave={handleSave}

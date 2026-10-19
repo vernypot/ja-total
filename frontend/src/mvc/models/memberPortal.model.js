@@ -174,6 +174,43 @@ export async function requestPortalClaseApproval(sessionToken, assignmentId, com
   });
 }
 
+export async function requestPortalEspecialidadRequisitoApproval(
+  sessionToken,
+  assignmentId,
+  especialidadRequisitoId,
+  comentario = null
+) {
+  return sb.rpc('member_portal_request_especialidad_requisito_approval', {
+    p_session_token: sessionToken,
+    p_assignment_id: assignmentId,
+    p_especialidad_requisito_id: especialidadRequisitoId,
+    p_comentario: comentario,
+  });
+}
+
+export async function requestPortalEspecialidadApproval(
+  sessionToken,
+  assignmentId,
+  comentario = null
+) {
+  return sb.rpc('member_portal_request_especialidad_approval', {
+    p_session_token: sessionToken,
+    p_assignment_id: assignmentId,
+    p_comentario: comentario,
+  });
+}
+
+export async function fetchPortalEspecialidadProgress(sessionToken) {
+  const { data, error } = await sb.rpc('member_portal_fetch_especialidad_progress', {
+    p_session_token: sessionToken,
+  });
+  if (error) {
+    if (isRpcSignatureMismatch(error)) return { data: { completions: [], solicitudes: [] }, error: null };
+    return { data: null, error };
+  }
+  return { data: parsePortalJsonPayload(data) || { completions: [], solicitudes: [] }, error: null };
+}
+
 function isRpcSignatureMismatch(error) {
   const msg = String(error?.message || '');
   return msg.includes('Could not find the function')

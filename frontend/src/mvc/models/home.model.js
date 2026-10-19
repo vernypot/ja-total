@@ -51,7 +51,7 @@ export async function fetchIglesiaMemberIds(iglesiaId) {
   return { data: memberIds, error: null };
 }
 
-async function fetchPendingSolicitudesForMemberIds(memberIds, select) {
+async function fetchPendingSolicitudesForMemberIds(memberIds, select, table) {
   if (!memberIds.length) return [];
 
   const rowsById = new Map();
@@ -59,7 +59,7 @@ async function fetchPendingSolicitudesForMemberIds(memberIds, select) {
   for (let index = 0; index < memberIds.length; index += MEMBER_ID_CHUNK_SIZE) {
     const chunk = memberIds.slice(index, index + MEMBER_ID_CHUNK_SIZE);
     const { data, error } = await sb
-      .from('miembro_clase_aprobacion_solicitud')
+      .from(table)
       .select(select)
       .eq('estado', 'pendiente')
       .in('miembro_id', chunk)
@@ -84,7 +84,7 @@ export async function fetchPendingApprovalSolicitudesByIglesia(iglesiaId, { limi
   if (memberError) return { data: [], error: memberError };
   if (!memberIds.length) return { data: [], error: null };
 
-  const selectAttempts = [
+  const classSelectAttempts = [
     `id, miembro_id, tipo, estado, solicitado_at, comentario_miembro,
       miembros ( id, ${MIEMBRO_NAME_FIELDS} ),
       miembro_clase_progresiva ( clase_progresiva_id, clases_progresivas ( id, nombre ) ),
@@ -98,15 +98,15 @@ export async function fetchPendingApprovalSolicitudesByIglesia(iglesiaId, { limi
       clase_requisitos ( id, numero, descripcion, texto_opcional )`,
   ];
 
-  for (const select of selectAttempts) {
+  let classRows = [];
+  for (const select of classSelectAttempts) {
     try {
-      const rows = await fetchPendingSolicitudesForMemberIds(memberIds, select);
-      const normalized = filterVisiblePendingApprovals(rows.map(row => ({
-        ...row,
-        clases_progresivas: row.miembro_clase_progresiva?.clases_progresivas || row.clases_progresivas || null,
-      })));
-      const data = typeof limit === 'number' ? normalized.slice(0, limit) : normalized;
-      return { data, error: null };
+      classRows = await fetchPendingSolicitudesForMemberIds(
+        memberIds,
+        select,
+        'miembro_clase_aprobacion_solicitud'
+      );
+      break;
     } catch (error) {
       if (
         isMissingRelationError(error, 'miembro_clase_aprobacion_solicitud')
@@ -115,12 +115,41 @@ export async function fetchPendingApprovalSolicitudesByIglesia(iglesiaId, { limi
       ) {
         continue;
       }
-
       return { data: [], error };
     }
   }
 
-  return { data: [], error: null };
+  let specialtyRows = [];
+  try {
+    specialtyRows = await fetchPendingSolicitudesForMemberIds(
+      memberIds,
+      `id, miembro_id, tipo, estado, solicitado_at, comentario_miembro,
+        miembros ( id, ${MIEMBRO_NAME_FIELDS} ),
+        miembro_especialidad ( especialidad_id, especialidades ( id, nombre ) ),
+        especialidad_requisitos ( id, descripcion )`,
+      'miembro_especialidad_aprobacion_solicitud'
+    );
+  } catch (error) {
+    if (!isMissingRelationError(error, 'miembro_especialidad_aprobacion_solicitud')) {
+      return { data: [], error };
+    }
+  }
+
+  const normalized = filterVisiblePendingApprovals([
+    ...classRows.map(row => ({
+      ...row,
+      origen: 'clase',
+      clases_progresivas: row.miembro_clase_progresiva?.clases_progresivas || row.clases_progresivas || null,
+    })),
+    ...specialtyRows.map(row => ({
+      ...row,
+      origen: 'especialidad',
+      especialidades: row.miembro_especialidad?.especialidades || row.especialidades || null,
+    })),
+  ]).sort((a, b) => new Date(b.solicitado_at).getTime() - new Date(a.solicitado_at).getTime());
+
+  const data = typeof limit === 'number' ? normalized.slice(0, limit) : normalized;
+  return { data, error: null };
 }
 
 export function memberFullName(m) {

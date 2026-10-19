@@ -24,6 +24,7 @@ function HomeNotifications({
   eventDisplayName,
   getClubName,
   goToMemberClasses,
+  goToMemberSpecialties,
   goToEventos,
 }) {
   if (!canManage || loading) return null;
@@ -56,6 +57,7 @@ function HomeNotifications({
           memberName={memberName}
           formatRequestedDate={formatRequestedDate}
           goToMemberClasses={goToMemberClasses}
+          goToMemberSpecialties={goToMemberSpecialties}
           t={t}
         />
       )}
@@ -264,6 +266,7 @@ export default function HomeView(props) {
     reviewSolicitud,
     formatRequestedDate,
     goToMemberClasses,
+    goToMemberSpecialties,
     ...panelProps
   } = props;
 
@@ -376,7 +379,8 @@ export default function HomeView(props) {
             formatEventTime={panelProps.formatEventTime}
             eventDisplayName={panelProps.eventDisplayName}
             getClubName={panelProps.getClubName}
-            goToMemberClasses={panelProps.goToMemberClasses}
+            goToMemberClasses={goToMemberClasses}
+            goToMemberSpecialties={goToMemberSpecialties}
             goToEventos={panelProps.goToEventos}
           />
           <HomePanels
