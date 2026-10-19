@@ -30,6 +30,56 @@ html[data-ui-theme='dark'] .mensaje-privacy-notice-icon {
   color: #fbbf24;
 }
 
+html[data-ui-theme='dark'] button.mensaje-folder-tab {
+  background: var(--brand-base);
+  border-color: var(--gray-200);
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='dark'] button.mensaje-folder-tab:hover,
+html[data-ui-theme='dark'] button.mensaje-folder-tab:focus-visible {
+  background: var(--gray-50);
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='dark'] button.mensaje-folder-tab.is-active,
+html[data-ui-theme='dark'] button.mensaje-folder-tab.is-active:hover,
+html[data-ui-theme='dark'] button.mensaje-folder-tab.is-active:focus-visible {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--color-on-primary);
+}
+
+html[data-ui-theme='dark'] .mensaje-list {
+  background: var(--brand-base);
+  border-color: var(--gray-200);
+}
+
+html[data-ui-theme='dark'] button.mensaje-list-item,
+html[data-ui-theme='dark'] button.mensaje-list-item:hover,
+html[data-ui-theme='dark'] button.mensaje-list-item:focus-visible,
+html[data-ui-theme='dark'] button.mensaje-list-item.is-selected,
+html[data-ui-theme='dark'] button.mensaje-list-item.is-selected:hover {
+  color: var(--color-text-primary);
+}
+
+html[data-ui-theme='dark'] button.mensaje-list-item:hover,
+html[data-ui-theme='dark'] button.mensaje-list-item:focus-visible {
+  background: var(--gray-50);
+}
+
+html[data-ui-theme='dark'] button.mensaje-list-item.is-selected,
+html[data-ui-theme='dark'] button.mensaje-list-item.is-selected:hover {
+  background: rgba(37, 99, 235, 0.22);
+}
+
+html[data-ui-theme='dark'] .mensaje-list-empty,
+html[data-ui-theme='dark'] .mensaje-detail-empty,
+html[data-ui-theme='dark'] .mensaje-list-subject,
+html[data-ui-theme='dark'] .mensaje-list-meta {
+  color: var(--color-text-muted);
+}
+
 html[data-ui-theme='dark'] .alert-info {
   color: var(--color-alert-info);
   border-color: #60a5fa;

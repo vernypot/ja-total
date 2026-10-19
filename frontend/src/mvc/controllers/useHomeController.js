@@ -12,6 +12,7 @@ import * as NoticiasModel from '../models/noticias.model';
 import * as HomeModel from '../models/home.model';
 import * as EventosModel from '../models/eventos.model';
 import * as ClasesModel from '../models/clases.model';
+import * as EspecialidadesModel from '../models/especialidades.model';
 
 export function useHomeController() {
   const { user, userData, loading: authLoading } = useContext(AuthContext);
@@ -181,6 +182,11 @@ export function useHomeController() {
     navigate(`/dashboard/miembro/${miembroId}/clases`);
   }
 
+  function goToMemberSpecialties(miembroId) {
+    if (!miembroId) return;
+    navigate(`/dashboard/miembro/${miembroId}/especialidades`);
+  }
+
   function formatRequestedDate(dateStr) {
     if (!dateStr) return '';
     const locale = language === 'en' ? 'en-US' : 'es-CO';
@@ -200,7 +206,12 @@ export function useHomeController() {
       .filter(Boolean)
       .join(' ');
 
-    const { error: reviewError } = await ClasesModel.reviewMiembroClaseAprobacionSolicitud({
+    const row = pendingApprovals.find(item => item.id === solicitudId);
+    const reviewFn = row?.origen === 'especialidad'
+      ? EspecialidadesModel.reviewMiembroEspecialidadAprobacionSolicitud
+      : ClasesModel.reviewMiembroClaseAprobacionSolicitud;
+
+    const { error: reviewError } = await reviewFn({
       solicitudId,
       aprobar,
       comentarioLider,
@@ -288,6 +299,7 @@ export function useHomeController() {
     goToNoticiasAdmin,
     goToEventos,
     goToMemberClasses,
+    goToMemberSpecialties,
     formatSolicitudTarget,
     goToIglesias,
     toggleNewsExpand,

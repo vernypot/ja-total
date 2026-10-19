@@ -403,14 +403,16 @@ const PAGE_HELP = {
       title: 'Inbox',
       overview: 'Send and receive messages with other members of your clubs. General notes, requests, and birthday greetings all land in the same inbox.',
       steps: [
-        'Open Inbox from the sidebar.',
+        'Open Inbox from the sidebar (second item) or the member navigation.',
         'Choose New message, pick a club member, and send a general note or a request.',
         'Use the rich-text toolbar to format the message and insert images, and attach files under 1 GB.',
         'Unread messages are highlighted. Opening a message marks it as read.',
+        'Reply, forward, or delete a message from the open-message actions.',
         'From the club calendar, open a birthday to send a greeting to that member.',
       ],
       tips: [
         'You can only message members who share a club with you.',
+        'Deleting a message hides it from your inbox; the other person may still have a copy.',
         'Messages may be monitored by club administrators and are not entirely private.',
         'After login you will be prompted if you have unread messages.',
       ],
@@ -419,14 +421,16 @@ const PAGE_HELP = {
       title: 'Bandeja de entrada',
       overview: 'Envíe y reciba mensajes con otros miembros de sus clubes. Notas generales, solicitudes y saludos de cumpleaños llegan a la misma bandeja.',
       steps: [
-        'Abra Bandeja de entrada en el menú.',
+        'Abra Bandeja en el menú (segunda opción) o en la navegación del miembro.',
         'Elija Nuevo mensaje, seleccione un miembro y envíe una nota general o una solicitud.',
         'Use el editor de texto enriquecido para dar formato e insertar imágenes, y adjunte archivos de menos de 1 GB.',
         'Los mensajes no leídos se destacan. Al abrirlos se marcan como leídos.',
+        'Responda, reenvíe o elimine un mensaje desde las acciones al abrirlo.',
         'Desde el calendario del club, abra un cumpleaños para enviar un saludo.',
       ],
       tips: [
         'Solo puede escribir a miembros que compartan un club con usted.',
+        'Eliminar un mensaje lo oculta de su bandeja; la otra persona puede conservar una copia.',
         'Los mensajes pueden ser monitoreados por los administradores del club y no son completamente privados.',
         'Al iniciar sesión se le avisará si hay mensajes sin leer.',
       ],
@@ -1083,7 +1087,8 @@ const PAGE_HELP = {
       overview: 'Assign honors from the catalog and track requirement completion for this member. Bulk honor assignment is available on Acciones masivas.',
       steps: [
         'Assign an honor from the available list for the member’s clubs.',
-        'Open each requirement to mark complete and record who validated it.',
+        'Approve the honor as a complete item (default), or expand requirements and mark them one by one.',
+        'Review pending approval requests from the member portal — approve to mark the honor or a requirement complete.',
         'Add comments when a requirement needs clarification.',
       ],
       fields: [
@@ -1100,7 +1105,8 @@ const PAGE_HELP = {
       overview: 'Asigne especialidades del catálogo y registre el cumplimiento de requisitos para este miembro. La asignación masiva de especialidades está en Acciones masivas.',
       steps: [
         'Asigne una especialidad de la lista disponible según los clubes del miembro.',
-        'Abra cada requisito para marcarlo completo y registrar quién lo validó.',
+        'Apruebe la especialidad completa (opción predeterminada) o expanda los requisitos y márquelos uno a uno.',
+        'Revise las solicitudes de aprobación del portal — al aprobar se marca la especialidad o el requisito como completado.',
         'Agregue comentarios cuando un requisito necesite aclaración.',
       ],
       fields: [

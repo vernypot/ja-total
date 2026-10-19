@@ -39,7 +39,11 @@ export default function ApprovalSolicitudReviewModal({
       >
         <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>{formatSolicitudTarget(row, t)}</h3>
         <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-          {row.tipo === 'clase' ? t('approvalRequestTypeClase') : t('approvalRequestTypeRequisito')}
+          {row.tipo === 'clase'
+            ? t('approvalRequestTypeClase')
+            : row.tipo === 'especialidad'
+              ? t('approvalRequestTypeEspecialidad')
+              : t('approvalRequestTypeRequisito')}
         </p>
         {row.comentario_miembro && (
           <div style={{ marginBottom: '12px', fontSize: '13px' }}>

@@ -12,6 +12,7 @@ import {
   replaceHtmlSources,
   sanitizeMensajeFileName,
   validateMensajeFile,
+  withMensajeSubjectPrefix,
 } from './mensajes.model';
 
 describe('mensaje helpers', () => {
@@ -41,5 +42,11 @@ describe('mensaje helpers', () => {
   it('formats file sizes', () => {
     expect(formatMensajeFileSize(512, 'en')).toBe('512 B');
     expect(formatMensajeFileSize(1024, 'en')).toMatch(/KB/);
+  });
+
+  it('adds reply and forward subject prefixes once', () => {
+    expect(withMensajeSubjectPrefix('Hello', 'Re:')).toBe('Re: Hello');
+    expect(withMensajeSubjectPrefix('Re: Hello', 'Re:')).toBe('Re: Hello');
+    expect(withMensajeSubjectPrefix('', 'Fw:')).toBe('Fw:');
   });
 });

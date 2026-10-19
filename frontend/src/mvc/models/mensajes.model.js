@@ -159,6 +159,54 @@ export async function markMensajeLeido(mensajeId, { sessionToken } = {}) {
   return { error };
 }
 
+export async function deleteMensaje(mensajeId, { sessionToken } = {}) {
+  if (!mensajeId) return { error: new Error('missing message') };
+
+  if (sessionToken) {
+    const { error } = await sb.rpc('member_portal_delete_mensaje', {
+      p_session_token: sessionToken,
+      p_mensaje_id: mensajeId,
+    });
+    return { error };
+  }
+
+  const { error } = await sb.rpc('admin_delete_mensaje', { p_mensaje_id: mensajeId });
+  return { error };
+}
+
+export function withMensajeSubjectPrefix(subject, prefix) {
+  const value = String(subject || '').trim();
+  const tag = String(prefix || '').trim();
+  if (!tag) return value;
+  if (!value) return tag;
+  if (value.toLowerCase().startsWith(tag.toLowerCase())) return value;
+  return `${tag} ${value}`;
+}
+
+function escapeMensajeText(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export function quotedMensajeHtml(html) {
+  const clean = sanitizeMensajeHtml(html);
+  if (!clean) return '';
+  return `<p><br></p><blockquote>${clean}</blockquote>`;
+}
+
+export function forwardedMensajeHtml(html, adjuntos = []) {
+  const clean = sanitizeMensajeHtml(html) || '';
+  const files = (adjuntos || []).filter(file => file?.url);
+  if (!files.length) return clean;
+  const items = files.map(file => (
+    `<li><a href="${escapeMensajeText(file.url)}">${escapeMensajeText(file.nombre || file.url)}</a></li>`
+  )).join('');
+  return `${clean}<ul>${items}</ul>`;
+}
+
 export function partyDisplayName(party) {
   if (!party) return '';
   return [party.nombre, party.apellido1].filter(Boolean).join(' ').trim();

@@ -8,6 +8,7 @@ import MensajePrivacyNotice from './MensajePrivacyNotice';
 import NoticiaHtml from './NoticiaHtml';
 import * as MensajesModel from '../mvc/models/mensajes.model';
 import { memberDisplayName } from '../utils/memberDisplayName';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import '../styles/form.css';
 import '../styles/mensajes.css';
 import '../styles/noticia-html.css';
@@ -35,6 +36,10 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
   const [selectedId, setSelectedId] = useState('');
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePreset, setComposePreset] = useState(null);
+  const { askConfirm, confirmDialog } = useConfirmDialog({
+    cancelLabel: t('cancel'),
+    confirmingLabel: t('saving'),
+  });
 
   async function load() {
     setLoading(true);
@@ -78,28 +83,76 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
 
   function replyTo(row) {
     const other = row.folder === 'sent' ? row.destinatario : row.remitente;
-    if (other?.tipo !== 'miembro' || !other.id) {
-      startCompose({ clubId: row.club_id });
+    const quoted = MensajesModel.quotedMensajeHtml(row.cuerpo);
+    const asunto = MensajesModel.withMensajeSubjectPrefix(row.asunto, t('mensajeReplyPrefix'));
+    const tipo = row.tipo === 'solicitud' ? 'solicitud' : 'general';
+
+    if (other?.tipo === 'usuario' && other.id) {
+      startCompose({
+        clubId: row.club_id,
+        usuarioId: other.id,
+        recipientLabel: MensajesModel.partyDisplayName(other) || t('mensajeUnknownParty'),
+        tipo,
+        asunto,
+        cuerpo: quoted,
+      });
       return;
     }
+
+    if (other?.tipo !== 'miembro' || !other.id) {
+      startCompose({ clubId: row.club_id, tipo, asunto, cuerpo: quoted });
+      return;
+    }
+
     startCompose({
       clubId: row.club_id,
       miembroId: other.id,
+      tipo,
+      asunto,
+      cuerpo: quoted,
+    });
+  }
+
+  function forwardTo(row) {
+    startCompose({
+      clubId: row.club_id,
       tipo: row.tipo === 'solicitud' ? 'solicitud' : 'general',
-      asunto: row.asunto ? `${t('mensajeReplyPrefix')} ${row.asunto}` : '',
+      asunto: MensajesModel.withMensajeSubjectPrefix(row.asunto, t('mensajeForwardPrefix')),
+      cuerpo: MensajesModel.forwardedMensajeHtml(row.cuerpo, row.adjuntos),
+    });
+  }
+
+  function deleteMessage(row) {
+    askConfirm({
+      title: t('mensajeDeleteTitle'),
+      message: t('mensajeDeleteConfirm'),
+      highlight: row.asunto || t('mensajeNoSubject'),
+      confirmLabel: t('mensajeDelete'),
+      onConfirm: async () => {
+        const { error: deleteError } = await MensajesModel.deleteMensaje(row.id, { sessionToken });
+        if (deleteError) {
+          setError(deleteError.message || t('mensajeDeleteError'));
+          return;
+        }
+        setError('');
+        setNotice(t('mensajeDeleted'));
+        setSelectedId(current => (current === row.id ? '' : current));
+        await load();
+        window.dispatchEvent(new Event('inbox-unread-refresh'));
+      },
     });
   }
 
   return (
     <div className="container">
       <BackLink />
-      <div className="page-header">
+      <div className="page-header mensaje-page-header">
         <div>
           <h1>✉️ {t('mensajesTitle')} <PageHelpLink pageId="mensajes" /></h1>
           <p className="text-muted" style={{ margin: '4px 0 0' }}>{t('mensajesHint')}</p>
           <MensajePrivacyNotice t={t} />
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => startCompose({ clubId: defaultClubId })}>
+        <button type="button" className="btn btn-primary mensaje-compose-btn" onClick={() => startCompose({ clubId: defaultClubId })}>
           {t('mensajeComposeTitle')}
         </button>
       </div>
@@ -113,7 +166,8 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
             key={id}
             type="button"
             role="tab"
-            className={folder === id ? 'is-active' : ''}
+            className={`mensaje-folder-tab${folder === id ? ' is-active' : ''}`}
+            aria-selected={folder === id}
             onClick={() => {
               setFolder(id);
               setSelectedId('');
@@ -130,7 +184,7 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
         <div className="mensaje-layout">
           <ul className="mensaje-list">
             {visible.length === 0 ? (
-              <li className="text-muted">{t('mensajeEmptyFolder')}</li>
+              <li className="mensaje-list-empty">{t('mensajeEmptyFolder')}</li>
             ) : visible.map(row => {
               const other = row.folder === 'sent' ? row.destinatario : row.remitente;
               return (
@@ -154,7 +208,7 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
 
           <div className="mensaje-detail card">
             {!selected ? (
-              <p className="text-muted">{t('mensajeSelectPrompt')}</p>
+              <p className="mensaje-detail-empty">{t('mensajeSelectPrompt')}</p>
             ) : (
               <>
                 <div className="mensaje-detail-head">
@@ -191,6 +245,12 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
                   <button type="button" className="btn btn-secondary" onClick={() => replyTo(selected)}>
                     {t('mensajeReply')}
                   </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => forwardTo(selected)}>
+                    {t('mensajeForward')}
+                  </button>
+                  <button type="button" className="btn btn-danger" onClick={() => deleteMessage(selected)}>
+                    {t('mensajeDelete')}
+                  </button>
                 </div>
               </>
             )}
@@ -218,6 +278,7 @@ export default function MensajesInbox({ clubs = [], defaultClubId = '' }) {
           window.dispatchEvent(new Event('inbox-unread-refresh'));
         }}
       />
+      {confirmDialog}
     </div>
   );
 }
